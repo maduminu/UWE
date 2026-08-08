@@ -239,8 +239,8 @@ export const ProductPage: React.FC<ProductPageProps> = ({ setActivePage }) => {
               </tr>
               <tr className="hover:bg-surface-variant/20 transition-colors">
                 <td className="p-4 font-semibold text-on-surface">Duration</td>
+                <td className="p-4">5 Days</td>
                 <td className="p-4">4 Weeks</td>
-                <td className="p-4">8 Weeks</td>
                 {/* <td className="p-4">12 Weeks</td> */}
               </tr>
               <tr className="hover:bg-surface-variant/20 transition-colors">
