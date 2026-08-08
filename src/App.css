@@ -1,0 +1,102 @@
+.page-container {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  text-align: center;
+}
+
+/* Page Entrance Animation */
+@keyframes pageFadeIn {
+  0% {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-page-entrance {
+  animation: pageFadeIn 0.45s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Emblem 2.5D Micro-Float */
+@keyframes microFloat {
+  0%, 100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-12px) rotate(1.2deg);
+  }
+}
+
+.animate-micro-float {
+  animation: microFloat 6s ease-in-out infinite;
+}
+
+/* Ambient Pulse Glow */
+@keyframes pulseGlow {
+  0%, 100% {
+    opacity: 0.6;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.95;
+    transform: scale(1.05);
+  }
+}
+
+.animate-pulse-glow {
+  animation: pulseGlow 4s ease-in-out infinite;
+}
+
+/* Border Shimmer for Glass Cards */
+@keyframes borderShimmer {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.hover-shimmer {
+  background-size: 200% 200%;
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+.hover-shimmer:hover {
+  animation: borderShimmer 3s ease infinite;
+}
+
+/* Mobile Drawer Slide Down */
+@keyframes slideDownMenu {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-slide-down {
+  animation: slideDownMenu 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Tactile Active Press Effect */
+.active-press {
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.active-press:active {
+  transform: scale(0.96) translateY(1px);
+}
