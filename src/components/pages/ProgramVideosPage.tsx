@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { PageId } from '../layout/Navbar';
 import { AuthModal } from '../ui/AuthModal';
-import { api } from '../../services/api';
+import { api, API_BASE } from '../../services/api';
 
 interface ProgramVideosPageProps {
   setActivePage?: (page: PageId) => void;
@@ -137,7 +137,7 @@ export const ProgramVideosPage: React.FC<ProgramVideosPageProps> = () => {
         }
         const localUser = JSON.parse(saved);
         // Fetch fresh enrolledCourseSlugs from backend
-        const res = await fetch(`http://localhost:5005/api/users/${localUser.id}`);
+        const res = await fetch(`${API_BASE}/users/${localUser.id}`);
         if (res.ok) {
           const json = await res.json();
           const freshUser = json.data || json;
@@ -203,9 +203,7 @@ export const ProgramVideosPage: React.FC<ProgramVideosPageProps> = () => {
   useEffect(() => {
     const fetchSeries = async () => {
       try {
-        const res = await fetch('http://localhost:5005/api/program-videos');
-        if (!res.ok) return;
-        const json = await res.json();
+        const json = await api.getProgramVideos();
         if (json.data && json.data.length > 0) {
           const mapped: VideoSeries[] = json.data.map((s: any) => ({
             id: s.id,

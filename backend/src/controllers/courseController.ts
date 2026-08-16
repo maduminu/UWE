@@ -1,6 +1,5 @@
 import { Request, Response } from 'express';
 import { prisma } from '../config/db';
-import { getErrorMessage, normalizeEnumValue } from '../utils/typeHelpers';
 
 // @desc    Get all courses with active upcoming batches
 // @route   GET /api/courses
@@ -16,8 +15,8 @@ export const getAllCourses = async (_req: Request, res: Response): Promise<void>
       orderBy: { createdAt: 'asc' },
     });
     res.status(200).json({ success: true, count: courses.length, data: courses });
-  } catch (error: unknown) {
-    res.status(500).json({ success: false, message: getErrorMessage(error) });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 
@@ -25,7 +24,7 @@ export const getAllCourses = async (_req: Request, res: Response): Promise<void>
 // @route   GET /api/courses/:slug
 export const getCourseBySlug = async (req: Request, res: Response): Promise<void> => {
   try {
-    const slug = String(req.params.slug);
+    const { slug } = req.params;
     const course = await prisma.course.findUnique({
       where: { slug },
       include: { batches: true },
@@ -37,8 +36,8 @@ export const getCourseBySlug = async (req: Request, res: Response): Promise<void
     }
 
     res.status(200).json({ success: true, data: course });
-  } catch (error: unknown) {
-    res.status(500).json({ success: false, message: getErrorMessage(error) });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 
@@ -46,7 +45,7 @@ export const getCourseBySlug = async (req: Request, res: Response): Promise<void
 // @route   PUT /api/courses/:id
 export const updateCourse = async (req: Request, res: Response): Promise<void> => {
   try {
-    const id = String(req.params.id);
+    const { id } = req.params;
     const { price, duration, subtitle } = req.body;
 
     const updated = await prisma.course.update({
@@ -59,8 +58,8 @@ export const updateCourse = async (req: Request, res: Response): Promise<void> =
     });
 
     res.status(200).json({ success: true, data: updated });
-  } catch (error: unknown) {
-    res.status(500).json({ success: false, message: getErrorMessage(error) });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 
@@ -68,7 +67,7 @@ export const updateCourse = async (req: Request, res: Response): Promise<void> =
 // @route   PUT /api/courses/batches/:batchId/seats
 export const updateBatchSeats = async (req: Request, res: Response): Promise<void> => {
   try {
-    const batchId = String(req.params.batchId);
+    const { batchId } = req.params;
     const { availableSeats } = req.body;
 
     const updatedBatch = await prisma.courseBatch.update({
@@ -77,8 +76,8 @@ export const updateBatchSeats = async (req: Request, res: Response): Promise<voi
     });
 
     res.status(200).json({ success: true, data: updatedBatch });
-  } catch (error: unknown) {
-    res.status(500).json({ success: false, message: getErrorMessage(error) });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 
@@ -94,8 +93,6 @@ export const createCourse = async (req: Request, res: Response): Promise<void> =
     }
 
     const generatedSlug = (slug || title).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
-    const normalizedCategory =
-      (normalizeEnumValue(category, ['MIND', 'COMMAND', 'ENTERPRISE']) as 'MIND' | 'COMMAND' | 'ENTERPRISE' | undefined) ?? 'MIND';
 
     const newCourse = await prisma.course.create({
       data: {
@@ -103,7 +100,7 @@ export const createCourse = async (req: Request, res: Response): Promise<void> =
         slug: generatedSlug,
         subtitle: subtitle || 'Tactical Mind & Command Protocol',
         badge: badge || 'MIND DIVISION',
-        category: normalizedCategory,
+        category: (category as any) || 'MIND',
         description: description || 'Comprehensive tactical empowerment program.',
         price: parseFloat(price),
         currency: currency || 'RS.',
@@ -126,8 +123,8 @@ export const createCourse = async (req: Request, res: Response): Promise<void> =
     });
 
     res.status(201).json({ success: true, data: newCourse });
-  } catch (error: unknown) {
-    res.status(500).json({ success: false, message: getErrorMessage(error) });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 

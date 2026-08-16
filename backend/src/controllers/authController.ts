@@ -1,12 +1,5 @@
 import { Request, Response } from 'express';
-import jwt from 'jsonwebtoken';
 import { prisma } from '../config/db';
-import { getErrorMessage } from '../utils/typeHelpers';
-
-const JWT_SECRET = process.env.JWT_SECRET || 'uwe-dev-secret-key';
-
-const signToken = (payload: object) =>
-  jwt.sign(payload, JWT_SECRET, { expiresIn: '7d' });
 
 // @desc    Register new student operative user account
 // @route   POST /api/auth/register
@@ -46,8 +39,8 @@ export const registerUser = async (req: Request, res: Response): Promise<void> =
         enrolledCourseSlugs: user.enrolledCourseSlugs.split(','),
       },
     });
-  } catch (error: unknown) {
-    res.status(500).json({ success: false, message: getErrorMessage(error) });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 
@@ -69,13 +62,6 @@ export const loginUser = async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
-    const token = signToken({
-      id: user.id,
-      email: user.email,
-      name: user.name,
-      role: 'USER',
-    });
-
     res.status(200).json({
       success: true,
       message: 'Authentication successful',
@@ -84,11 +70,10 @@ export const loginUser = async (req: Request, res: Response): Promise<void> => {
         name: user.name,
         email: user.email,
         enrolledCourseSlugs: user.enrolledCourseSlugs.split(','),
-        token,
       },
     });
-  } catch (error: unknown) {
-    res.status(500).json({ success: false, message: getErrorMessage(error) });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 
@@ -117,13 +102,6 @@ export const adminLogin = async (req: Request, res: Response): Promise<void> => 
       return;
     }
 
-    const token = signToken({
-      id: admin.id,
-      email: admin.email,
-      name: admin.name,
-      role: admin.role,
-    });
-
     res.status(200).json({
       success: true,
       message: 'Command HQ Access Granted',
@@ -132,10 +110,10 @@ export const adminLogin = async (req: Request, res: Response): Promise<void> => 
         name: admin.name,
         email: admin.email,
         role: admin.role,
-        token,
+        token: `cmd_hq_token_${Date.now()}`,
       },
     });
-  } catch (error: unknown) {
-    res.status(500).json({ success: false, message: getErrorMessage(error) });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message });
   }
 };

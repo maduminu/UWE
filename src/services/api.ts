@@ -1,4 +1,4 @@
-const API_BASE = 'http://localhost:5005/api';
+export const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5005/api';
 
 export const api = {
   // ── Courses ──

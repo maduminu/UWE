@@ -1,6 +1,5 @@
 import { Request, Response } from 'express';
 import { prisma } from '../config/db';
-import { getErrorMessage } from '../utils/typeHelpers';
 
 // @desc    Get active announcement banner
 // @route   GET /api/banners/active
@@ -12,8 +11,8 @@ export const getActiveBanner = async (_req: Request, res: Response): Promise<voi
     });
 
     res.status(200).json({ success: true, data: banner || null });
-  } catch (error: unknown) {
-    res.status(500).json({ success: false, message: getErrorMessage(error) });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 
@@ -46,8 +45,8 @@ export const createBanner = async (req: Request, res: Response): Promise<void> =
     });
 
     res.status(201).json({ success: true, data: newBanner });
-  } catch (error: unknown) {
-    res.status(500).json({ success: false, message: getErrorMessage(error) });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 
@@ -55,7 +54,7 @@ export const createBanner = async (req: Request, res: Response): Promise<void> =
 // @route   PUT /api/banners/:id
 export const updateBanner = async (req: Request, res: Response): Promise<void> => {
   try {
-    const id = String(req.params.id);
+    const { id } = req.params;
     const { message, badgeText, linkUrl, bannerType, isActive } = req.body;
 
     // Check if banner exists

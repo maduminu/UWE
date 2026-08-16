@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { Variants } from 'framer-motion';
 import type { PageId } from '../layout/Navbar';
+import { api } from '../../services/api';
 
 interface DemoPageProps {
   setActivePage: (page: PageId) => void;
@@ -101,9 +102,7 @@ export const DemoPage: React.FC<DemoPageProps> = ({ setActivePage }) => {
   useEffect(() => {
     const fetchDemos = async () => {
       try {
-        const res = await fetch('http://localhost:5005/api/demos');
-        if (!res.ok) return;
-        const json = await res.json();
+        const json = await api.getDemos();
         if (json.data && json.data.length > 0) {
           const mapped: DemoVideo[] = json.data.map((d: any) => ({
             id: d.id,

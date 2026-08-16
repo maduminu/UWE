@@ -1,6 +1,5 @@
 import { Request, Response } from 'express';
 import { prisma } from '../config/db';
-import { getErrorMessage } from '../utils/typeHelpers';
 
 // @desc    Get user's video progress list
 // @route   GET /api/progress/:userId
@@ -11,8 +10,8 @@ export const getUserProgress = async (req: Request, res: Response): Promise<void
       where: { userId },
     });
     res.status(200).json({ success: true, count: progressList.length, data: progressList });
-  } catch (error: unknown) {
-    res.status(500).json({ success: false, message: getErrorMessage(error) });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 

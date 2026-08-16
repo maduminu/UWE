@@ -1,6 +1,5 @@
 import { Request, Response } from 'express';
 import { prisma } from '../config/db';
-import { getErrorMessage, normalizeEnumValue } from '../utils/typeHelpers';
 
 const VALID_INQUIRY_TYPES = ['BMB', 'LEADERSHIP', 'IGNIT', 'CORPORATE', 'JOB_APPLICATION', 'GENERAL'];
 const VALID_LEAD_STATUSES = ['NEW', 'CONTACTED', 'ENROLLED', 'REJECTED'];
@@ -14,8 +13,8 @@ export const getAllLeads = async (_req: Request, res: Response): Promise<void> =
       include: { course: true },
     });
     res.status(200).json({ success: true, count: leads.length, data: leads });
-  } catch (error: unknown) {
-    res.status(500).json({ success: false, message: getErrorMessage(error) });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 
@@ -53,7 +52,7 @@ export const createLead = async (req: Request, res: Response): Promise<void> => 
         email: email ? email.trim() : null,
         courseSlug: courseSlug ? courseSlug.toLowerCase() : null,
         courseId,
-        inquiryType: normalizeEnumValue(normalizedInquiryType, ['BMB', 'LEADERSHIP', 'IGNIT', 'CORPORATE', 'JOB_APPLICATION', 'GENERAL']) ?? 'GENERAL',
+        inquiryType: normalizedInquiryType as any,
         message: message ? message.trim() : null,
         whatsappSent: true,
         status: 'NEW',
@@ -70,7 +69,7 @@ export const createLead = async (req: Request, res: Response): Promise<void> => 
 // @route   PUT /api/leads/:id/status
 export const updateLeadStatus = async (req: Request, res: Response): Promise<void> => {
   try {
-    const id = String(req.params.id);
+    const { id } = req.params;
     const { status, notes } = req.body;
 
     // Check if lead exists
@@ -95,7 +94,7 @@ export const updateLeadStatus = async (req: Request, res: Response): Promise<voi
     const updated = await prisma.lead.update({
       where: { id },
       data: {
-        ...(status && { status: normalizeEnumValue(status, ['NEW', 'CONTACTED', 'ENROLLED', 'REJECTED']) ?? 'NEW' }),
+        ...(status && { status: status.toUpperCase() as any }),
         ...(typeof notes === 'string' && { notes: notes.trim() }),
       },
     });

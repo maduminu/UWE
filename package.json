@@ -7,7 +7,8 @@
     "dev": "concurrently -k -p \"[{name}]\" -c \"cyan,yellow\" -n \"BACKEND,FRONTEND\" \"npm run backend\" \"npm run frontend\"",
     "frontend": "vite",
     "backend": "nodemon --watch backend --ext ts,json --exec \"npx tsx\" backend/src/index.ts",
-    "build": "tsc -b && vite build",
+    "build": "prisma generate && tsc -b && vite build",
+    "vercel-build": "prisma generate",
     "lint": "eslint .",
     "preview": "vite preview"
   },
@@ -16,7 +17,6 @@
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
     "framer-motion": "^13.0.0",
-    "jsonwebtoken": "^9.0.3",
     "lucide-react": "^1.30.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0"
@@ -26,7 +26,6 @@
     "@prisma/client": "^6.19.3",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
-    "@types/jsonwebtoken": "^9.0.10",
     "@types/react": "^19.1.2",
     "@types/react-dom": "^19.1.2",
     "@vitejs/plugin-react": "^4.4.1",

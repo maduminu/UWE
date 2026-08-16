@@ -1,6 +1,5 @@
 import { Request, Response } from 'express';
 import { prisma } from '../config/db';
-import { getErrorMessage } from '../utils/typeHelpers';
 
 // @desc    Get all staff members
 // @route   GET /api/staff
@@ -10,8 +9,8 @@ export const getAllStaff = async (_req: Request, res: Response): Promise<void> =
       orderBy: [{ isActive: 'desc' }, { joinDate: 'asc' }],
     });
     res.status(200).json({ success: true, count: staff.length, data: staff });
-  } catch (error: unknown) {
-    res.status(500).json({ success: false, message: getErrorMessage(error) });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 
@@ -40,8 +39,8 @@ export const createStaff = async (req: Request, res: Response): Promise<void> =>
     });
 
     res.status(201).json({ success: true, data: newStaff });
-  } catch (error: unknown) {
-    res.status(500).json({ success: false, message: getErrorMessage(error) });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 
@@ -67,8 +66,8 @@ export const updateStaff = async (req: Request, res: Response): Promise<void> =>
     });
 
     res.status(200).json({ success: true, data: updated });
-  } catch (error: unknown) {
-    res.status(500).json({ success: false, message: getErrorMessage(error) });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 

@@ -4,6 +4,7 @@ import type { PageId } from '../layout/Navbar';
 import { TiltCard } from '../ui/TiltCard';
 import { BankSlipUploadModal } from '../ui/BankSlipUploadModal';
 import { parsePrice, formatPrice } from '../../utils/priceFormatter';
+import { api } from '../../services/api';
 
 interface ProductPageProps {
   setActivePage: (page: PageId) => void;
@@ -67,9 +68,7 @@ export const ProductPage: React.FC<ProductPageProps> = ({ setActivePage }) => {
   useEffect(() => {
     const fetchLivePrices = async () => {
       try {
-        const res = await fetch('http://localhost:5005/api/courses');
-        if (!res.ok) return;
-        const json = await res.json();
+        const json = await api.getCourses();
         if (json.data && json.data.length > 0) {
           setPrograms((prev) =>
             prev.map((p) => {

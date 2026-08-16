@@ -1,6 +1,5 @@
 import { Request, Response } from 'express';
 import { prisma } from '../config/db';
-import { getErrorMessage } from '../utils/typeHelpers';
 
 // @desc    Get all registered student users/operatives (CMS Admin HQ)
 // @route   GET /api/users
@@ -11,8 +10,8 @@ export const getAllUsers = async (_req: Request, res: Response): Promise<void> =
     });
 
     res.status(200).json({ success: true, count: users.length, data: users });
-  } catch (error: unknown) {
-    res.status(500).json({ success: false, message: getErrorMessage(error) });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 
@@ -27,8 +26,8 @@ export const getUserById = async (req: Request, res: Response): Promise<void> =>
       return;
     }
     res.status(200).json({ success: true, data: user });
-  } catch (error: unknown) {
-    res.status(500).json({ success: false, message: getErrorMessage(error) });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 
@@ -61,8 +60,8 @@ export const createUser = async (req: Request, res: Response): Promise<void> => 
     });
 
     res.status(201).json({ success: true, data: newUser });
-  } catch (error: unknown) {
-    res.status(500).json({ success: false, message: getErrorMessage(error) });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 
@@ -85,8 +84,8 @@ export const updateUser = async (req: Request, res: Response): Promise<void> => 
     });
 
     res.status(200).json({ success: true, data: updated });
-  } catch (error: unknown) {
-    res.status(500).json({ success: false, message: getErrorMessage(error) });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 
