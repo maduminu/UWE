@@ -54,7 +54,7 @@ export const createBanner = async (req: Request, res: Response): Promise<void> =
 // @route   PUT /api/banners/:id
 export const updateBanner = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { id } = req.params;
+    const id = String(req.params.id);
     const { message, badgeText, linkUrl, bannerType, isActive } = req.body;
 
     // Check if banner exists

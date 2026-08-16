@@ -7,7 +7,7 @@
     "dev": "concurrently -k -p \"[{name}]\" -c \"cyan,yellow\" -n \"BACKEND,FRONTEND\" \"npm run backend\" \"npm run frontend\"",
     "frontend": "vite",
     "backend": "nodemon --watch backend --ext ts,json --exec \"npx tsx\" backend/src/index.ts",
-    "build": "prisma generate && tsc -b && vite build",
+    "build": "prisma generate && tsc && vite build",
     "postinstall": "prisma generate",
     "vercel-build": "prisma generate",
     "lint": "eslint .",

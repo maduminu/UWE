@@ -69,7 +69,7 @@ export const createLead = async (req: Request, res: Response): Promise<void> => 
 // @route   PUT /api/leads/:id/status
 export const updateLeadStatus = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { id } = req.params;
+    const id = String(req.params.id);
     const { status, notes } = req.body;
 
     // Check if lead exists

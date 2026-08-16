@@ -24,7 +24,7 @@ export const getAllCourses = async (_req: Request, res: Response): Promise<void>
 // @route   GET /api/courses/:slug
 export const getCourseBySlug = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { slug } = req.params;
+    const slug = String(req.params.slug);
     const course = await prisma.course.findUnique({
       where: { slug },
       include: { batches: true },
@@ -45,7 +45,7 @@ export const getCourseBySlug = async (req: Request, res: Response): Promise<void
 // @route   PUT /api/courses/:id
 export const updateCourse = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { id } = req.params;
+    const id = String(req.params.id);
     const { price, duration, subtitle } = req.body;
 
     const updated = await prisma.course.update({
@@ -67,7 +67,7 @@ export const updateCourse = async (req: Request, res: Response): Promise<void> =
 // @route   PUT /api/courses/batches/:batchId/seats
 export const updateBatchSeats = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { batchId } = req.params;
+    const batchId = String(req.params.batchId);
     const { availableSeats } = req.body;
 
     const updatedBatch = await prisma.courseBatch.update({
