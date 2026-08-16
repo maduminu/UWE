@@ -10,7 +10,7 @@
     "build:server": "esbuild backend/src/index.ts --bundle --platform=node --format=esm --target=node18 --outfile=api/index.js --external:@prisma/client",
     "build": "prisma generate && npm run build:server && tsc && vite build",
     "postinstall": "prisma generate",
-    "vercel-build": "prisma generate && npm run build:server",
+    "vercel-build": "prisma generate",
     "lint": "eslint .",
     "preview": "vite preview"
   },
