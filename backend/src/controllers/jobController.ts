@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { prisma } from '../config/db';
+import { getErrorMessage, normalizeEnumValue } from '../utils/typeHelpers';
 
 // @desc    Get all job vacancies with application counts
 // @route   GET /api/jobs
@@ -14,8 +15,8 @@ export const getAllJobs = async (_req: Request, res: Response): Promise<void> =>
       orderBy: { createdAt: 'desc' },
     });
     res.status(200).json({ success: true, count: vacancies.length, data: vacancies });
-  } catch (error: any) {
-    res.status(500).json({ success: false, message: error.message });
+  } catch (error: unknown) {
+    res.status(500).json({ success: false, message: getErrorMessage(error) });
   }
 };
 
@@ -31,12 +32,19 @@ export const createJob = async (req: Request, res: Response): Promise<void> => {
     }
 
     const seats = typeof openPositions === 'number' ? openPositions : parseInt(openPositions) || 5;
+    const normalizedEmploymentType =
+      (normalizeEnumValue(employmentType, ['FULL_TIME', 'PART_TIME', 'WORK_FROM_HOME', 'HYBRID']) as
+        | 'FULL_TIME'
+        | 'PART_TIME'
+        | 'WORK_FROM_HOME'
+        | 'HYBRID'
+        | undefined) ?? 'WORK_FROM_HOME';
 
     const newVacancy = await prisma.jobVacancy.create({
       data: {
         title: title.trim(),
         department: department || 'Sales & Growth',
-        employmentType: (employmentType as any) || 'WORK_FROM_HOME',
+        employmentType: normalizedEmploymentType,
         incomeText: incomeText.trim(),
         requirements: requirements || 'Strong communication skills, self-motivated, basic WhatsApp fluency.',
         isActive: typeof isActive === 'boolean' ? isActive : true,
@@ -47,8 +55,8 @@ export const createJob = async (req: Request, res: Response): Promise<void> => {
     });
 
     res.status(201).json({ success: true, data: newVacancy });
-  } catch (error: any) {
-    res.status(500).json({ success: false, message: error.message });
+  } catch (error: unknown) {
+    res.status(500).json({ success: false, message: getErrorMessage(error) });
   }
 };
 
@@ -60,7 +68,7 @@ export const updateJob = async (req: Request, res: Response): Promise<void> => {
     const { title, department, employmentType, incomeText, requirements, isActive, openPositions, hiringStatus } = req.body;
 
     // If openPositions is being changed, recalculate hiring status
-    let derivedStatus: any = undefined;
+    let derivedStatus: 'HIRING' | 'HIRING_FINISHED' | 'PAUSED' | undefined;
     if (typeof openPositions !== 'undefined' || typeof hiringStatus !== 'undefined') {
       if (hiringStatus) {
         derivedStatus = hiringStatus;
@@ -79,18 +87,26 @@ export const updateJob = async (req: Request, res: Response): Promise<void> => {
       data: {
         ...(typeof title === 'string' && { title }),
         ...(typeof department === 'string' && { department }),
-        ...(employmentType && { employmentType: employmentType as any }),
+        ...(employmentType && {
+          employmentType:
+            (normalizeEnumValue(employmentType, ['FULL_TIME', 'PART_TIME', 'WORK_FROM_HOME', 'HYBRID']) as
+              | 'FULL_TIME'
+              | 'PART_TIME'
+              | 'WORK_FROM_HOME'
+              | 'HYBRID'
+              | undefined) ?? 'WORK_FROM_HOME',
+        }),
         ...(typeof incomeText === 'string' && { incomeText }),
         ...(typeof requirements === 'string' && { requirements }),
         ...(typeof isActive === 'boolean' && { isActive }),
         ...(typeof openPositions !== 'undefined' && { openPositions: parseInt(openPositions) }),
-        ...(derivedStatus && { hiringStatus: derivedStatus as any }),
+        ...(derivedStatus && { hiringStatus: derivedStatus }),
       },
     });
 
     res.status(200).json({ success: true, data: updated });
-  } catch (error: any) {
-    res.status(500).json({ success: false, message: error.message });
+  } catch (error: unknown) {
+    res.status(500).json({ success: false, message: getErrorMessage(error) });
   }
 };
 
@@ -105,8 +121,8 @@ export const getAllApplications = async (_req: Request, res: Response): Promise<
       orderBy: { createdAt: 'desc' },
     });
     res.status(200).json({ success: true, count: applications.length, data: applications });
-  } catch (error: any) {
-    res.status(500).json({ success: false, message: error.message });
+  } catch (error: unknown) {
+    res.status(500).json({ success: false, message: getErrorMessage(error) });
   }
 };
 
@@ -149,8 +165,8 @@ export const createApplication = async (req: Request, res: Response): Promise<vo
     });
 
     res.status(201).json({ success: true, data: application });
-  } catch (error: any) {
-    res.status(500).json({ success: false, message: error.message });
+  } catch (error: unknown) {
+    res.status(500).json({ success: false, message: getErrorMessage(error) });
   }
 };
 
@@ -176,7 +192,14 @@ export const updateApplicationStatus = async (req: Request, res: Response): Prom
     const updated = await prisma.jobApplication.update({
       where: { id },
       data: {
-        status: status.toUpperCase() as any,
+        status:
+          (normalizeEnumValue(status, ['APPLIED', 'REVIEWED', 'SHORTLISTED', 'HIRED', 'REJECTED']) as
+            | 'APPLIED'
+            | 'REVIEWED'
+            | 'SHORTLISTED'
+            | 'HIRED'
+            | 'REJECTED'
+            | undefined) ?? 'APPLIED',
       },
       include: {
         vacancy: true,
@@ -202,7 +225,7 @@ export const updateApplicationStatus = async (req: Request, res: Response): Prom
             where: { id: updated.vacancyId },
             data: {
               hiredCount: newHiredCount,
-              hiringStatus: newHiringStatus as any,
+              hiringStatus: newHiringStatus,
               // Auto-deactivate if all positions filled
               isActive: remainingPositions > 0,
             },
@@ -212,7 +235,7 @@ export const updateApplicationStatus = async (req: Request, res: Response): Prom
     }
 
     res.status(200).json({ success: true, data: updated });
-  } catch (error: any) {
-    res.status(500).json({ success: false, message: error.message });
+  } catch (error: unknown) {
+    res.status(500).json({ success: false, message: getErrorMessage(error) });
   }
 };

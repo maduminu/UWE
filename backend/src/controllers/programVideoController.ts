@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { prisma } from '../config/db';
+import { getErrorMessage } from '../utils/typeHelpers';
 
 // @desc    Get category-wise program video series
 // @route   GET /api/program-videos
@@ -18,8 +19,8 @@ export const getProgramVideos = async (req: Request, res: Response): Promise<voi
     });
 
     res.status(200).json({ success: true, count: seriesList.length, data: seriesList });
-  } catch (error: any) {
-    res.status(500).json({ success: false, message: error.message });
+  } catch (error: unknown) {
+    res.status(500).json({ success: false, message: getErrorMessage(error) });
   }
 };
 
@@ -48,8 +49,8 @@ export const createSeries = async (req: Request, res: Response): Promise<void> =
     });
 
     res.status(201).json({ success: true, data: newSeries });
-  } catch (error: any) {
-    res.status(500).json({ success: false, message: error.message });
+  } catch (error: unknown) {
+    res.status(500).json({ success: false, message: getErrorMessage(error) });
   }
 };
 
@@ -77,8 +78,8 @@ export const createModule = async (req: Request, res: Response): Promise<void> =
     });
 
     res.status(201).json({ success: true, data: newModule });
-  } catch (error: any) {
-    res.status(500).json({ success: false, message: error.message });
+  } catch (error: unknown) {
+    res.status(500).json({ success: false, message: getErrorMessage(error) });
   }
 };
 

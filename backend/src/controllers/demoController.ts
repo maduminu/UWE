@@ -1,18 +1,25 @@
 import { Request, Response } from 'express';
 import { prisma } from '../config/db';
+import { getErrorMessage, normalizeEnumValue } from '../utils/typeHelpers';
 
 // @desc    Get all demo video reels
 // @route   GET /api/demos
 export const getAllDemos = async (req: Request, res: Response): Promise<void> => {
   try {
     const { category } = req.query;
+    const normalizedCategory = normalizeEnumValue(category, ['BMB', 'LEADERSHIP', 'IGNIT', 'TESTIMONIAL']) as
+      | 'BMB'
+      | 'LEADERSHIP'
+      | 'IGNIT'
+      | 'TESTIMONIAL'
+      | undefined;
     const demos = await prisma.demoVideo.findMany({
-      where: category ? { category: category as any } : {},
+      where: normalizedCategory ? { category: normalizedCategory } : {},
       orderBy: { sortOrder: 'asc' },
     });
     res.status(200).json({ success: true, count: demos.length, data: demos });
-  } catch (error: any) {
-    res.status(500).json({ success: false, message: error.message });
+  } catch (error: unknown) {
+    res.status(500).json({ success: false, message: getErrorMessage(error) });
   }
 };
 
@@ -36,8 +43,8 @@ export const createDemo = async (req: Request, res: Response): Promise<void> => 
     });
 
     res.status(201).json({ success: true, data: newDemo });
-  } catch (error: any) {
-    res.status(500).json({ success: false, message: error.message });
+  } catch (error: unknown) {
+    res.status(500).json({ success: false, message: getErrorMessage(error) });
   }
 };
 
@@ -63,8 +70,8 @@ export const updateDemo = async (req: Request, res: Response): Promise<void> => 
     });
 
     res.status(200).json({ success: true, data: updated });
-  } catch (error: any) {
-    res.status(500).json({ success: false, message: error.message });
+  } catch (error: unknown) {
+    res.status(500).json({ success: false, message: getErrorMessage(error) });
   }
 };
 
@@ -75,8 +82,8 @@ export const deleteDemo = async (req: Request, res: Response): Promise<void> => 
     const id = String(req.params.id);
     await prisma.demoVideo.delete({ where: { id } });
     res.status(200).json({ success: true, message: 'Demo video deleted successfully' });
-  } catch (error: any) {
-    res.status(500).json({ success: false, message: error.message });
+  } catch (error: unknown) {
+    res.status(500).json({ success: false, message: getErrorMessage(error) });
   }
 };
 

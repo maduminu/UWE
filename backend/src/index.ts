@@ -24,6 +24,17 @@ app.use(cors({ origin: '*' }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+if (process.env.NODE_ENV !== 'production') {
+  const server = app.listen(PORT, () => {
+    console.log(`🚀 UWE Backend API Server running on port ${PORT}`);
+    console.log(`📡 Health Check: http://localhost:${PORT}/api/health`);
+  });
+
+  server.on('error', (err) => {
+    console.error('💥 Server Error:', err);
+  });
+}
+
 // Health Check Route
 app.get('/api/health', (_req: Request, res: Response) => {
   res.status(200).json({
@@ -57,13 +68,4 @@ process.on('unhandledRejection', (reason) => {
   console.error('💥 Unhandled Rejection:', reason);
 });
 
-// Start Server
-const server = app.listen(PORT, () => {
-  console.log(`🚀 UWE Backend API Server running on port ${PORT}`);
-  console.log(`📡 Health Check: http://localhost:${PORT}/api/health`);
-});
-
-server.on('error', (err) => {
-  console.error('💥 Server Error:', err);
-});
-
+export default app

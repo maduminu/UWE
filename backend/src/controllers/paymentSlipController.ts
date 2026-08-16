@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { prisma } from '../config/db';
+import { getErrorMessage, normalizeEnumValue } from '../utils/typeHelpers';
 
 // @desc    Get all uploaded bank payment slips (Admin HQ)
 // @route   GET /api/slips
@@ -11,8 +12,8 @@ export const getAllPaymentSlips = async (req: Request, res: Response): Promise<v
       orderBy: { createdAt: 'desc' },
     });
     res.status(200).json({ success: true, count: slips.length, data: slips });
-  } catch (error: any) {
-    res.status(500).json({ success: false, message: error.message });
+  } catch (error: unknown) {
+    res.status(500).json({ success: false, message: getErrorMessage(error) });
   }
 };
 
@@ -49,7 +50,7 @@ export const createPaymentSlip = async (req: Request, res: Response): Promise<vo
           phone: studentPhone.trim(),
           email: studentEmail ? studentEmail.trim().toLowerCase() : null,
           courseSlug: courseSlug.trim().toLowerCase(),
-          inquiryType: courseSlug.toUpperCase() as any,
+          inquiryType: normalizeEnumValue(courseSlug, ['BMB', 'LEADERSHIP', 'IGNIT', 'CORPORATE', 'JOB_APPLICATION', 'GENERAL']) ?? 'GENERAL',
           message: `Bank Transfer Slip Uploaded (Ref: ${bankReference || 'N/A'}, Slip ID: ${newSlip.id.substring(0, 8)})`,
           status: 'NEW',
           whatsappSent: true,
@@ -75,7 +76,7 @@ export const updateSlipStatus = async (req: Request, res: Response): Promise<voi
     const slip = await prisma.paymentSlip.update({
       where: { id },
       data: {
-        status: status as any,
+        status: normalizeEnumValue(status, ['PENDING', 'VERIFIED', 'REJECTED']) ?? 'PENDING',
         ...(notes && { notes }),
       },
     });
@@ -93,7 +94,7 @@ export const updateSlipStatus = async (req: Request, res: Response): Promise<voi
       });
 
       if (existingUser) {
-        let slugs = (existingUser.enrolledCourseSlugs || '').split(',').map((s) => s.trim()).filter(Boolean);
+        const slugs = (existingUser.enrolledCourseSlugs || '').split(',').map((s) => s.trim()).filter(Boolean);
         if (!slugs.includes(slip.courseSlug)) {
           slugs.push(slip.courseSlug);
         }
