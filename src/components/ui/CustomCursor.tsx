@@ -35,6 +35,7 @@ export const CustomCursor: React.FC = () => {
           target.closest('button') !== null ||
           target.closest('a') !== null ||
           target.classList.contains('cursor-pointer') ||
+          target.closest('.cursor-pointer') !== null ||
           target.closest('.glass-card') !== null ||
           target.closest('.glass-panel') !== null;
 
@@ -83,7 +84,7 @@ export const CustomCursor: React.FC = () => {
             : '0 0 10px rgba(255, 184, 0, 0.2)',
         }}
         transition={{ type: 'spring', damping: 20, stiffness: 300, mass: 0.5 }}
-        className="fixed top-0 left-0 pointer-events-none z-[9999] rounded-full w-8 h-8 border"
+        className="fixed top-0 left-0 pointer-events-none z-[9999999] rounded-full w-8 h-8 border"
       />
 
       {/* Central Precision Target Dot */}
@@ -100,7 +101,7 @@ export const CustomCursor: React.FC = () => {
           boxShadow: isHovered ? '0 0 15px #00D2FF' : '0 0 10px #FFB800',
         }}
         transition={{ duration: 0.1 }}
-        className="fixed top-0 left-0 pointer-events-none z-[9999] rounded-full w-2 h-2"
+        className="fixed top-0 left-0 pointer-events-none z-[9999999] rounded-full w-2 h-2"
       />
     </>
   );

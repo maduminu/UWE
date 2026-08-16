@@ -135,14 +135,15 @@ export const HomePage: React.FC<HomePageProps> = ({ setActivePage }) => {
                   {/* CTA Button Shine Sweep effect from portfolio */}
                   <span className="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-white/30 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700 pointer-events-none" />
                 </motion.button>
+
                 <motion.button
                   whileHover={{ scale: 1.05, y: -2 }}
                   whileTap={{ scale: 0.95 }}
-                  onClick={() => setActivePage('about')}
-                  className="glass-panel min-h-[46px] px-5 py-3 rounded font-label-caps text-xs sm:text-label-caps text-on-surface hover:bg-surface-variant transition-all uppercase flex items-center justify-center gap-xs cursor-pointer border border-outline-variant/30 hover:border-secondary/60"
+                  onClick={() => setActivePage('demos')}
+                  className="glass-panel min-h-[46px] px-5 py-3 rounded font-label-caps text-xs sm:text-label-caps text-secondary hover:bg-secondary/15 transition-all uppercase flex items-center justify-center gap-xs cursor-pointer border border-secondary/40 active-press hover:border-secondary shadow-[0_0_15px_rgba(255,184,0,0.2)]"
                 >
-                  <span className="material-symbols-outlined text-[18px] text-secondary">play_circle</span>
-                  Learn Our Origin
+                  <span className="material-symbols-outlined text-[18px]">movie</span>
+                  Watch Demo Reels
                 </motion.button>
               </motion.div>
             </motion.div>
@@ -249,6 +250,92 @@ export const HomePage: React.FC<HomePageProps> = ({ setActivePage }) => {
             </TiltCard>
           </motion.div>
         </motion.div>
+      </section>
+
+      {/* Featured Demo Reels Section */}
+      <section className="px-lg py-xl max-w-container-max mx-auto relative z-10">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6 }}
+          className="flex flex-col md:flex-row justify-between items-center mb-xl gap-4"
+        >
+          <div className="text-center md:text-left">
+            <h2 className="font-headline-lg text-2xl sm:text-headline-lg text-on-surface mb-xs font-bold">
+              Featured Demo Showcase
+            </h2>
+            <p className="font-body-md text-sm text-on-surface-variant">
+              Experience tactical demonstrations of subconscious rewiring &amp; crisis simulations.
+            </p>
+          </div>
+
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => setActivePage('demos')}
+            className="glass-panel px-5 py-2.5 rounded font-label-caps text-xs text-secondary border border-secondary/40 hover:border-secondary transition-all cursor-pointer flex items-center gap-2"
+          >
+            <span>VIEW ALL DEMO REELS</span>
+            <span className="material-symbols-outlined text-sm">east</span>
+          </motion.button>
+        </motion.div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Featured Video 1 */}
+          <motion.div
+            whileHover={{ y: -6 }}
+            onClick={() => setActivePage('demos')}
+            className="glass-card rounded-xl overflow-hidden border border-outline-variant/30 hover:border-secondary/50 transition-all shadow-xl cursor-pointer group"
+          >
+            <div className="relative aspect-video bg-surface-container-high overflow-hidden">
+              <img
+                src="https://images.unsplash.com/photo-1507413245164-6160d8298b31?auto=format&fit=crop&w=800&q=80"
+                alt="BMB Mind Optimization"
+                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 opacity-80"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-[#0B0E14] via-transparent to-transparent opacity-90" />
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="w-14 h-14 rounded-full bg-secondary/90 text-surface-container-lowest flex items-center justify-center shadow-[0_0_20px_rgba(255,184,0,0.8)] group-hover:scale-110 transition-transform">
+                  <span className="material-symbols-outlined text-2xl ml-1">play_arrow</span>
+                </div>
+              </div>
+            </div>
+            <div className="p-4">
+              <span className="font-label-caps text-xs text-secondary font-bold">BMB MIND DIVISION • 01:45</span>
+              <h3 className="font-headline-md text-lg text-on-surface font-bold mt-1 group-hover:text-secondary transition-colors">
+                BMB Subconscious Paradigm Shift
+              </h3>
+            </div>
+          </motion.div>
+
+          {/* Featured Video 2 */}
+          <motion.div
+            whileHover={{ y: -6 }}
+            onClick={() => setActivePage('demos')}
+            className="glass-card rounded-xl overflow-hidden border border-outline-variant/30 hover:border-secondary/50 transition-all shadow-xl cursor-pointer group"
+          >
+            <div className="relative aspect-video bg-surface-container-high overflow-hidden">
+              <img
+                src="https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?auto=format&fit=crop&w=800&q=80"
+                alt="Tactical Crisis Simulation"
+                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 opacity-80"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-[#0B0E14] via-transparent to-transparent opacity-90" />
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="w-14 h-14 rounded-full bg-secondary/90 text-surface-container-lowest flex items-center justify-center shadow-[0_0_20px_rgba(255,184,0,0.8)] group-hover:scale-110 transition-transform">
+                  <span className="material-symbols-outlined text-2xl ml-1">play_arrow</span>
+                </div>
+              </div>
+            </div>
+            <div className="p-4">
+              <span className="font-label-caps text-xs text-secondary font-bold">COMMAND DIVISION • 02:10</span>
+              <h3 className="font-headline-md text-lg text-on-surface font-bold mt-1 group-hover:text-secondary transition-colors">
+                Tactical Crisis Simulation &amp; Voice Command
+              </h3>
+            </div>
+          </motion.div>
+        </div>
       </section>
 
       {/* Stats Section with Framer Motion Stagger Reveal */}

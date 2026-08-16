@@ -1,7 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { PageId } from '../layout/Navbar';
 import { TiltCard } from '../ui/TiltCard';
+import { BankSlipUploadModal } from '../ui/BankSlipUploadModal';
+import { parsePrice, formatPrice } from '../../utils/priceFormatter';
 
 interface ProductPageProps {
   setActivePage: (page: PageId) => void;
@@ -9,15 +11,17 @@ interface ProductPageProps {
 
 export const ProductPage: React.FC<ProductPageProps> = ({ setActivePage }) => {
   const [filter, setFilter] = useState<'all' | 'bmb' | 'leadership' | 'ignit'>('all');
+  const [slipModalOpen, setSlipModalOpen] = useState(false);
+  const [selectedCourseForSlip, setSelectedCourseForSlip] = useState('bmb');
 
-  const programs = [
+  const defaultPrograms = [
     {
       id: 'bmb',
       category: 'bmb',
       title: 'Blind Mind Breaker (BMB)',
       subtitle: 'Subconscious Mind Optimization Protocol',
       duration: '5 Days Intensive',
-      price: 'RS.12,000',
+      price: 'RS. 12,000',
       period: 'per operative',
       icon: 'psychology',
       color: 'tertiary',
@@ -31,14 +35,15 @@ export const ProductPage: React.FC<ProductPageProps> = ({ setActivePage }) => {
         '1-on-1 Cognitive Assessment',
       ],
       badge: 'MIND DIVISION',
+      seatsLeft: 6,
     },
     {
       id: 'leadership',
       category: 'leadership',
       title: 'UWE Leadership Academy',
       subtitle: 'Command & Control Training',
-      duration: '4-Week Tactical Program',
-      price: 'RS.100,000',
+      duration: '8-Week Tactical Program',
+      price: 'RS. 100,000',
       period: 'per officer',
       icon: 'military_tech',
       color: 'error-container',
@@ -52,29 +57,42 @@ export const ProductPage: React.FC<ProductPageProps> = ({ setActivePage }) => {
         'Live Simulated Combat & Simulations',
       ],
       badge: 'COMMAND DIVISION',
+      seatsLeft: 4,
     },
-    // {
-    //   id: 'ignit',
-    //   category: 'ignit',
-    //   title: 'UWE IGNIT Accelerator',
-    //   subtitle: 'Venture Incubation & Ecosystem',
-    //   duration: '12-Week Incubator',
-    //   price: '$1,499',
-    //   period: 'per venture team',
-    //   icon: 'local_fire_department',
-    //   color: 'secondary-container',
-    //   borderColor: 'border-secondary-container/50',
-    //   description: 'Transform high-impact ideas into profitable, scalable Sri Lankan enterprises backed by investor mentorship.',
-    //   features: [
-    //     'Business Model Validation & Unit Economics',
-    //     'Capital Raising & Investor Pitching',
-    //     'Scalability & Operations Roadmap',
-    //     'Direct Access to UWE Angel Network',
-    //     'Post-Graduation Growth Mentorship',
-    //   ],
-    //   badge: 'ENTERPRISE DIVISION',
-    // },
   ];
+
+  const [programs, setPrograms] = useState(defaultPrograms);
+
+  // Fetch live prices & seat counts from Supabase via API
+  useEffect(() => {
+    const fetchLivePrices = async () => {
+      try {
+        const res = await fetch('http://localhost:5005/api/courses');
+        if (!res.ok) return;
+        const json = await res.json();
+        if (json.data && json.data.length > 0) {
+          setPrograms((prev) =>
+            prev.map((p) => {
+              const dbCourse = json.data.find((c: any) => c.slug === p.id);
+              if (dbCourse) {
+                const numericPrice = parsePrice(dbCourse.price);
+                return {
+                  ...p,
+                  price: formatPrice(numericPrice, dbCourse.currency || 'RS.'),
+                  duration: dbCourse.duration || p.duration,
+                  seatsLeft: dbCourse.batches?.[0]?.availableSeats ?? p.seatsLeft,
+                };
+              }
+              return p;
+            })
+          );
+        }
+      } catch {
+        // API offline — use hardcoded defaults
+      }
+    };
+    fetchLivePrices();
+  }, []);
 
   const filteredPrograms = filter === 'all'
     ? programs
@@ -188,20 +206,39 @@ export const ProductPage: React.FC<ProductPageProps> = ({ setActivePage }) => {
                     </div>
                   </div>
 
-                  <motion.button
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.96 }}
-                    onClick={() => setActivePage('contact')}
-                    className="btn-elite min-h-[46px] w-full py-3 rounded font-label-caps text-label-caps uppercase tracking-widest cursor-pointer mt-sm"
-                  >
-                    APPLY FOR ADMISSION
-                  </motion.button>
+                  <div className="flex flex-col gap-2 mt-sm">
+                    <motion.button
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.96 }}
+                      onClick={() => setActivePage('contact')}
+                      className="btn-elite min-h-[44px] w-full py-2.5 rounded-lg font-label-caps text-xs uppercase tracking-widest cursor-pointer shadow-[0_0_15px_rgba(255,184,0,0.3)]"
+                    >
+                      APPLY FOR ADMISSION
+                    </motion.button>
+                    <button
+                      onClick={() => {
+                        setSelectedCourseForSlip(prog.id);
+                        setSlipModalOpen(true);
+                      }}
+                      className="w-full py-2 rounded-lg bg-[#131929] border border-secondary/40 text-secondary hover:bg-secondary/20 transition-all font-mono-data text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer"
+                    >
+                      <span className="material-symbols-outlined text-sm">receipt_long</span>
+                      <span>UPLOAD BANK SLIP</span>
+                    </button>
+                  </div>
                 </TiltCard>
               </motion.div>
             ))}
           </AnimatePresence>
         </motion.div>
       </section>
+
+      {/* Bank Transfer Slip Upload Modal */}
+      <BankSlipUploadModal
+        isOpen={slipModalOpen}
+        onClose={() => setSlipModalOpen(false)}
+        defaultCourseSlug={selectedCourseForSlip}
+      />
 
       {/* Comparison Matrix Section */}
       <section className="max-w-container-max mx-auto px-4 md:px-lg py-xl">
