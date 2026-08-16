@@ -24,7 +24,28 @@ app.use(cors({ origin: '*' }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Health Check Route
+// Root / Health Check Route
+app.get('/', (_req: Request, res: Response) => {
+  res.status(200).json({
+    status: 'ONLINE',
+    system: 'UWE Backend Command Center API',
+    message: 'Welcome to UWE API Gateway. Access endpoints at /api/*',
+    endpoints: [
+      '/api/health',
+      '/api/courses',
+      '/api/leads',
+      '/api/demos',
+      '/api/banners',
+      '/api/auth',
+      '/api/jobs',
+      '/api/users',
+      '/api/slips',
+      '/api/staff',
+    ],
+    timestamp: new Date().toISOString(),
+  });
+});
+
 app.get('/api/health', (_req: Request, res: Response) => {
   res.status(200).json({
     status: 'ONLINE',
