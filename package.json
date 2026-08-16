@@ -7,7 +7,7 @@
     "dev": "concurrently -k -p \"[{name}]\" -c \"cyan,yellow\" -n \"BACKEND,FRONTEND\" \"npm run backend\" \"npm run frontend\"",
     "frontend": "vite",
     "backend": "nodemon --watch backend --ext ts,json --exec \"npx tsx\" backend/src/index.ts",
-    "build:server": "esbuild backend/src/index.ts --bundle --platform=node --format=esm --target=node18 --outfile=api/index.js --external:@prisma/client",
+    "build:server": "npx esbuild backend/src/index.ts --bundle --platform=node --format=cjs --target=node18 --outfile=api/index.cjs --external:@prisma/client",
     "build": "prisma generate && npm run build:server && tsc && vite build",
     "postinstall": "prisma generate",
     "vercel-build": "prisma generate && npm run build:server",
