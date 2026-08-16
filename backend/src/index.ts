@@ -54,18 +54,37 @@ app.get('/api/health', (_req: Request, res: Response) => {
   });
 });
 
-// API Routes
+app.get('/health', (_req: Request, res: Response) => {
+  res.status(200).json({
+    status: 'ONLINE',
+    system: 'UWE Backend Command Center API',
+    timestamp: new Date().toISOString(),
+  });
+});
+
+// API Routes (Mounted on both /api/* and /* for full routing compatibility)
 app.use('/api/courses', courseRoutes);
+app.use('/courses', courseRoutes);
 app.use('/api/leads', leadRoutes);
+app.use('/leads', leadRoutes);
 app.use('/api/demos', demoRoutes);
+app.use('/demos', demoRoutes);
 app.use('/api/banners', bannerRoutes);
+app.use('/banners', bannerRoutes);
 app.use('/api/auth', authRoutes);
+app.use('/auth', authRoutes);
 app.use('/api/program-videos', programVideoRoutes);
+app.use('/program-videos', programVideoRoutes);
 app.use('/api/jobs', jobRoutes);
+app.use('/jobs', jobRoutes);
 app.use('/api/users', userRoutes);
+app.use('/users', userRoutes);
 app.use('/api/progress', videoProgressRoutes);
+app.use('/progress', videoProgressRoutes);
 app.use('/api/slips', paymentSlipRoutes);
+app.use('/slips', paymentSlipRoutes);
 app.use('/api/staff', staffRoutes);
+app.use('/staff', staffRoutes);
 
 // Error Middleware
 app.use(errorHandler);

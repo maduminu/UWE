@@ -60,7 +60,7 @@ async function main() {
     create: {
       slug: 'ignit',
       title: 'UWE IGNIT Accelerator',
-      subtitle: 'Sri Lankan Entrepreneurial Incubator',
+      subtitle: 'Sri Lankan Entreipreneurial Incubator',
       badge: 'ENTERPRISE DIVISION',
       category: 'ENTERPRISE',
       description: 'Venture scaling, pitch deck engineering, and angel investor syndicate connections.',

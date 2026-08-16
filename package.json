@@ -8,22 +8,24 @@
     "frontend": "vite",
     "backend": "nodemon --watch backend --ext ts,json --exec \"npx tsx\" backend/src/index.ts",
     "build": "prisma generate && tsc -b && vite build",
+    "postinstall": "prisma generate",
     "vercel-build": "prisma generate",
     "lint": "eslint .",
     "preview": "vite preview"
   },
   "dependencies": {
+    "@prisma/client": "^6.19.3",
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
     "framer-motion": "^13.0.0",
     "lucide-react": "^1.30.0",
+    "prisma": "^6.19.3",
     "react": "^19.1.0",
     "react-dom": "^19.1.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.25.0",
-    "@prisma/client": "^6.19.3",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
     "@types/react": "^19.1.2",
