@@ -1,6 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import type { Variants } from 'framer-motion';
+import { PageSEO } from '../ui/PageSEO';
 import type { PageId } from '../layout/Navbar';
 
 interface VisionPageProps {
@@ -31,6 +32,11 @@ const itemVariants: Variants = {
 export const VisionPage: React.FC<VisionPageProps> = ({ setActivePage }) => {
   return (
     <div className="pt-xl md:pt-[120px] pb-xl flex-grow bg-transparent relative overflow-hidden">
+      <PageSEO
+        title="Our Vision"
+        description="Discover the UWE vision — building an empire of high-performance operatives through psychological reprogramming, command leadership, and entrepreneurial excellence."
+        canonical="/vision"
+      />
       {/* Background radial glow */}
       <div className="radial-bg absolute inset-0 pointer-events-none" />
 

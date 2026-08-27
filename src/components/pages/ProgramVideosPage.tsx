@@ -1,8 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { PageId } from '../layout/Navbar';
+import { PageSEO } from '../ui/PageSEO';
 import { AuthModal } from '../ui/AuthModal';
+import { SecureVideoPlayer } from '../ui/SecureVideoPlayer';
 import { api, API_BASE } from '../../services/api';
+import { safeGetStorage, safeSetStorage } from '../../utils/storage';
 
 interface ProgramVideosPageProps {
   setActivePage?: (page: PageId) => void;
@@ -50,92 +53,20 @@ export const ProgramVideosPage: React.FC<ProgramVideosPageProps> = () => {
     return enrolledSlugs.includes(courseSlug.toLowerCase());
   };
 
-  const defaultSeriesData: VideoSeries[] = [
-    {
-      id: 'series-bmb-1',
-      courseSlug: 'bmb',
-      seriesTitle: 'BMB 5-Day Subconscious Neural Rewiring Masterclass',
-      category: 'Subconscious Mind Optimization',
-      description: 'Step-by-step subconscious mind rewiring drills to eliminate fear responses and install peak focus.',
-      thumbnailUrl: 'https://images.unsplash.com/photo-1507413245164-6160d8298b31?auto=format&fit=crop&w=800&q=80',
-      badge: 'BMB MIND DIVISION',
-      color: '#00D2FF',
-      modules: [
-        {
-          id: 'mod-bmb-1',
-          episodeNumber: 1,
-          title: 'Day 1: Deconstructing Subconscious Fear Traps',
-          duration: '00:15',
-          videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
-          isFreePreview: true,
-          description: 'Introduction to subconscious anxiety patterns (Free Public Preview).',
-        },
-        {
-          id: 'mod-bmb-2',
-          episodeNumber: 2,
-          title: 'Day 2: Neuro-Anchoring & Triggers Installation',
-          duration: '00:15',
-          videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4',
-          isFreePreview: false,
-          description: 'Installing peak emotional state anchors (Operative Account Login Required).',
-        },
-        {
-          id: 'mod-bmb-3',
-          episodeNumber: 3,
-          title: 'Day 3: Strategic Focus & Overthinking Elimination',
-          duration: '00:15',
-          videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4',
-          isFreePreview: false,
-          description: 'Calming central nervous system responses under stress.',
-        },
-      ],
-    },
-    {
-      id: 'series-leadership-1',
-      courseSlug: 'leadership',
-      seriesTitle: 'Executive Command & Control Drills',
-      category: 'Tactical Leadership',
-      description: 'High-stakes executive command drills, crisis response management, and voice authority optimization.',
-      thumbnailUrl: 'https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?auto=format&fit=crop&w=800&q=80',
-      badge: 'COMMAND DIVISION',
-      color: '#FFB800',
-      modules: [
-        {
-          id: 'mod-lead-1',
-          episodeNumber: 1,
-          title: 'Module 1: Voice Projection & Command Authority',
-          duration: '00:15',
-          videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoybacks.mp4',
-          isFreePreview: true,
-          description: 'Vocal acoustics and commanding presence (Free Public Preview).',
-        },
-        {
-          id: 'mod-lead-2',
-          episodeNumber: 2,
-          title: 'Module 2: High-Stakes Crisis Simulation & Unit Dynamics',
-          duration: '09:56',
-          videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
-          isFreePreview: false,
-          description: 'Executing tactical decisions under pressure (Operative Account Login Required).',
-        },
-      ],
-    },
-  ];
-
-  const [seriesData, setSeriesData] = useState<VideoSeries[]>(defaultSeriesData);
+  const [seriesData, setSeriesData] = useState<VideoSeries[]>([]);
+  const [seriesLoading, setSeriesLoading] = useState(true);
 
   // ── Fetch live user data from DB (bypasses stale localStorage) ──
   useEffect(() => {
     const loadUserFromDB = async () => {
       setUserLoading(true);
       try {
-        const saved = localStorage.getItem('uwe_user_account');
-        if (!saved) {
+        const localUser = safeGetStorage<any>('uwe_user_account', null);
+        if (!localUser || !localUser.id) {
           setCurrentUser(null);
           setUserLoading(false);
           return;
         }
-        const localUser = JSON.parse(saved);
         // Fetch fresh enrolledCourseSlugs from backend
         const res = await fetch(`${API_BASE}/users/${localUser.id}`);
         if (res.ok) {
@@ -147,7 +78,7 @@ export const ProgramVideosPage: React.FC<ProgramVideosPageProps> = () => {
             isEnrolled: freshUser.isEnrolled,
           };
           // Sync updated access back into localStorage
-          localStorage.setItem('uwe_user_account', JSON.stringify(updated));
+          safeSetStorage('uwe_user_account', updated);
           setCurrentUser(updated);
 
           // Fetch watch progress from LMS
@@ -158,15 +89,13 @@ export const ProgramVideosPage: React.FC<ProgramVideosPageProps> = () => {
             }
           } catch { /* ignore */ }
         } else {
-          // Backend unreachable — fall back to localStorage but still log in
+          // Backend unreachable — fall back to localStorage
           setCurrentUser(localUser);
         }
       } catch {
         // Fallback: use localStorage as-is
-        try {
-          const saved = localStorage.getItem('uwe_user_account');
-          if (saved) setCurrentUser(JSON.parse(saved));
-        } catch { /* ignore */ }
+        const localUser = safeGetStorage<any>('uwe_user_account', null);
+        setCurrentUser(localUser);
       } finally {
         setUserLoading(false);
       }
@@ -194,6 +123,17 @@ export const ProgramVideosPage: React.FC<ProgramVideosPageProps> = () => {
         isCompleted: !isCompleted,
         progressPercent: !isCompleted ? 100 : 0,
       });
+
+      // Award XP for tactical completion
+      if (!isCompleted) {
+        try {
+          await api.awardXp({
+            userId: currentUser.id,
+            actionType: 'VIDEO_COMPLETED',
+            xpAmount: 50,
+          });
+        } catch { /* silent */ }
+      }
     } catch {
       // Rollback on network error
       setCompletedModuleIds(completedModuleIds);
@@ -254,6 +194,11 @@ export const ProgramVideosPage: React.FC<ProgramVideosPageProps> = () => {
 
   return (
     <div className="pt-xl md:pt-[120px] pb-xl flex-grow bg-transparent relative">
+      <PageSEO
+        title="Tactical Video Vault"
+        description="Stream classified UWE program modules and tactical mind rewiring training videos."
+        canonical="/videos"
+      />
       {/* Loading guard while DB access check runs */}
       {userLoading && (
         <div className="fixed inset-0 z-[9999] bg-[#06080D]/90 flex items-center justify-center">
@@ -278,7 +223,10 @@ export const ProgramVideosPage: React.FC<ProgramVideosPageProps> = () => {
                 <span>AUTHENTICATED: {currentUser.name}</span>
               </span>
               <button
-                onClick={() => setCurrentUser(null)}
+                onClick={() => {
+                  localStorage.removeItem('uwe_user_account');
+                  setCurrentUser(null);
+                }}
                 className="px-3 py-1 rounded glass-panel text-xs font-mono-data text-on-surface-variant hover:text-red-400 border border-outline-variant/30 cursor-pointer"
               >
                 LOG OUT
@@ -518,32 +466,43 @@ export const ProgramVideosPage: React.FC<ProgramVideosPageProps> = () => {
                 </button>
               </div>
 
-              <div className="relative aspect-video bg-black">
-                {activeVideo.mod.videoUrl.includes('youtube') || activeVideo.mod.videoUrl.includes('youtu.be') ? (
-                  <iframe
-                    src={
-                      activeVideo.mod.videoUrl.includes('embed/')
-                        ? `${activeVideo.mod.videoUrl}?autoplay=1`
-                        : `https://www.youtube.com/embed/${
-                            activeVideo.mod.videoUrl.match(/(?:v=|\/)([\w-]{11})/)?.[1] || 'JQypYNVzS3Q'
-                          }?autoplay=1&rel=0`
-                    }
-                    title={activeVideo.mod.title}
-                    className="w-full h-full border-0"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    allowFullScreen
-                  />
-                ) : (
-                  <video src={activeVideo.mod.videoUrl} controls autoPlay className="w-full h-full object-contain" />
-                )}
-              </div>
+              {/* DRM-Protected Secure Video Player */}
+              <SecureVideoPlayer
+                videoUrl={activeVideo.mod.videoUrl}
+                title={activeVideo.mod.title}
+                duration={activeVideo.mod.duration}
+                watermarkText={currentUser?.name}
+                operativeId={currentUser?.id ? `#UWE-OP-${currentUser.id.slice(-4).toUpperCase()}` : undefined}
+                moduleId={activeVideo.mod.id}
+                seriesId={activeVideo.series.id}
+                isCompleted={completedModuleIds.includes(activeVideo.mod.id)}
+                onProgressMilestone={async (percent) => {
+                  if (percent === 100 && currentUser && !completedModuleIds.includes(activeVideo.mod.id)) {
+                    // Auto-complete at 100% watch progress
+                    toggleModuleCompletion(activeVideo.mod.id, activeVideo.series.id);
+                  }
+                  if (currentUser) {
+                    try {
+                      await api.saveProgress({
+                        userId: currentUser.id,
+                        moduleId: activeVideo.mod.id,
+                        seriesId: activeVideo.series.id,
+                        isCompleted: percent >= 100,
+                        progressPercent: percent,
+                      });
+                    } catch { /* silent */ }
+                  }
+                }}
+                onToggleComplete={() => toggleModuleCompletion(activeVideo.mod.id, activeVideo.series.id)}
+                onClose={() => setActiveVideo(null)}
+              />
 
               {/* Player Bottom Completion Bar */}
               <div className="p-3.5 bg-[#0D111A] border-t border-outline-variant/30 flex justify-between items-center flex-wrap gap-2">
                 <span className="font-mono-data text-xs text-on-surface-variant">
                   {completedModuleIds.includes(activeVideo.mod.id)
                     ? '🎉 You have completed this lesson module!'
-                    : 'Mark this lesson as completed when finished to record progress.'}
+                    : 'Watch progress is tracked automatically. Module completes at 100%.'}
                 </span>
 
                 <button
@@ -573,7 +532,10 @@ export const ProgramVideosPage: React.FC<ProgramVideosPageProps> = () => {
       <AuthModal
         isOpen={authModalOpen}
         onClose={() => setAuthModalOpen(false)}
-        onLoginSuccess={(user) => setCurrentUser(user)}
+        onLoginSuccess={(user) => {
+          safeSetStorage('uwe_user_account', user);
+          setCurrentUser(user);
+        }}
       />
     </div>
   );

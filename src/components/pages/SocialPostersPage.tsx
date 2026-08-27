@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
+import { PageSEO } from '../ui/PageSEO';
 
 export const SocialPostersPage: React.FC = () => {
   const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -188,6 +189,11 @@ Great opportunities don't wait — and neither should you! UWE PVT LTD is finali
 
   return (
     <div className="pt-xl md:pt-[120px] pb-xl flex-grow bg-transparent relative">
+      <PageSEO
+        title="Social Posters & Media Assets"
+        description="High-resolution promotional media and campaign posters for UWE programs."
+        canonical="/posters"
+      />
       <section className="max-w-container-max mx-auto px-4 md:px-lg py-lg text-center relative z-10">
         <motion.h1
           initial={{ opacity: 0, y: -20 }}

@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { Variants } from 'framer-motion';
+import { PageSEO } from '../ui/PageSEO';
 import { AuthModal } from '../ui/AuthModal';
 import { api } from '../../services/api';
 
 export type PageId = 'home' | 'about' | 'vision' | 'product' | 'contact';
+
+import { safeGetStorage } from '../../utils/storage';
 
 const containerVariants: Variants = {
   initial: { opacity: 0 },
@@ -12,7 +15,7 @@ const containerVariants: Variants = {
     opacity: 1,
     transition: {
       staggerChildren: 0.1,
-      delayChildren: 0.15,
+      delayChildren: 0.1,
     },
   },
 };
@@ -27,17 +30,10 @@ const itemVariants: Variants = {
 };
 
 export const ContactPage: React.FC = () => {
-  const [currentUser, setCurrentUser] = useState<any>(() => {
-    try {
-      const saved = localStorage.getItem('uwe_user_account');
-      return saved ? JSON.parse(saved) : null;
-    } catch {
-      return null;
-    }
-  });
-
+  const [currentUser, setCurrentUser] = useState<any>(() => safeGetStorage('uwe_user_account', null));
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [pendingAction, setPendingAction] = useState<'email' | 'whatsapp' | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [formData, setFormData] = useState({
     fullName: currentUser?.name || '',
@@ -79,6 +75,8 @@ export const ContactPage: React.FC = () => {
   };
 
   const executeEmailSubmit = async () => {
+    if (isSubmitting) return;
+    setIsSubmitting(true);
     try {
       await api.createLead({
         name: formData.fullName || currentUser?.name || 'Operative',
@@ -90,6 +88,8 @@ export const ContactPage: React.FC = () => {
       });
     } catch {
       // Continue even if local API is unreachable
+    } finally {
+      setIsSubmitting(false);
     }
 
     setSubmitted(true);
@@ -107,6 +107,7 @@ export const ContactPage: React.FC = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSubmitting) return;
     if (!currentUser) {
       setPendingAction('email');
       setAuthModalOpen(true);
@@ -132,10 +133,11 @@ export const ContactPage: React.FC = () => {
       case 'corporate':
         messageText = `Hello UWE Command HQ! My name is ${nameStr}. I am reaching out for a Corporate Partnership. Please connect me with senior command.`;
         break;
-      default:
+      default: {
         const userMsg = formData.message.trim() ? ` Inquiry: "${formData.message.trim()}"` : '';
         messageText = `Hello UWE Command HQ! My name is ${nameStr}.${userMsg} Please provide more information.`;
         break;
+      }
     }
 
     // Save lead record in database
@@ -158,16 +160,16 @@ export const ContactPage: React.FC = () => {
   };
 
   const handleWhatsAppButtonClick = () => {
-    if (!currentUser) {
-      setPendingAction('whatsapp');
-      setAuthModalOpen(true);
-      return;
-    }
     executeWhatsAppClick();
   };
 
   return (
     <div className="pt-xl md:pt-[120px] pb-xl flex-grow bg-transparent relative">
+      <PageSEO
+        title="Contact & Command HQ"
+        description="Connect with Unity Warriors Empire Command Center. Direct WhatsApp and hotline channels available."
+        canonical="/contact"
+      />
       <div className="ambient-glow-top-left" />
       <div className="ambient-glow-bottom-right" />
 
@@ -404,13 +406,18 @@ export const ContactPage: React.FC = () => {
                   {/* Dual Action Buttons: Standard Submit + WhatsApp Direct Launch */}
                   <div className="flex flex-col sm:flex-row gap-3 mt-xs">
                     <motion.button
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.96 }}
+                      whileHover={!isSubmitting ? { scale: 1.02 } : {}}
+                      whileTap={!isSubmitting ? { scale: 0.96 } : {}}
                       type="submit"
-                      className="btn-elite min-h-[46px] flex-1 py-3 rounded font-label-caps text-xs sm:text-label-caps uppercase tracking-widest cursor-pointer font-bold flex items-center justify-center gap-2"
+                      disabled={isSubmitting}
+                      className={`btn-elite min-h-[46px] flex-1 py-3 rounded font-label-caps text-xs sm:text-label-caps uppercase tracking-widest font-bold flex items-center justify-center gap-2 transition-opacity ${
+                        isSubmitting ? 'opacity-70 cursor-wait' : 'cursor-pointer'
+                      }`}
                     >
-                      <span className="material-symbols-outlined text-lg">send</span>
-                      <span>EMAIL PAYLOAD</span>
+                      <span className={`material-symbols-outlined text-lg ${isSubmitting ? 'animate-spin' : ''}`}>
+                        {isSubmitting ? 'progress_activity' : 'send'}
+                      </span>
+                      <span>{isSubmitting ? 'TRANSMITTING...' : 'EMAIL PAYLOAD'}</span>
                     </motion.button>
 
                     <motion.button

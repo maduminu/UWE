@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { Variants } from 'framer-motion';
+import { PageSEO } from '../ui/PageSEO';
 import type { PageId } from '../layout/Navbar';
 import { api } from '../../services/api';
 
@@ -46,80 +47,46 @@ export const DemoPage: React.FC<DemoPageProps> = ({ setActivePage }) => {
   const [filter, setFilter] = useState<'all' | 'bmb' | 'leadership' | 'ignit' | 'testimonial'>('all');
   const [activeVideo, setActiveVideo] = useState<DemoVideo | null>(null);
 
-  const defaultDemoVideos: DemoVideo[] = [
-    {
-      id: 'demo-bmb-1',
-      category: 'bmb',
-      title: 'BMB Subconscious Paradigm Shift',
-      subtitle: 'Mind Optimization Protocol Demonstration',
-      duration: '00:15',
-      poster: 'https://images.unsplash.com/photo-1507413245164-6160d8298b31?auto=format&fit=crop&w=800&q=80',
-      videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
-      badge: 'BMB MIND DIVISION',
-      color: '#00D2FF',
-      description: 'Live demonstration of subconscious fear response deconstruction and neuro-anchoring protocols.',
-    },
-    {
-      id: 'demo-leadership-1',
-      category: 'leadership',
-      title: 'Tactical Crisis Simulation & Voice Command',
-      subtitle: 'High-Stakes Leadership Drill',
-      duration: '00:15',
-      poster: 'https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?auto=format&fit=crop&w=800&q=80',
-      videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4',
-      badge: 'COMMAND DIVISION',
-      color: '#FFB800',
-      description: 'High-stakes leadership drills executing real-time crisis management and command authority under pressure.',
-    },
-    {
-      id: 'demo-ignit-1',
-      category: 'ignit',
-      title: 'UWE IGNIT Pitch Night & Venture Syndicate',
-      subtitle: 'Enterprise Incubator Showcase',
-      duration: '00:15',
-      poster: 'https://images.unsplash.com/photo-1559136555-9303baea8ebd?auto=format&fit=crop&w=800&q=80',
-      videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4',
-      badge: 'ENTERPRISE DIVISION',
-      color: '#FF4757',
-      description: 'Graduates pitching high-growth Sri Lankan ventures to angel investors and venture capitalists.',
-    },
-    {
-      id: 'demo-testimonial-1',
-      category: 'testimonial',
-      title: 'Operative Transformation Case Study',
-      subtitle: 'Executive Alumni Feedback',
-      duration: '00:15',
-      poster: 'https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=800&q=80',
-      videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoybacks.mp4',
-      badge: 'ALUMNI REEL',
-      color: '#2ED573',
-      description: 'Real feedback from executive operatives who underwent the 4-week BMB mind optimization program.',
-    },
-  ];
-
-  const [demoVideos, setDemoVideos] = useState<DemoVideo[]>(defaultDemoVideos);
+  const [demoVideos, setDemoVideos] = useState<DemoVideo[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchDemos = async () => {
       try {
         const json = await api.getDemos();
         if (json.data && json.data.length > 0) {
-          const mapped: DemoVideo[] = json.data.map((d: any) => ({
-            id: d.id,
-            category: d.category.toLowerCase(),
-            title: d.title,
-            subtitle: d.subtitle,
-            duration: d.duration,
-            poster: d.posterUrl,
-            videoUrl: d.videoUrl,
-            badge: d.badge,
-            color: d.category === 'BMB' ? '#00D2FF' : d.category === 'LEADERSHIP' ? '#FFB800' : d.category === 'IGNIT' ? '#FF4757' : '#2ED573',
-            description: d.description,
-          }));
+          const mapped: DemoVideo[] = json.data.map((d: any) => {
+            const cat = (d.category || 'BMB').toUpperCase();
+            const divisionColor =
+              cat === 'BMB'
+                ? '#00D2FF'
+                : cat === 'LEADERSHIP'
+                ? '#FFB800'
+                : cat === 'IGNIT'
+                ? '#00FF66'
+                : '#2ED573';
+
+            return {
+              id: d.id,
+              category: d.category ? d.category.toLowerCase() : 'bmb',
+              title: d.title,
+              subtitle: d.subtitle,
+              duration: d.duration || '02:30',
+              poster: d.posterUrl || d.thumbnailUrl || d.poster || 'https://images.unsplash.com/photo-1507413245164-6160d8298b31?auto=format&fit=crop&w=800&q=80',
+              videoUrl: d.videoUrl,
+              badge: d.badge || `${cat} DIVISION`,
+              color: divisionColor,
+              description: d.description || '',
+            };
+          });
           setDemoVideos(mapped);
+        } else {
+          setDemoVideos([]);
         }
       } catch {
-        // Fallback to default
+        setDemoVideos([]);
+      } finally {
+        setLoading(false);
       }
     };
     fetchDemos();
@@ -131,6 +98,11 @@ export const DemoPage: React.FC<DemoPageProps> = ({ setActivePage }) => {
 
   return (
     <div className="pt-xl md:pt-[120px] pb-xl flex-grow bg-transparent relative">
+      <PageSEO
+        title="Live Demonstrations"
+        description="Watch UWE operative mind breakthroughs, tactical command drills, and live program transformations."
+        canonical="/demos"
+      />
       {/* Header Section */}
       <section className="max-w-container-max mx-auto px-4 md:px-lg py-lg text-center relative z-10">
         <motion.h1
@@ -178,9 +150,14 @@ export const DemoPage: React.FC<DemoPageProps> = ({ setActivePage }) => {
 
       {/* Video Cards Grid */}
       <section className="max-w-container-max mx-auto px-4 md:px-lg mb-xl relative z-10">
-        <motion.div layout variants={containerVariants} initial="initial" animate="animate" className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-lg">
-          <AnimatePresence mode="popLayout">
-            {filteredVideos.map((video) => (
+        {filteredVideos.length === 0 ? (
+          <div className="p-12 text-center text-on-surface-variant font-mono-data text-sm bg-[#0B0F1C] rounded-2xl border border-outline-variant/30">
+            No demonstration transmissions recorded for this category yet.
+          </div>
+        ) : (
+          <motion.div layout variants={containerVariants} initial="initial" animate="animate" className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-lg">
+            <AnimatePresence mode="popLayout">
+              {filteredVideos.map((video) => (
               <motion.div
                 key={video.id}
                 layout
@@ -197,6 +174,9 @@ export const DemoPage: React.FC<DemoPageProps> = ({ setActivePage }) => {
                   <img
                     src={video.poster}
                     alt={video.title}
+                    onError={(e) => {
+                      e.currentTarget.src = 'https://images.unsplash.com/photo-1507413245164-6160d8298b31?auto=format&fit=crop&w=800&q=80';
+                    }}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 opacity-80 group-hover:opacity-95"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-[#0B0E14] via-transparent to-transparent opacity-90" />
@@ -243,6 +223,7 @@ export const DemoPage: React.FC<DemoPageProps> = ({ setActivePage }) => {
             ))}
           </AnimatePresence>
         </motion.div>
+        )}
       </section>
 
       {/* Interactive Video Player Modal */}

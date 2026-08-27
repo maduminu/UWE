@@ -4,8 +4,10 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { UserProfileModal } from '../ui/UserProfileModal';
 import { AuthModal } from '../ui/AuthModal';
 import uweLogoAsset from '../../assets/images/uwe_shield_isolated.png';
+import { safeGetStorage } from '../../utils/storage';
+import { authService } from '../../services/auth';
 
-export type PageId = 'home' | 'about' | 'vision' | 'product' | 'demos' | 'careers' | 'program-videos' | 'posters' | 'admin' | 'contact';
+export type PageId = 'home' | 'about' | 'vision' | 'product' | 'demos' | 'careers' | 'program-videos' | 'posters' | 'admin' | 'contact' | 'dashboard' | 'course-detail';
 
 interface NavbarProps {
   activePage: PageId;
@@ -20,26 +22,14 @@ export const Navbar: React.FC<NavbarProps> = ({ activePage, setActivePage }) => 
   const [popoverPos, setPopoverPos] = useState({ top: 0, right: 0 });
 
   // ── Auth User Session State ──
-  const [currentUser, setCurrentUser] = useState<any>(() => {
-    try {
-      const saved = localStorage.getItem('uwe_user_account');
-      return saved ? JSON.parse(saved) : null;
-    } catch {
-      return null;
-    }
-  });
+  const [currentUser, setCurrentUser] = useState<any>(() => safeGetStorage('uwe_user_account', null));
 
   const [profileModalOpen, setProfileModalOpen] = useState(false);
   const [authModalOpen, setAuthModalOpen] = useState(false);
 
   useEffect(() => {
     const handleStorageChange = () => {
-      try {
-        const saved = localStorage.getItem('uwe_user_account');
-        setCurrentUser(saved ? JSON.parse(saved) : null);
-      } catch {
-        setCurrentUser(null);
-      }
+      setCurrentUser(safeGetStorage('uwe_user_account', null));
     };
     window.addEventListener('storage', handleStorageChange);
     const interval = setInterval(handleStorageChange, 1000);
@@ -50,7 +40,7 @@ export const Navbar: React.FC<NavbarProps> = ({ activePage, setActivePage }) => 
   }, []);
 
   const handleLogout = () => {
-    localStorage.removeItem('uwe_user_account');
+    authService.clearStudentSession();
     setCurrentUser(null);
     setProfileModalOpen(false);
   };
@@ -97,9 +87,11 @@ export const Navbar: React.FC<NavbarProps> = ({ activePage, setActivePage }) => 
     { id: 'product', label: 'Programs' },
     { id: 'demos', label: 'Demos' },
     { id: 'careers', label: 'Careers' },
+    { id: 'contact', label: 'Contact' },
   ];
 
   const toolNavItems: { id: PageId; label: string; icon: string }[] = [
+    { id: 'dashboard', label: 'My Student Portal', icon: 'school' },
     { id: 'program-videos', label: 'Series & Vault', icon: 'video_library' },
     { id: 'posters', label: 'Command Flyers', icon: 'photo_library' },
     { id: 'admin', label: 'Admin HQ', icon: 'admin_panel_settings' },
@@ -221,18 +213,31 @@ export const Navbar: React.FC<NavbarProps> = ({ activePage, setActivePage }) => 
             </button>
           </nav>
 
-          {/* Action CTA Button / User Profile & Mobile Toggle */}
+          {/* Action CTA Button / User Profile & Mobile Quick Admin */}
           <div className="flex items-center gap-2 shrink-0">
+            {/* Mobile Quick Admin HQ Trigger */}
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => handleNavClick('admin')}
+              className="lg:hidden p-2 rounded-xl bg-secondary/15 border border-secondary/40 text-secondary flex items-center justify-center cursor-pointer shadow-[0_0_10px_rgba(255,184,0,0.2)]"
+              title="Enter Admin Command HQ"
+            >
+              <span className="material-symbols-outlined text-lg">shield</span>
+            </motion.button>
+
             {currentUser ? (
               <div className="flex items-center gap-1.5">
                 <motion.button
                   whileHover={{ scale: 1.04 }}
                   whileTap={{ scale: 0.96 }}
                   onClick={() => setProfileModalOpen(true)}
-                  className="px-3.5 py-1.5 rounded-xl bg-secondary/15 border border-secondary/60 text-secondary font-mono-data text-xs font-bold hover:bg-secondary hover:text-black transition-all flex items-center gap-1.5 cursor-pointer shadow-[0_0_15px_rgba(255,184,0,0.25)]"
+                  className="px-2.5 sm:px-3.5 py-1.5 rounded-xl bg-secondary/15 border border-secondary/60 text-secondary font-mono-data text-xs font-bold hover:bg-secondary hover:text-black transition-all flex items-center gap-1.5 cursor-pointer shadow-[0_0_15px_rgba(255,184,0,0.25)]"
                 >
                   <span className="material-symbols-outlined text-sm">account_circle</span>
-                  <span>⚡ OPERATIVE {currentUser.name ? currentUser.name.split(' ')[0].toUpperCase() : 'ALEX'}</span>
+                  <span className="truncate max-w-[90px] sm:max-w-none">
+                    {currentUser.name ? currentUser.name.split(' ')[0].toUpperCase() : 'OPERATIVE'}
+                  </span>
                 </motion.button>
 
                 <button
@@ -248,56 +253,14 @@ export const Navbar: React.FC<NavbarProps> = ({ activePage, setActivePage }) => 
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={() => setAuthModalOpen(true)}
-                className="btn-elite px-4 py-2 rounded font-label-caps text-xs uppercase tracking-widest cursor-pointer whitespace-nowrap shrink-0 flex items-center gap-1.5"
+                className="btn-elite px-3 sm:px-4 py-1.5 sm:py-2 rounded font-label-caps text-[11px] sm:text-xs uppercase tracking-wider cursor-pointer whitespace-nowrap shrink-0 flex items-center gap-1.5"
               >
                 <span className="material-symbols-outlined text-sm">login</span>
-                <span>OPERATIVE LOGIN</span>
+                <span><span className="hidden sm:inline">OPERATIVE </span>LOGIN</span>
               </motion.button>
             )}
-
-            {/* Mobile Menu Hamburger Button */}
-            <button
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="lg:hidden min-h-[40px] min-w-[40px] flex items-center justify-center text-on-surface p-2 focus:outline-none active-press"
-              aria-label="Toggle Navigation Menu"
-            >
-              <span className="material-symbols-outlined text-2xl text-secondary">
-                {mobileMenuOpen ? 'close' : 'menu'}
-              </span>
-            </button>
           </div>
         </div>
-
-        {/* Mobile Animated Dropdown Drawer */}
-        <AnimatePresence>
-          {mobileMenuOpen && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              exit={{ opacity: 0, height: 0 }}
-              transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
-              className="lg:hidden overflow-hidden bg-[#0e121a]/95 backdrop-blur-2xl border-b border-outline-variant/40 px-6 py-4 flex flex-col gap-2 shadow-2xl absolute top-[100%] left-0 w-full"
-            >
-              {[...mainNavItems, ...toolNavItems, { id: 'contact' as PageId, label: 'Contact HQ' }].map((item) => {
-                const isActive = activePage === item.id;
-                return (
-                  <button
-                    key={item.id}
-                    onClick={() => handleNavClick(item.id)}
-                    className={`text-left min-h-[44px] w-full px-4 py-2.5 rounded-lg font-body-md transition-all cursor-pointer flex items-center justify-between active-press ${
-                      isActive 
-                        ? 'bg-secondary/15 text-secondary font-bold border-l-4 border-secondary shadow-[0_0_15px_rgba(255,186,32,0.2)]' 
-                        : 'text-on-surface-variant hover:bg-surface-variant/40 hover:text-on-surface'
-                    }`}
-                  >
-                    <span>{item.label}</span>
-                    {isActive && <span className="material-symbols-outlined text-secondary text-sm">chevron_right</span>}
-                  </button>
-                );
-              })}
-            </motion.div>
-          )}
-        </AnimatePresence>
       </header>
 
       {/* Portal-rendered dropdown popover */}
@@ -310,6 +273,7 @@ export const Navbar: React.FC<NavbarProps> = ({ activePage, setActivePage }) => 
         onClose={() => setProfileModalOpen(false)}
         onLogout={handleLogout}
         onNavigateToVideos={() => setActivePage('program-videos')}
+        onNavigateToDashboard={() => setActivePage('dashboard')}
       />
 
       {/* Auth Modal */}
@@ -317,8 +281,21 @@ export const Navbar: React.FC<NavbarProps> = ({ activePage, setActivePage }) => 
         isOpen={authModalOpen}
         onClose={() => setAuthModalOpen(false)}
         onLoginSuccess={(user) => {
-          localStorage.setItem('uwe_user_account', JSON.stringify(user));
-          setCurrentUser(user);
+          const account = user as typeof user & {
+            token?: string;
+            refreshToken?: string;
+            phone?: string;
+          };
+
+          authService.persistStudentLogin(account);
+          setCurrentUser({
+            id: account.id,
+            name: account.name,
+            email: account.email,
+            phone: account.phone,
+            enrolledCourseSlugs: account.enrolledCourseSlugs || [],
+          });
+          setActivePage('dashboard');
         }}
       />
     </>

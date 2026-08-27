@@ -1,5 +1,9 @@
 import { Request, Response } from 'express';
 import { prisma } from '../config/db';
+import { recordAdminAudit } from '../utils/auditLogger';
+
+const PHONE_REGEX = /^[+\d\s\-()]{7,20}$/;
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 // @desc    Get all job vacancies with application counts
 // @route   GET /api/jobs
@@ -15,7 +19,8 @@ export const getAllJobs = async (_req: Request, res: Response): Promise<void> =>
     });
     res.status(200).json({ success: true, count: vacancies.length, data: vacancies });
   } catch (error: any) {
-    res.status(500).json({ success: false, message: error.message });
+    console.error('[getAllJobs]', error);
+    res.status(500).json({ success: false, message: 'Failed to retrieve job listings.' });
   }
 };
 
@@ -26,7 +31,12 @@ export const createJob = async (req: Request, res: Response): Promise<void> => {
     const { title, department, employmentType, incomeText, requirements, isActive, openPositions } = req.body;
 
     if (!title || !incomeText) {
-      res.status(400).json({ success: false, message: 'Title and Income details are required' });
+      res.status(400).json({ success: false, message: 'Title and Income details are required.' });
+      return;
+    }
+
+    if (title.trim().length > 150) {
+      res.status(400).json({ success: false, message: 'Title must be under 150 characters.' });
       return;
     }
 
@@ -35,12 +45,12 @@ export const createJob = async (req: Request, res: Response): Promise<void> => {
     const newVacancy = await prisma.jobVacancy.create({
       data: {
         title: title.trim(),
-        department: department || 'Sales & Growth',
+        department: (department || 'Sales & Growth').trim(),
         employmentType: (employmentType as any) || 'WORK_FROM_HOME',
         incomeText: incomeText.trim(),
-        requirements: requirements || 'Strong communication skills, self-motivated, basic WhatsApp fluency.',
+        requirements: (requirements || 'Strong communication skills, self-motivated, basic WhatsApp fluency.').trim(),
         isActive: typeof isActive === 'boolean' ? isActive : true,
-        openPositions: seats,
+        openPositions: Math.max(1, seats),
         hiredCount: 0,
         hiringStatus: 'HIRING',
       },
@@ -48,7 +58,8 @@ export const createJob = async (req: Request, res: Response): Promise<void> => {
 
     res.status(201).json({ success: true, data: newVacancy });
   } catch (error: any) {
-    res.status(500).json({ success: false, message: error.message });
+    console.error('[createJob]', error);
+    res.status(500).json({ success: false, message: 'Failed to create job vacancy.' });
   }
 };
 
@@ -77,20 +88,21 @@ export const updateJob = async (req: Request, res: Response): Promise<void> => {
     const updated = await prisma.jobVacancy.update({
       where: { id },
       data: {
-        ...(typeof title === 'string' && { title }),
-        ...(typeof department === 'string' && { department }),
+        ...(typeof title === 'string' && { title: title.trim() }),
+        ...(typeof department === 'string' && { department: department.trim() }),
         ...(employmentType && { employmentType: employmentType as any }),
-        ...(typeof incomeText === 'string' && { incomeText }),
-        ...(typeof requirements === 'string' && { requirements }),
+        ...(typeof incomeText === 'string' && { incomeText: incomeText.trim() }),
+        ...(typeof requirements === 'string' && { requirements: requirements.trim() }),
         ...(typeof isActive === 'boolean' && { isActive }),
-        ...(typeof openPositions !== 'undefined' && { openPositions: parseInt(openPositions) }),
+        ...(typeof openPositions !== 'undefined' && { openPositions: Math.max(1, parseInt(openPositions)) }),
         ...(derivedStatus && { hiringStatus: derivedStatus as any }),
       },
     });
 
     res.status(200).json({ success: true, data: updated });
   } catch (error: any) {
-    res.status(500).json({ success: false, message: error.message });
+    console.error('[updateJob]', error);
+    res.status(500).json({ success: false, message: 'Failed to update job vacancy.' });
   }
 };
 
@@ -106,113 +118,172 @@ export const getAllApplications = async (_req: Request, res: Response): Promise<
     });
     res.status(200).json({ success: true, count: applications.length, data: applications });
   } catch (error: any) {
-    res.status(500).json({ success: false, message: error.message });
+    console.error('[getAllApplications]', error);
+    res.status(500).json({ success: false, message: 'Failed to retrieve applications.' });
   }
 };
 
 // @desc    Submit new job application (Public Applicant)
-// @route   POST /api/jobs/applications (also supports /api/jobs/apply)
+// @route   POST /api/jobs/applications
 export const createApplication = async (req: Request, res: Response): Promise<void> => {
   try {
     const { vacancyId, name, phone, email, experience } = req.body;
 
     if (!name || !phone) {
-      res.status(400).json({ success: false, message: 'Name and Phone are required' });
+      res.status(400).json({ success: false, message: 'Name and phone number are required.' });
       return;
     }
 
-    // Support applications without a specific vacancyId (general inquiry)
-    let finalVacancyId = vacancyId;
-    if (!finalVacancyId) {
-      // Auto-route to first active vacancy
-      const firstActive = await prisma.jobVacancy.findFirst({ where: { isActive: true } });
-      if (firstActive) finalVacancyId = firstActive.id;
+    if (name.trim().length > 100) {
+      res.status(400).json({ success: false, message: 'Name must be under 100 characters.' });
+      return;
     }
 
-    if (!finalVacancyId) {
-      res.status(400).json({ success: false, message: 'No active vacancies available at this time' });
+    if (experience && experience.trim().length > 1000) {
+      res.status(400).json({ success: false, message: 'Experience summary must be under 1000 characters.' });
+      return;
+    }
+
+    const cleanPhone = phone.trim();
+    if (!PHONE_REGEX.test(cleanPhone)) {
+      res.status(400).json({ success: false, message: 'Invalid phone number format.' });
+      return;
+    }
+
+    if (email && !EMAIL_REGEX.test(email.trim())) {
+      res.status(400).json({ success: false, message: 'Invalid email address format.' });
+      return;
+    }
+
+    // Default to first vacancy if not specified
+    let targetVacancyId = vacancyId;
+    if (!targetVacancyId) {
+      const firstVacancy = await prisma.jobVacancy.findFirst({ where: { isActive: true } });
+      if (firstVacancy) targetVacancyId = firstVacancy.id;
+    }
+
+    if (!targetVacancyId) {
+      res.status(400).json({ success: false, message: 'No active job vacancies found to apply for.' });
       return;
     }
 
     const application = await prisma.jobApplication.create({
       data: {
-        vacancyId: finalVacancyId,
+        vacancyId: targetVacancyId,
         name: name.trim(),
-        phone: phone.trim(),
-        email: email ? email.trim() : null,
-        experience: experience ? experience.trim() : 'No prior experience specified',
+        phone: cleanPhone,
+        email: email ? email.trim().toLowerCase() : null,
+        experience: experience ? experience.trim() : null,
         status: 'APPLIED',
-      },
-      include: {
-        vacancy: true,
       },
     });
 
     res.status(201).json({ success: true, data: application });
   } catch (error: any) {
-    res.status(500).json({ success: false, message: error.message });
+    console.error('[createApplication]', error);
+    res.status(500).json({ success: false, message: 'Failed to submit application. Please try again.' });
   }
 };
 
-// @desc    Update application review status (auto-decrements vacancy open positions on HIRED)
+// @desc    Update applicant status (APPLIED -> REVIEWED -> SHORTLISTED -> HIRED -> REJECTED)
 // @route   PUT /api/jobs/applications/:id/status
 export const updateApplicationStatus = async (req: Request, res: Response): Promise<void> => {
   try {
     const id = String(req.params.id);
     const { status } = req.body;
 
-    const validStatuses = ['APPLIED', 'REVIEWED', 'SHORTLISTED', 'HIRED', 'REJECTED'];
-    if (status && !validStatuses.includes(status.toUpperCase())) {
-      res.status(400).json({ success: false, message: `Invalid status. Must be one of: ${validStatuses.join(', ')}` });
-      return;
-    }
+    const result = await prisma.$transaction(async (tx) => {
+      const existingApp = await tx.jobApplication.findUnique({ where: { id } });
+      if (!existingApp) {
+        throw new Error('Application not found');
+      }
 
-    // Fetch existing application to detect status transition
-    const existingApp = await prisma.jobApplication.findUnique({
-      where: { id },
-      include: { vacancy: true },
-    });
+      const updated = await tx.jobApplication.update({
+        where: { id },
+        data: {
+          status: status as any,
+        },
+        include: {
+          vacancy: true,
+        },
+      });
 
-    const updated = await prisma.jobApplication.update({
-      where: { id },
-      data: {
-        status: status.toUpperCase() as any,
-      },
-      include: {
-        vacancy: true,
-      },
-    });
+      // Auto-sync vacancy: HIRED -> atomic increment/decrement hiredCount, recalculate hiringStatus
+      if (updated.vacancyId) {
+        const isNowHired = String(status).toUpperCase() === 'HIRED';
+        const wasPreviouslyHired = existingApp.status === 'HIRED';
 
-    // ── Auto-sync vacancy: HIRED → increment hiredCount, recalculate hiringStatus ──
-    if (updated.vacancyId) {
-      const wasHired = status.toUpperCase() === 'HIRED';
-      const wasUnhired = existingApp?.status === 'HIRED' && status.toUpperCase() !== 'HIRED';
+        if (isNowHired !== wasPreviouslyHired) {
+          if (isNowHired) {
+            const vacancy = await tx.jobVacancy.findUnique({ where: { id: updated.vacancyId } });
+            if (!vacancy) {
+              throw new Error('Target job vacancy directive not found.');
+            }
 
-      if (wasHired || wasUnhired) {
-        const vacancy = await prisma.jobVacancy.findUnique({
-          where: { id: updated.vacancyId },
-        });
+            // Atomically guard increment in DB where hiredCount < openPositions
+            const updateRes = await tx.jobVacancy.updateMany({
+              where: {
+                id: updated.vacancyId,
+                hiredCount: { lt: vacancy.openPositions },
+              },
+              data: {
+                hiredCount: { increment: 1 },
+              },
+            });
 
-        if (vacancy) {
-          const newHiredCount = Math.max(0, vacancy.hiredCount + (wasHired ? 1 : -1));
-          const remainingPositions = vacancy.openPositions - newHiredCount;
-          const newHiringStatus = remainingPositions <= 0 ? 'HIRING_FINISHED' : 'HIRING';
+            if (updateRes.count === 0) {
+              throw new Error(`Cannot hire applicant: all ${vacancy.openPositions} open positions for ${vacancy.title} have already been filled.`);
+            }
 
-          await prisma.jobVacancy.update({
-            where: { id: updated.vacancyId },
-            data: {
-              hiredCount: newHiredCount,
-              hiringStatus: newHiringStatus as any,
-              // Auto-deactivate if all positions filled
-              isActive: remainingPositions > 0,
-            },
-          });
+            // Recalculate status from DB
+            const finalVacancy = await tx.jobVacancy.findUnique({ where: { id: updated.vacancyId } });
+            if (finalVacancy && finalVacancy.hiredCount >= finalVacancy.openPositions && finalVacancy.hiringStatus !== 'HIRING_FINISHED') {
+              await tx.jobVacancy.update({
+                where: { id: updated.vacancyId },
+                data: { hiringStatus: 'HIRING_FINISHED' },
+              });
+            }
+          } else {
+            // Reverted from HIRED: conditionally decrement in DB where hiredCount > 0
+            const updateRes = await tx.jobVacancy.updateMany({
+              where: {
+                id: updated.vacancyId,
+                hiredCount: { gt: 0 },
+              },
+              data: {
+                hiredCount: { decrement: 1 },
+              },
+            });
+
+            if (updateRes.count > 0) {
+              const finalVacancy = await tx.jobVacancy.findUnique({ where: { id: updated.vacancyId } });
+              if (finalVacancy && finalVacancy.hiredCount < finalVacancy.openPositions && finalVacancy.hiringStatus === 'HIRING_FINISHED') {
+                await tx.jobVacancy.update({
+                  where: { id: updated.vacancyId },
+                  data: { hiringStatus: 'HIRING' },
+                });
+              }
+            }
+          }
         }
       }
-    }
 
-    res.status(200).json({ success: true, data: updated });
+      return updated;
+    });
+
+    await recordAdminAudit({
+      adminId: req.user?.id,
+      adminEmail: req.user?.email,
+      action: `JOB_APP_${status}`,
+      targetEntity: 'JobApplication',
+      targetId: id,
+      details: { applicantName: result.name, vacancyId: result.vacancyId, status },
+      ipAddress: req.ip,
+    });
+
+    res.status(200).json({ success: true, data: result });
   } catch (error: any) {
-    res.status(500).json({ success: false, message: error.message });
+    console.error('[updateApplicationStatus]', error);
+    res.status(500).json({ success: false, message: error.message || 'Failed to update application status.' });
   }
 };

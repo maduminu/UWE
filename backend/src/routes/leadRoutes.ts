@@ -1,10 +1,20 @@
 import { Router } from 'express';
-import { getAllLeads, createLead, updateLeadStatus } from '../controllers/leadController';
+import { getAllLeads, createLead, updateLeadStatus, recordAbandonedReminder, deleteLead } from '../controllers/leadController';
+import { authenticate } from '../middlewares/authenticate';
+import { requireAdmin } from '../middlewares/requireAdmin';
+import { requireRole } from '../middlewares/requireRole';
+import { validateBody, leadSchema } from '../middlewares/validate';
 
 const router = Router();
 
-router.get('/', getAllLeads);
-router.post('/', createLead);
-router.put('/:id/status', updateLeadStatus);
+// Public lead submission (rate-limited in index.ts with Zod validation)
+router.post('/', validateBody(leadSchema), createLead);
+
+// Admin-only CRM leads viewing, status updates, and management (SUPER_ADMIN, COMMANDER, RECRUITER)
+router.get('/', authenticate, requireAdmin, requireRole(['SUPER_ADMIN', 'COMMANDER', 'RECRUITER']), getAllLeads);
+router.put('/:id/status', authenticate, requireAdmin, requireRole(['SUPER_ADMIN', 'COMMANDER', 'RECRUITER']), updateLeadStatus);
+router.post('/:id/abandoned-reminder', authenticate, requireAdmin, requireRole(['SUPER_ADMIN', 'COMMANDER', 'RECRUITER']), recordAbandonedReminder);
+router.delete('/:id', authenticate, requireAdmin, requireRole(['SUPER_ADMIN', 'COMMANDER']), deleteLead);
 
 export default router;
+

@@ -1,3 +1,7 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
 @media (pointer: fine) {
   body, button, a, input, select, textarea {
     cursor: none !important;
@@ -155,12 +159,8 @@ body {
   box-shadow: 0 0 15px rgba(255, 184, 0, 0.3);
 }
 
+/* ── Animations ── */
 
-/* ═══════════════════════════════════════════════════════════════
-   ██  PAGE TRANSITION  ██
-   ═══════════════════════════════════════════════════════════════ */
-
-/* Clean fade + slide-up entrance — instant swap, no delay */
 @keyframes pageEnter {
   from {
     opacity: 0;
@@ -176,13 +176,6 @@ body {
   animation: pageEnter 0.3s cubic-bezier(0.25, 1, 0.5, 1) both;
 }
 
-
-/* ═══════════════════════════════════════════════════════════════
-   ██  MICRO-ANIMATIONS & MOTION SYSTEM  ██
-   ═══════════════════════════════════════════════════════════════ */
-
-/* ── Emblem 2.5D Floating ── */
-
 @keyframes microFloat {
   0%, 100% {
     transform: translateY(0px) rotate(0deg);
@@ -195,8 +188,6 @@ body {
 .animate-micro-float {
   animation: microFloat 6s ease-in-out infinite;
 }
-
-/* ── Ambient Pulse Glow ── */
 
 @keyframes pulseGlow {
   0%, 100% {
@@ -213,8 +204,6 @@ body {
   animation: pulseGlow 4s ease-in-out infinite;
 }
 
-/* ── Mobile Menu Slide Down ── */
-
 @keyframes slideDownMenu {
   from {
     opacity: 0;
@@ -230,8 +219,6 @@ body {
   animation: slideDownMenu 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
-/* ── Tactile Active Press ── */
-
 .active-press {
   transition: transform 0.18s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.18s ease;
 }
@@ -239,8 +226,6 @@ body {
 .active-press:active {
   transform: scale(0.95) translateY(1px);
 }
-
-/* ── Content Stagger Entrance (for sections/cards) ── */
 
 @keyframes staggerSlideUp {
   from {

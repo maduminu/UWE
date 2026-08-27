@@ -1,6 +1,8 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import type { Variants } from 'framer-motion';
+import { PageSEO } from '../ui/PageSEO';
+import uweHeroEmblem from '../../assets/images/uwe_hero_emblem.png';
 
 const containerVariants: Variants = {
   initial: { opacity: 0 },
@@ -52,6 +54,11 @@ export const AboutPage: React.FC = () => {
 
   return (
     <div className="pt-xl md:pt-[120px] pb-xl flex-grow bg-transparent relative">
+      <PageSEO
+        title="About Us"
+        description="Learn about Unity Warriors Empire — our mission, story, and the vision driving Sri Lanka's premier mind optimization and leadership training organisation."
+        canonical="/about"
+      />
       {/* Hero Section */}
       <section className="max-w-container-max mx-auto px-4 md:px-lg py-lg md:py-xl text-center md:text-left relative">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-secondary/5 via-transparent to-transparent pointer-events-none -z-10" />
@@ -108,7 +115,7 @@ export const AboutPage: React.FC = () => {
             <img 
               className="w-full h-full object-cover absolute inset-0 opacity-85 group-hover:scale-105 transition-transform duration-700"
               alt="UWE Tactical Command"
-              src="https://lh3.googleusercontent.com/aida/AP1WRLsd2Hk0LpcwD4K1lWq2I3pZUnFUznF0wtN79xQ5VUeaGZPxdH5zFLw-3zr5WUGFNJQ3vqtRLZwAaiRdgwq2363NQyK25OJpN3a0Ug7_wSTHgGzG6vOnbASqvaanwJsQUwkebU03NpRaRpDswlfmCy7cM3AUJqmRAdU2n_zPsRyE_x5MtgVGWuHzAcFC9ocPfYOHqBvG_Aah41g0wykfbCa-aykfpZBop-GY_J4GUwesm5xG5qT8IKMTNw" 
+              src={uweHeroEmblem}
             />
           </motion.div>
         </div>

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { PageId } from '../layout/Navbar';
+import { PageSEO } from '../ui/PageSEO';
 import { api } from '../../services/api';
 
 interface CareersPageProps {
@@ -36,45 +37,6 @@ export const CareersPage: React.FC<CareersPageProps> = () => {
     experience: '',
   });
 
-  const defaultVacancies: JobVacancy[] = [
-    {
-      id: 'job-1',
-      title: 'Digital Sales & Student Recruitment Specialist',
-      department: 'Sales & Growth',
-      employmentType: 'WORK_FROM_HOME',
-      incomeText: 'RS. 45,000 - RS. 120,000 + High Commission',
-      requirements: 'Strong conversational Sinhala & English skills, WhatsApp communication speed, self-driven motivation.',
-      openPositions: 5,
-      hiredCount: 2,
-      hiringStatus: 'HIRING',
-      isActive: true,
-    },
-    {
-      id: 'job-2',
-      title: 'Executive Program Coordinator & Coach Assistant',
-      department: 'Operations & Training',
-      employmentType: 'HYBRID',
-      incomeText: 'RS. 60,000 - RS. 95,000',
-      requirements: 'Experience coordinating Zoom live sessions, student support fluency, strong organizational mindset.',
-      openPositions: 2,
-      hiredCount: 1,
-      hiringStatus: 'HIRING',
-      isActive: true,
-    },
-    {
-      id: 'job-3',
-      title: 'Performance Marketing & Creative Strategist',
-      department: 'Marketing & Media',
-      employmentType: 'FULL_TIME',
-      incomeText: 'RS. 75,000 - RS. 140,000',
-      requirements: 'Meta Ad Manager proficiency, video script ideation, high-converting copywriting instincts.',
-      openPositions: 1,
-      hiredCount: 0,
-      hiringStatus: 'HIRING',
-      isActive: true,
-    },
-  ];
-
   useEffect(() => {
     const fetchJobs = async () => {
       try {
@@ -82,10 +44,10 @@ export const CareersPage: React.FC<CareersPageProps> = () => {
         if (res.data && res.data.length > 0) {
           setVacancies(res.data);
         } else {
-          setVacancies(defaultVacancies);
+          setVacancies([]);
         }
       } catch {
-        setVacancies(defaultVacancies);
+        setVacancies([]);
       } finally {
         setLoading(false);
       }
@@ -99,16 +61,20 @@ export const CareersPage: React.FC<CareersPageProps> = () => {
     ? vacancies
     : vacancies.filter((v) => v.department === selectedDept);
 
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
   const handleOpenApply = (job: JobVacancy) => {
     setSelectedJob(job);
     setApplyModalOpen(true);
     setSuccessMessage(false);
+    setErrorMessage(null);
   };
 
   const handleApplySubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedJob) return;
+    if (!selectedJob || submitting) return;
     setSubmitting(true);
+    setErrorMessage(null);
     try {
       await api.applyForJob({
         vacancyId: selectedJob.id,
@@ -122,8 +88,8 @@ export const CareersPage: React.FC<CareersPageProps> = () => {
         setApplyModalOpen(false);
         setApplicant({ name: '', phone: '', email: '', experience: '' });
       }, 2500);
-    } catch {
-      alert('Application could not be submitted. Please connect directly via WhatsApp.');
+    } catch (err: any) {
+      setErrorMessage(err.message || 'Application could not be submitted. Please connect directly via WhatsApp.');
     } finally {
       setSubmitting(false);
     }
@@ -131,6 +97,11 @@ export const CareersPage: React.FC<CareersPageProps> = () => {
 
   return (
     <div className="pt-xl md:pt-[120px] pb-xl flex-grow bg-transparent relative font-sans">
+      <PageSEO
+        title="Careers & Recruitment"
+        description="Join the UWE syndicate. Explore open positions in training, sales, and operations."
+        canonical="/careers"
+      />
       {/* Header Banner */}
       <section className="max-w-container-max mx-auto px-4 md:px-lg py-md relative z-10 text-center">
         <motion.div
@@ -334,6 +305,16 @@ export const CareersPage: React.FC<CareersPageProps> = () => {
                 </button>
               </div>
 
+              {errorMessage && (
+                <div className="p-3 rounded-xl bg-red-500/15 border border-red-500/50 text-red-300 font-mono-data text-xs flex items-start gap-2">
+                  <span className="material-symbols-outlined text-red-400 text-base shrink-0 mt-0.5">warning</span>
+                  <div>
+                    <p className="font-bold text-red-200">Transmission Error</p>
+                    <p className="text-[11px] text-red-300/80">{errorMessage}</p>
+                  </div>
+                </div>
+              )}
+
               {successMessage ? (
                 <div className="p-6 text-center space-y-3 font-mono-data">
                   <div className="w-12 h-12 rounded-full bg-[#2ED573]/20 border border-[#2ED573] text-[#2ED573] mx-auto flex items-center justify-center text-2xl">
@@ -350,7 +331,10 @@ export const CareersPage: React.FC<CareersPageProps> = () => {
                       type="text"
                       required
                       value={applicant.name}
-                      onChange={(e) => setApplicant({ ...applicant, name: e.target.value })}
+                      onChange={(e) => {
+                        setApplicant({ ...applicant, name: e.target.value });
+                        if (errorMessage) setErrorMessage(null);
+                      }}
                       placeholder="e.g. Kasun Fernando"
                       className="input-field w-full p-2.5 rounded-lg bg-[#131929] border-secondary/40 text-on-surface"
                     />
@@ -363,7 +347,10 @@ export const CareersPage: React.FC<CareersPageProps> = () => {
                         type="tel"
                         required
                         value={applicant.phone}
-                        onChange={(e) => setApplicant({ ...applicant, phone: e.target.value })}
+                        onChange={(e) => {
+                          setApplicant({ ...applicant, phone: e.target.value });
+                          if (errorMessage) setErrorMessage(null);
+                        }}
                         placeholder="077 123 4567"
                         className="input-field w-full p-2.5 rounded-lg bg-[#131929] border-secondary/40 text-on-surface font-bold"
                       />
@@ -373,7 +360,10 @@ export const CareersPage: React.FC<CareersPageProps> = () => {
                       <input
                         type="email"
                         value={applicant.email}
-                        onChange={(e) => setApplicant({ ...applicant, email: e.target.value })}
+                        onChange={(e) => {
+                          setApplicant({ ...applicant, email: e.target.value });
+                          if (errorMessage) setErrorMessage(null);
+                        }}
                         placeholder="kasun@gmail.com"
                         className="input-field w-full p-2.5 rounded-lg bg-[#131929] border-secondary/40 text-on-surface"
                       />
@@ -386,7 +376,10 @@ export const CareersPage: React.FC<CareersPageProps> = () => {
                       required
                       rows={3}
                       value={applicant.experience}
-                      onChange={(e) => setApplicant({ ...applicant, experience: e.target.value })}
+                      onChange={(e) => {
+                        setApplicant({ ...applicant, experience: e.target.value });
+                        if (errorMessage) setErrorMessage(null);
+                      }}
                       placeholder="Briefly describe your previous experience, skills, and why you want to join UWE Empire..."
                       className="input-field w-full p-2.5 rounded-lg bg-[#131929] border-secondary/40 text-on-surface"
                     />
@@ -396,16 +389,21 @@ export const CareersPage: React.FC<CareersPageProps> = () => {
                     <button
                       type="button"
                       onClick={() => setApplyModalOpen(false)}
-                      className="px-4 py-2 rounded-xl bg-[#131929] text-on-surface-variant hover:text-on-surface"
+                      className="px-4 py-2 rounded-xl bg-[#131929] text-on-surface-variant hover:text-on-surface cursor-pointer"
                     >
                       CANCEL
                     </button>
                     <button
                       type="submit"
                       disabled={submitting}
-                      className="btn-elite px-6 py-2.5 rounded-xl font-label-caps font-black uppercase tracking-wider cursor-pointer shadow-[0_0_15px_rgba(255,184,0,0.3)]"
+                      className={`btn-elite px-6 py-2.5 rounded-xl font-label-caps font-black uppercase tracking-wider shadow-[0_0_15px_rgba(255,184,0,0.3)] flex items-center gap-2 ${
+                        submitting ? 'opacity-70 cursor-wait' : 'cursor-pointer'
+                      }`}
                     >
-                      {submitting ? 'TRANSMITTING...' : 'SUBMIT CANDIDATE RECORD'}
+                      <span className={`material-symbols-outlined text-sm ${submitting ? 'animate-spin' : ''}`}>
+                        {submitting ? 'progress_activity' : 'send'}
+                      </span>
+                      <span>{submitting ? 'TRANSMITTING...' : 'SUBMIT CANDIDATE RECORD'}</span>
                     </button>
                   </div>
                 </form>

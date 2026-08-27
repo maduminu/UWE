@@ -1,0 +1,785 @@
+import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useParams, useNavigate } from 'react-router-dom';
+import { api } from '../../services/api';
+import { authService } from '../../services/auth';
+import { BankSlipUploadModal } from '../ui/BankSlipUploadModal';
+import { PageSEO } from '../ui/PageSEO';
+import type { PageId } from '../layout/Navbar';
+
+interface CourseDetailPageProps {
+  courseSlug?: string;
+  setActivePage?: (page: PageId) => void;
+  onBackToCatalog?: () => void;
+}
+
+interface DetailedCourseInfo {
+  slug: string;
+  title: string;
+  subtitle: string;
+  badge: string;
+  badgeColor: string;
+  price: number;
+  duration: string;
+  scheduleText: string;
+  availableSeats: number;
+  totalSeats: number;
+  rating: number;
+  reviewCount: number;
+  description: string;
+  trailerVideoUrl?: string;
+  instructor: {
+    name: string;
+    title: string;
+    bio: string;
+    credentials: string;
+    specialties: string;
+    studentCount: number;
+  };
+  learningOutcomes: string[];
+  modules: {
+    number: number;
+    title: string;
+    duration: string;
+    isFreePreview?: boolean;
+    description: string;
+  }[];
+}
+
+const DEFAULT_COURSE_DETAILS: Record<string, DetailedCourseInfo> = {
+  bmb: {
+    slug: 'bmb',
+    title: 'Beyond Mind Boundaries (BMB)',
+    subtitle: 'Subconscious Reprogramming & Identity Transcendence Architecture',
+    badge: 'MIND DIVISION',
+    badgeColor: '#FFB800',
+    price: 15000,
+    duration: '5 Days Intensive (Night Zoom Live)',
+    scheduleText: 'Next Cohort: 2026-08-25 (Zoom Live 8:30 PM)',
+    availableSeats: 6,
+    totalSeats: 20,
+    rating: 4.98,
+    reviewCount: 48,
+    description:
+      'A transformative 5-day neurological and mindset rewiring masterclass designed to shatter self-imposed limitations, master wealth psychology, and program your subconscious for unyielding sovereign execution.',
+    instructor: {
+      name: 'Commander Janith Perera',
+      title: 'Founder & Chief Mindset Architect',
+      bio: 'Pioneer of the Subconscious Rewiring Framework in Sri Lanka. Trained over 4,500+ professionals and elite corporate executives.',
+      credentials: 'B.Sc (Hons), Certified Master NLP Practitioner, Elite Executive Coach',
+      specialties: 'Subconscious Reprogramming, High-Ticket Negotiation, Sovereign Mind Architecture',
+      studentCount: 3200,
+    },
+    learningOutcomes: [
+      'Eliminate subconscious fear, hesitation, and self-sabotaging behavior patterns.',
+      'Construct a bulletproof wealth and abundance paradigm tailored for tough economic climates.',
+      'Master the 4-phase mental conditioning protocol used by high-performing enterprise leaders.',
+      'Deploy the Identity Shift Framework to command respect and influence in every room.',
+      'Receive the 21-Day Daily Subconscious Audio Directive for permanent neural integration.',
+    ],
+    modules: [
+      { number: 1, title: 'Neural Deconditioning & Baseline Calibration', duration: '18:40', isFreePreview: true, description: 'Auditing your inherited subconscious software and locating energetic blockers.' },
+      { number: 2, title: 'The Quantum Reality Paradigm', duration: '24:15', isFreePreview: false, description: 'Understanding how internal frequencies dictate external financial outcomes.' },
+      { number: 3, title: 'Fear Annihilation & Emotional Stoicism', duration: '28:50', isFreePreview: false, description: 'Techniques to neutralize panic, market uncertainty, and imposter syndrome.' },
+      { number: 4, title: 'Wealth Matrix & High-Ticket Psychology', duration: '32:10', isFreePreview: false, description: 'Architecting your personal economic moat and value proposition.' },
+      { number: 5, title: 'Identity Transcendence Protocol & Seal', duration: '35:20', isFreePreview: false, description: 'Final directive seal and integration into the Sovereign Alumni network.' },
+    ],
+  },
+  leadership: {
+    slug: 'leadership',
+    title: 'Leadership & Command Academy',
+    subtitle: 'Executive Authority, Tactical Delegation & Organizational Supremacy',
+    badge: 'COMMAND DIVISION',
+    badgeColor: '#00D2FF',
+    price: 25000,
+    duration: '4 Weeks Strategic Cohort',
+    scheduleText: 'Next Cohort: 2026-09-02 (Weekend Mastermind)',
+    availableSeats: 4,
+    totalSeats: 15,
+    rating: 4.95,
+    reviewCount: 36,
+    description:
+      'An elite leadership directive designed for founders, directors, and emerging managers ready to command high-performance teams, negotiate seven-figure contracts, and build resilient commercial systems.',
+    instructor: {
+      name: 'Suranjith Godagama',
+      title: 'Enterprise Growth Strategist & Corporate Coach',
+      bio: 'Renowned sales director and enterprise tactician with over 15+ years leading commercial teams across South Asia.',
+      credentials: 'MBA (UK), Fellow CIM, Senior Commercial Growth Director',
+      specialties: 'B2B Sales Mastery, High-Performance Leadership, Market Penetration',
+      studentCount: 2150,
+    },
+    learningOutcomes: [
+      'Master tactical delegation without sacrificing operational velocity or quality.',
+      'Develop high-stakes negotiation protocols to close deals at premium margins.',
+      'Build scalable KPI and OKR management dashboards for autonomous teams.',
+      'Architect corporate crisis response systems to protect revenue during market shocks.',
+    ],
+    modules: [
+      { number: 1, title: 'The Sovereign Command Philosophy', duration: '22:10', isFreePreview: true, description: 'The fundamentals of extreme ownership and leadership magnetism.' },
+      { number: 2, title: 'High-Velocity Team Architecture', duration: '31:40', isFreePreview: false, description: 'Recruiting, retaining, and deploying A-player operatives.' },
+      { number: 3, title: 'Strategic Negotiation & Power Dynamics', duration: '40:15', isFreePreview: false, description: 'Psychological leverage in boardroom negotiations.' },
+      { number: 4, title: 'Operational Redundancy & Delegation', duration: '34:50', isFreePreview: false, description: 'Automating business operations for founder freedom.' },
+    ],
+  },
+  ignit: {
+    slug: 'ignit',
+    title: 'IGNIT Enterprise Incubator',
+    subtitle: 'Zero-to-One Venture Launch, AI Automation & Scalable Commercial Systems',
+    badge: 'ENTERPRISE DIVISION',
+    badgeColor: '#00FF66',
+    price: 35000,
+    duration: '6 Weeks Accelerator Program',
+    scheduleText: 'Next Cohort: 2026-09-15 (Incubator Access)',
+    availableSeats: 8,
+    totalSeats: 20,
+    rating: 4.92,
+    reviewCount: 29,
+    description:
+      'A venture creation and scaling blueprint that equips entrepreneurs with AI automation pipelines, digital product architecture, and investor-ready financial models.',
+    instructor: {
+      name: 'Dilshan Madusanka',
+      title: 'Lead Incubator Tactician & AI Systems Specialist',
+      bio: 'Tech entrepreneur and venture strategist specializing in AI integration, rapid venture scaling, and capital allocation.',
+      credentials: 'M.Sc Computing, Venture Mentor, AI Product Architect',
+      specialties: 'AI Automation, Startup MVP Scaling, Venture Capital Pitching',
+      studentCount: 1400,
+    },
+    learningOutcomes: [
+      'Validate, build, and launch a commercial venture MVP in under 30 days.',
+      'Automate lead acquisition and customer onboarding with custom AI workflows.',
+      'Master unit economics, customer acquisition cost (CAC), and lifetime value (LTV).',
+      'Create an institutional-grade pitch deck and investor presentation.',
+    ],
+    modules: [
+      { number: 1, title: 'Venture Ideation & Market Validation', duration: '25:00', isFreePreview: true, description: 'Stress-testing business models against market demand.' },
+      { number: 2, title: 'AI Automation & No-Code Systems', duration: '38:20', isFreePreview: false, description: 'Building operational pipelines that run 24/7 with zero headcount.' },
+      { number: 3, title: 'Growth Engine & Organic Distribution', duration: '42:10', isFreePreview: false, description: 'Acquiring your first 100 paying customers organically.' },
+      { number: 4, title: 'Venture Capital & Scaled Financing', duration: '36:45', isFreePreview: false, description: 'Valuation mechanics, equity structures, and pitch mastery.' },
+    ],
+  },
+};
+
+export const CourseDetailPage: React.FC<CourseDetailPageProps> = ({
+  courseSlug,
+  setActivePage,
+  onBackToCatalog,
+}) => {
+  const params = useParams<{ slug?: string }>();
+  const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState<'syllabus' | 'outcomes' | 'instructor' | 'reviews'>('syllabus');
+  const [slipModalOpen, setSlipModalOpen] = useState(false);
+  const [reviews, setReviews] = useState<any[]>([]);
+  const [loadingReviews, setLoadingReviews] = useState(false);
+  const [avgRating, setAvgRating] = useState<number>(5.0);
+
+  // Review submission state
+  const [reviewModalOpen, setReviewModalOpen] = useState(false);
+  const [studentName, setStudentName] = useState('');
+  const [studentRole, setStudentRole] = useState('');
+  const [reviewRating, setReviewRating] = useState(5);
+  const [reviewTitle, setReviewTitle] = useState('');
+  const [reviewComment, setReviewComment] = useState('');
+  const [isSubmittingReview, setIsSubmittingReview] = useState(false);
+  const [reviewSuccessMessage, setReviewSuccessMessage] = useState<string | null>(null);
+
+  const effectiveSlug = params.slug || courseSlug || 'bmb';
+  const course = DEFAULT_COURSE_DETAILS[effectiveSlug] || DEFAULT_COURSE_DETAILS.bmb;
+
+  const fetchReviews = async () => {
+    setLoadingReviews(true);
+    try {
+      const res = await api.getCourseReviews(course.slug);
+      if (res.success && Array.isArray(res.data)) {
+        setReviews(res.data);
+        if (typeof res.averageRating === 'number') {
+          setAvgRating(res.averageRating);
+        } else if (res.data.length > 0) {
+          const sum = res.data.reduce((acc: number, r: any) => acc + (r.rating || 5), 0);
+          setAvgRating(parseFloat((sum / res.data.length).toFixed(1)));
+        }
+      }
+    } catch (err) {
+      console.warn('Could not load course reviews from database', err);
+    } finally {
+      setLoadingReviews(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchReviews();
+  }, [course.slug]);
+
+  // Autofill name if student is logged in
+  useEffect(() => {
+    const studentUser = authService.getStudentUser();
+    if (studentUser) {
+      setStudentName(studentUser.name || '');
+      setStudentRole('Verified Student Operative');
+    }
+  }, []);
+
+  const handleReviewSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!studentName.trim() || !reviewComment.trim()) return;
+
+    setIsSubmittingReview(true);
+    setReviewSuccessMessage(null);
+
+    try {
+      const studentUser = authService.getStudentUser();
+      const res = await api.submitReview({
+        courseSlug: course.slug,
+        studentName: studentName.trim(),
+        studentRole: studentRole.trim() || 'Verified Operative',
+        rating: reviewRating,
+        title: reviewTitle.trim() || undefined,
+        comment: reviewComment.trim(),
+        userId: studentUser?.id,
+      });
+
+      if (res.success) {
+        setReviewSuccessMessage('Review transmitted & published to the database!');
+        setReviewComment('');
+        setReviewTitle('');
+        setTimeout(() => {
+          setReviewModalOpen(false);
+          setReviewSuccessMessage(null);
+          fetchReviews();
+        }, 1500);
+      }
+    } catch (err) {
+      console.error('Failed to post review:', err);
+    } finally {
+      setIsSubmittingReview(false);
+    }
+  };
+
+  const handleWhatsAppEnroll = async () => {
+    const text = encodeURIComponent(
+      `Hello Command Council, I wish to enroll in the ${course.title} directive (${course.badge}). Please send the payment instructions and batch access.`
+    );
+    try {
+      await api.createLead({
+        name: currentUser?.name || 'Prospective Operative',
+        phone: currentUser?.phone || '071 709 6386',
+        email: currentUser?.email || null,
+        courseSlug: course.slug,
+        inquiryType: (course.slug || 'GENERAL').toUpperCase(),
+        message: `Enrollment inquiry for ${course.title}`,
+      });
+    } catch {
+      /* ignore */
+    }
+    window.open(`https://wa.me/94717096386?text=${text}`, '_blank');
+  };
+
+  const displayRating = reviews.length > 0 ? avgRating : course.rating;
+  const displayReviewCount = reviews.length > 0 ? reviews.length : course.reviewCount;
+
+  return (
+    <div className="min-h-screen bg-[#070A12] text-on-surface py-10 px-4 md:px-8 max-w-7xl mx-auto space-y-10">
+      <PageSEO
+        title={course.title}
+        description={course.description || `${course.title} - ${course.subtitle}`}
+        canonical={`/programs/${course.slug}`}
+      />
+      {/* ── Breadcrumb Navigation ── */}
+      <div className="flex items-center gap-2 text-xs font-mono-data text-on-surface-variant">
+        <button onClick={() => onBackToCatalog ? onBackToCatalog() : navigate('/programs')} className="hover:text-secondary flex items-center gap-1 cursor-pointer">
+          <span className="material-symbols-outlined text-sm">arrow_back</span>
+          <span>Courses Catalog</span>
+        </button>
+        <span>/</span>
+        <span className="text-secondary uppercase">{course.badge}</span>
+        <span>/</span>
+        <span className="text-on-surface truncate">{course.title}</span>
+      </div>
+
+      {/* ── Hero Overview Header & Pricing Card ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+        {/* Left 2 Cols: Main Info */}
+        <div className="lg:col-span-2 space-y-6">
+          <div className="flex flex-wrap items-center gap-3">
+            <span
+              className="px-3 py-1 rounded-full text-xs font-mono-data font-bold uppercase tracking-wider border"
+              style={{
+                backgroundColor: `${course.badgeColor}15`,
+                borderColor: `${course.badgeColor}40`,
+                color: course.badgeColor,
+              }}
+            >
+              {course.badge}
+            </span>
+            <div className="flex items-center gap-1.5 font-mono-data text-xs text-[#FFB800]">
+              <span>★</span>
+              <span className="font-bold">{displayRating}</span>
+              <span className="text-on-surface-variant">({displayReviewCount} Verified Operatives)</span>
+            </div>
+            <span className="font-mono-data text-xs text-on-surface-variant">• {course.duration}</span>
+          </div>
+
+          <h1 className="font-display text-3xl md:text-5xl font-black text-on-surface uppercase tracking-wide leading-tight">
+            {course.title}
+          </h1>
+
+          <p className="font-display text-base md:text-lg text-secondary font-bold">
+            {course.subtitle}
+          </p>
+
+          <p className="font-body-md text-sm md:text-base text-on-surface-variant leading-relaxed">
+            {course.description}
+          </p>
+
+          {/* Instructor Snapshot */}
+          <div className="p-4 rounded-2xl bg-[#0C1220] border border-outline-variant/30 flex items-center gap-4">
+            <div className="w-12 h-12 rounded-full bg-secondary/20 border border-secondary flex items-center justify-center text-secondary font-display font-bold text-lg">
+              {course.instructor.name.charAt(0)}
+            </div>
+            <div>
+              <p className="font-mono-data text-[10px] text-secondary uppercase font-bold tracking-wider">
+                LEAD INSTRUCTOR &amp; FACULTY
+              </p>
+              <h4 className="font-display text-sm md:text-base font-bold text-on-surface">
+                {course.instructor.name}
+              </h4>
+              <p className="font-mono-data text-xs text-on-surface-variant">
+                {course.instructor.title}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Right Col: Instant Enrollment Action Card */}
+        <div className="rounded-2xl bg-gradient-to-b from-[#0E1528] to-[#080C16] border border-secondary/50 p-6 md:p-8 shadow-[0_0_50px_rgba(255,184,0,0.18)] space-y-6 sticky top-24">
+          <div className="space-y-2 pb-4 border-b border-outline-variant/30">
+            <p className="font-mono-data text-xs text-on-surface-variant uppercase">TUITION &amp; ADMISSION</p>
+            <div className="flex items-baseline gap-2">
+              <span className="font-display text-3xl md:text-4xl font-black text-secondary">
+                Rs. {course.price.toLocaleString()}
+              </span>
+              <span className="font-mono-data text-xs text-on-surface-variant">LKR</span>
+            </div>
+            <p className="font-mono-data text-[11px] text-[#00FF66]">
+              ✓ Includes Official Certificate &amp; Alumni Network
+            </p>
+          </div>
+
+          {/* Batch Status & Seat Counter */}
+          <div className="space-y-2 p-3 rounded-xl bg-[#0A0E18] border border-outline-variant/20">
+            <div className="flex justify-between text-xs font-mono-data">
+              <span className="text-on-surface-variant">Cohort Capacity</span>
+              <span className="text-secondary font-bold">{course.availableSeats} of {course.totalSeats} Seats Left</span>
+            </div>
+            <div className="w-full h-2 rounded-full bg-[#161D2E] overflow-hidden">
+              <div
+                className="h-full rounded-full bg-secondary"
+                style={{ width: `${((course.totalSeats - course.availableSeats) / course.totalSeats) * 100}%` }}
+              />
+            </div>
+            <p className="font-mono-data text-[10px] text-on-surface-variant mt-1">
+              🗓️ {course.scheduleText}
+            </p>
+          </div>
+
+          {/* CTAs */}
+          <div className="space-y-3">
+            <button
+              onClick={() => setSlipModalOpen(true)}
+              className="w-full py-3.5 rounded-xl bg-gradient-to-r from-secondary to-[#FFD700] text-black font-mono-data text-xs font-black uppercase hover:opacity-95 transition-all flex items-center justify-center gap-2 shadow-[0_0_25px_rgba(255,184,0,0.4)] cursor-pointer"
+            >
+              <span className="material-symbols-outlined text-base">receipt_long</span>
+              <span>ENROLL VIA BANK SLIP (INSTANT)</span>
+            </button>
+
+            <button
+              onClick={handleWhatsAppEnroll}
+              className="w-full py-3 rounded-xl bg-[#00FF66]/15 border border-[#00FF66]/50 text-[#00FF66] font-mono-data text-xs font-bold uppercase hover:bg-[#00FF66] hover:text-black transition-all flex items-center justify-center gap-2 cursor-pointer"
+            >
+              <span className="material-symbols-outlined text-base">chat</span>
+              <span>INQUIRE VIA WHATSAPP</span>
+            </button>
+
+            <button
+              onClick={() => setActivePage ? setActivePage('program-videos') : navigate('/videos')}
+              className="w-full py-2.5 rounded-xl bg-surface-variant/40 text-on-surface font-mono-data text-xs hover:bg-surface-variant transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+            >
+              <span className="material-symbols-outlined text-sm text-secondary">play_circle</span>
+              <span>Watch Episode 1 Preview Free</span>
+            </button>
+          </div>
+
+          <p className="font-mono-data text-[10px] text-center text-on-surface-variant">
+            🔒 Bank transfers, online CDM &amp; mobile banking accepted. Instant approval upon verification.
+          </p>
+        </div>
+      </div>
+
+      {/* ── Interactive Tab Navigation ── */}
+      <div className="border-b border-outline-variant/30 flex gap-4 md:gap-8 overflow-x-auto pb-1">
+        {[
+          { id: 'syllabus', label: 'Curriculum & Modules', icon: 'list_alt' },
+          { id: 'outcomes', label: 'What You Will Master', icon: 'check_circle' },
+          { id: 'instructor', label: 'Faculty Profile', icon: 'person' },
+          { id: 'reviews', label: `Reviews (${reviews.length > 0 ? reviews.length : course.reviewCount})`, icon: 'star' },
+        ].map((tab) => {
+          const isActive = activeTab === tab.id;
+          return (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id as any)}
+              className={`pb-3 font-mono-data text-xs md:text-sm uppercase tracking-wider flex items-center gap-2 transition-all cursor-pointer whitespace-nowrap ${
+                isActive
+                  ? 'text-secondary font-bold border-b-2 border-secondary'
+                  : 'text-on-surface-variant hover:text-on-surface'
+              }`}
+            >
+              <span className="material-symbols-outlined text-base">{tab.icon}</span>
+              <span>{tab.label}</span>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* ── Tab Content Views ── */}
+      <div className="pt-2">
+        {/* 1. Syllabus & Modules */}
+        {activeTab === 'syllabus' && (
+          <div className="space-y-4">
+            <h3 className="font-display text-xl font-bold uppercase text-on-surface">
+              Tactical Syllabus ({course.modules.length} Intensive Modules)
+            </h3>
+            <div className="space-y-3">
+              {course.modules.map((mod) => (
+                <div
+                  key={mod.number}
+                  className="p-4 md:p-5 rounded-2xl bg-[#0B0F1C] border border-outline-variant/30 hover:border-secondary/50 transition-all flex flex-col md:flex-row md:items-center justify-between gap-4"
+                >
+                  <div className="flex items-start gap-4">
+                    <div className="w-9 h-9 rounded-xl bg-secondary/15 border border-secondary/40 text-secondary font-mono-data font-bold text-xs flex items-center justify-center shrink-0">
+                      0{mod.number}
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <h4 className="font-display text-sm md:text-base font-bold text-on-surface">
+                          {mod.title}
+                        </h4>
+                        {mod.isFreePreview && (
+                          <span className="px-2 py-0.5 rounded bg-[#00FF66]/15 border border-[#00FF66]/40 text-[#00FF66] font-mono-data text-[10px] font-bold uppercase">
+                            FREE PREVIEW
+                          </span>
+                        )}
+                      </div>
+                      <p className="font-body-md text-xs text-on-surface-variant mt-1">
+                        {mod.description}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-3 shrink-0 self-end md:self-center font-mono-data text-xs">
+                    <span className="text-on-surface-variant flex items-center gap-1">
+                      <span className="material-symbols-outlined text-sm">schedule</span>
+                      {mod.duration}
+                    </span>
+                    <button
+                      onClick={() => setActivePage ? setActivePage('program-videos') : navigate('/videos')}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                        mod.isFreePreview
+                          ? 'bg-secondary text-black hover:bg-secondary-container'
+                          : 'bg-surface-variant/40 text-on-surface-variant hover:text-on-surface'
+                      }`}
+                    >
+                      {mod.isFreePreview ? 'PLAY LESSON' : 'UNLOCK'}
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* 2. Learning Outcomes */}
+        {activeTab === 'outcomes' && (
+          <div className="space-y-4">
+            <h3 className="font-display text-xl font-bold uppercase text-on-surface">
+              Core Capabilities You Will Possess
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {course.learningOutcomes.map((outcome, idx) => (
+                <div
+                  key={idx}
+                  className="p-5 rounded-2xl bg-[#0B0F1C] border border-outline-variant/30 flex items-start gap-3"
+                >
+                  <span className="material-symbols-outlined text-secondary text-xl shrink-0 mt-0.5">
+                    verified
+                  </span>
+                  <p className="font-body-md text-sm text-on-surface leading-relaxed">
+                    {outcome}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* 3. Instructor Profile */}
+        {activeTab === 'instructor' && (
+          <div className="p-6 md:p-8 rounded-2xl bg-[#0B0F1C] border border-outline-variant/30 space-y-6">
+            <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6 text-center sm:text-left">
+              <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-secondary/30 to-primary/30 border-2 border-secondary flex items-center justify-center text-secondary font-display text-3xl font-black shadow-[0_0_25px_rgba(255,184,0,0.3)]">
+                {course.instructor.name.charAt(0)}
+              </div>
+              <div className="space-y-2">
+                <span className="px-3 py-1 rounded-full bg-secondary/15 border border-secondary/40 text-secondary font-mono-data text-xs font-bold uppercase">
+                  MASTER FACULTY
+                </span>
+                <h3 className="font-display text-2xl font-bold text-on-surface">
+                  {course.instructor.name}
+                </h3>
+                <p className="font-mono-data text-xs text-secondary">
+                  {course.instructor.title}
+                </p>
+                <p className="font-body-md text-sm text-on-surface-variant max-w-2xl leading-relaxed">
+                  {course.instructor.bio}
+                </p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-6 border-t border-outline-variant/30 font-mono-data text-xs">
+              <div className="p-4 rounded-xl bg-[#070A12] border border-outline-variant/20">
+                <span className="text-on-surface-variant block">Credentials:</span>
+                <span className="text-on-surface font-bold mt-1 block">{course.instructor.credentials}</span>
+              </div>
+              <div className="p-4 rounded-xl bg-[#070A12] border border-outline-variant/20">
+                <span className="text-on-surface-variant block">Total Alumni Coached:</span>
+                <span className="text-secondary font-bold text-lg mt-1 block">{course.instructor.studentCount.toLocaleString()}+</span>
+              </div>
+              <div className="p-4 rounded-xl bg-[#070A12] border border-outline-variant/20">
+                <span className="text-on-surface-variant block">Student Rating:</span>
+                <span className="text-[#FFB800] font-bold text-base mt-1 block">★ 4.98 / 5.0</span>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* 4. Student Reviews (Database Driven Live Synced) */}
+        {activeTab === 'reviews' && (
+          <div className="space-y-6">
+            <div className="p-6 rounded-2xl bg-[#0B0F1C] border border-outline-variant/30 flex flex-col md:flex-row justify-between items-center gap-6">
+              <div className="text-center md:text-left">
+                <span className="font-display text-4xl md:text-5xl font-black text-secondary">
+                  {displayRating}
+                </span>
+                <div className="flex justify-center md:justify-start gap-1 text-[#FFB800] text-xl mt-1">
+                  {'★★★★★'.split('').map((s, i) => (
+                    <span key={i}>{s}</span>
+                  ))}
+                </div>
+                <p className="font-mono-data text-xs text-on-surface-variant mt-1">
+                  Based on {displayReviewCount} Verified Database Reviews
+                </p>
+              </div>
+
+              <div className="flex gap-3 flex-wrap justify-center">
+                <button
+                  onClick={() => setReviewModalOpen(true)}
+                  className="px-5 py-3 rounded-xl bg-secondary/15 border border-secondary text-secondary font-mono-data text-xs font-bold hover:bg-secondary hover:text-black transition-all cursor-pointer flex items-center gap-1.5 shadow-[0_0_15px_rgba(255,184,0,0.2)]"
+                >
+                  <span className="material-symbols-outlined text-sm">rate_review</span>
+                  <span>WRITE A REVIEW</span>
+                </button>
+                <button
+                  onClick={() => setSlipModalOpen(true)}
+                  className="px-6 py-3 rounded-xl bg-secondary text-black font-mono-data text-xs font-bold hover:bg-secondary-container transition-all cursor-pointer shadow-[0_0_15px_rgba(255,184,0,0.3)]"
+                >
+                  JOIN THIS COHORT
+                </button>
+              </div>
+            </div>
+
+            {/* Live Reviews Grid */}
+            {loadingReviews ? (
+              <div className="p-12 text-center text-on-surface-variant font-mono-data text-sm bg-[#0B0F1C] rounded-2xl border border-outline-variant/30 flex items-center justify-center gap-2">
+                <span className="material-symbols-outlined animate-spin text-secondary">sync</span>
+                <span>Connecting to UWE Database &amp; Loading Reviews...</span>
+              </div>
+            ) : reviews.length === 0 ? (
+              <div className="p-12 text-center text-on-surface-variant font-mono-data text-sm bg-[#0B0F1C] rounded-2xl border border-outline-variant/30 space-y-3">
+                <p>No student transmissions logged yet for this program.</p>
+                <button
+                  onClick={() => setReviewModalOpen(true)}
+                  className="px-4 py-2 rounded bg-secondary/20 text-secondary font-bold text-xs border border-secondary/40 cursor-pointer"
+                >
+                  Be the First Operative to Write a Review
+                </button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {reviews.map((rev) => (
+                  <div
+                    key={rev.id}
+                    className="p-5 rounded-2xl bg-[#0B0F1C] border border-outline-variant/30 space-y-3 hover:border-secondary/40 transition-all"
+                  >
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <h4 className="font-display text-sm font-bold text-on-surface">{rev.studentName}</h4>
+                        <p className="font-mono-data text-[10px] text-secondary">{rev.studentRole || 'Verified Operative'}</p>
+                      </div>
+                      <div className="text-[#FFB800] text-xs font-mono-data tracking-widest">
+                        {'★'.repeat(rev.rating || 5)}
+                        {'☆'.repeat(Math.max(0, 5 - (rev.rating || 5)))}
+                      </div>
+                    </div>
+                    {rev.title && (
+                      <h5 className="font-display text-xs font-bold text-on-surface">
+                        {rev.title}
+                      </h5>
+                    )}
+                    <p className="font-body-md text-xs text-on-surface-variant leading-relaxed">
+                      "{rev.comment}"
+                    </p>
+                    <p className="font-mono-data text-[9px] text-on-surface-variant pt-2 border-t border-outline-variant/20 flex justify-between">
+                      <span>✓ {rev.isVerified ? 'Verified Operative' : 'Database Record'}</span>
+                      <span>{new Date(rev.createdAt).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}</span>
+                    </p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* ── Bank Slip Upload Modal ── */}
+      <BankSlipUploadModal
+        isOpen={slipModalOpen}
+        onClose={() => setSlipModalOpen(false)}
+        defaultCourseSlug={course.slug}
+      />
+
+      {/* ── Interactive Course Review Modal ── */}
+      <AnimatePresence>
+        {reviewModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="bg-[#0D121F] border border-secondary/50 rounded-2xl p-6 sm:p-8 max-w-lg w-full shadow-2xl relative"
+            >
+              <div className="flex justify-between items-center mb-6">
+                <div>
+                  <h3 className="font-display text-lg font-bold text-on-surface">
+                    Submit Course Transmission
+                  </h3>
+                  <p className="font-mono-data text-xs text-secondary">
+                    Reviewing: {course.title}
+                  </p>
+                </div>
+                <button
+                  onClick={() => setReviewModalOpen(false)}
+                  className="text-on-surface-variant hover:text-on-surface text-xl cursor-pointer"
+                >
+                  ✕
+                </button>
+              </div>
+
+              {reviewSuccessMessage ? (
+                <div className="p-4 rounded-xl bg-[#00FF66]/20 border border-[#00FF66] text-[#00FF66] font-mono-data text-xs text-center">
+                  ✓ {reviewSuccessMessage}
+                </div>
+              ) : (
+                <form onSubmit={handleReviewSubmit} className="space-y-4 font-mono-data text-xs">
+                  <div>
+                    <label className="text-on-surface-variant block mb-1">Your Full Name *</label>
+                    <input
+                      type="text"
+                      required
+                      value={studentName}
+                      onChange={(e) => setStudentName(e.target.value)}
+                      placeholder="e.g. Kasun Wickramasinghe"
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-[#070A12] border border-outline-variant/40 text-on-surface focus:border-secondary outline-none"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-on-surface-variant block mb-1">Your Title / Role / Cohort</label>
+                    <input
+                      type="text"
+                      value={studentRole}
+                      onChange={(e) => setStudentRole(e.target.value)}
+                      placeholder="e.g. Founder & CEO / BMB Cohort 12"
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-[#070A12] border border-outline-variant/40 text-on-surface focus:border-secondary outline-none"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-on-surface-variant block mb-1">Star Rating *</label>
+                    <div className="flex gap-2 text-2xl cursor-pointer">
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <button
+                          type="button"
+                          key={star}
+                          onClick={() => setReviewRating(star)}
+                          className={star <= reviewRating ? 'text-[#FFB800]' : 'text-gray-600'}
+                        >
+                          ★
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="text-on-surface-variant block mb-1">Headline (Optional)</label>
+                    <input
+                      type="text"
+                      value={reviewTitle}
+                      onChange={(e) => setReviewTitle(e.target.value)}
+                      placeholder="e.g. Game-changing mindset shift"
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-[#070A12] border border-outline-variant/40 text-on-surface focus:border-secondary outline-none"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-on-surface-variant block mb-1">Your Review &amp; Experience *</label>
+                    <textarea
+                      required
+                      rows={4}
+                      value={reviewComment}
+                      onChange={(e) => setReviewComment(e.target.value)}
+                      placeholder="Detail the tactical breakthroughs and value you gained from this program..."
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-[#070A12] border border-outline-variant/40 text-on-surface focus:border-secondary outline-none resize-none"
+                    />
+                  </div>
+
+                  <div className="flex justify-end gap-3 pt-3">
+                    <button
+                      type="button"
+                      onClick={() => setReviewModalOpen(false)}
+                      className="px-4 py-2 rounded-xl bg-surface-variant/30 text-on-surface hover:bg-surface-variant"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={isSubmittingReview}
+                      className="px-5 py-2 rounded-xl bg-secondary text-black font-bold hover:bg-secondary-container flex items-center gap-1.5"
+                    >
+                      {isSubmittingReview ? (
+                        <>
+                          <span className="material-symbols-outlined text-sm animate-spin">sync</span>
+                          <span>SAVING...</span>
+                        </>
+                      ) : (
+                        <span>TRANSMIT REVIEW</span>
+                      )}
+                    </button>
+                  </div>
+                </form>
+              )}
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+};

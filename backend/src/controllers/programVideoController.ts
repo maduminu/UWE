@@ -53,6 +53,49 @@ export const createSeries = async (req: Request, res: Response): Promise<void> =
   }
 };
 
+// @desc    Update program video series (CMS Admin)
+// @route   PUT /api/program-videos/series/:id
+export const updateSeries = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const id = String(req.params.id);
+    const { courseSlug, seriesTitle, category, description, thumbnailUrl } = req.body;
+
+    const updatedSeries = await prisma.programVideoSeries.update({
+      where: { id },
+      data: {
+        ...(courseSlug && { courseSlug: courseSlug.toLowerCase() }),
+        ...(seriesTitle && { seriesTitle: seriesTitle.trim() }),
+        ...(category && { category }),
+        ...(description && { description }),
+        ...(thumbnailUrl && { thumbnailUrl }),
+      },
+      include: {
+        modules: {
+          orderBy: { episodeNumber: 'asc' },
+        },
+      },
+    });
+
+    res.status(200).json({ success: true, data: updatedSeries });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// @desc    Delete program video series (CMS Admin)
+// @route   DELETE /api/program-videos/series/:id
+export const deleteSeries = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const id = String(req.params.id);
+    // Delete modules first
+    await prisma.programVideoModule.deleteMany({ where: { seriesId: id } });
+    await prisma.programVideoSeries.delete({ where: { id } });
+    res.status(200).json({ success: true, message: 'Video series deleted successfully' });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 // @desc    Create new video module episode inside a series (CMS Admin)
 // @route   POST /api/program-videos/modules
 export const createModule = async (req: Request, res: Response): Promise<void> => {

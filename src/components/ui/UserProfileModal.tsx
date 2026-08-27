@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { api } from '../../services/api';
+import { safeGetStorage, safeSetStorage } from '../../utils/storage';
 
 export interface AuthUser {
   id: string;
@@ -16,6 +17,8 @@ interface UserProfileModalProps {
   onClose: () => void;
   onLogout: () => void;
   onNavigateToVideos?: () => void;
+  onNavigateToDashboard?: () => void;
+  onUserUpdate?: (updatedUser: AuthUser) => void;
 }
 
 export const UserProfileModal: React.FC<UserProfileModalProps> = ({
@@ -24,6 +27,8 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
   onClose,
   onLogout,
   onNavigateToVideos,
+  onNavigateToDashboard,
+  onUserUpdate,
 }) => {
   const [editingPhone, setEditingPhone] = useState(false);
   const [phoneValue, setPhoneValue] = useState('');
@@ -52,14 +57,12 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
     setSaveMessage(null);
     try {
       await api.updateUser(user.id, { phone: phoneValue.trim() });
-      // Update localStorage session with new phone
-      const stored = localStorage.getItem('uwe_user_account');
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        parsed.phone = phoneValue.trim();
-        localStorage.setItem('uwe_user_account', JSON.stringify(parsed));
-      }
-      user.phone = phoneValue.trim();
+      // Update localStorage session with new phone safely
+      const stored = safeGetStorage<any>('uwe_user_account', user);
+      const updatedUser = { ...stored, phone: phoneValue.trim() };
+      safeSetStorage('uwe_user_account', updatedUser);
+
+      if (onUserUpdate) onUserUpdate(updatedUser);
       setEditingPhone(false);
       setSaveMessage('✅ Mobile number updated!');
       setTimeout(() => setSaveMessage(null), 3000);
@@ -208,13 +211,26 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
 
           {/* Action Buttons */}
           <div className="pt-2 flex flex-col gap-2.5">
+            {onNavigateToDashboard && (
+              <button
+                onClick={() => {
+                  onClose();
+                  onNavigateToDashboard();
+                }}
+                className="btn-elite py-3 rounded-xl font-label-caps text-xs uppercase font-black tracking-wider cursor-pointer shadow-[0_0_20px_rgba(255,184,0,0.3)] flex items-center justify-center gap-2"
+              >
+                <span className="material-symbols-outlined text-base">school</span>
+                <span>OPEN MY STUDENT PORTAL &amp; CERTIFICATES</span>
+              </button>
+            )}
+
             {onNavigateToVideos && (
               <button
                 onClick={() => {
                   onClose();
                   onNavigateToVideos();
                 }}
-                className="btn-elite py-3 rounded-xl font-label-caps text-xs uppercase font-black tracking-wider cursor-pointer shadow-[0_0_20px_rgba(255,184,0,0.3)] flex items-center justify-center gap-2"
+                className="w-full py-2.5 rounded-xl bg-secondary/15 border border-secondary/50 text-secondary font-mono-data text-xs font-bold uppercase hover:bg-secondary hover:text-black transition-all flex items-center justify-center gap-2 cursor-pointer"
               >
                 <span className="material-symbols-outlined text-base">play_circle</span>
                 <span>ENTER GATED VIDEO VAULT</span>

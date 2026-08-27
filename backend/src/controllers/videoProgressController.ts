@@ -5,9 +5,17 @@ import { prisma } from '../config/db';
 // @route   GET /api/progress/:userId
 export const getUserProgress = async (req: Request, res: Response): Promise<void> => {
   try {
-    const userId = String(req.params.userId);
+    const callerId = req.user?.id;
+    const isAdmin = req.user?.type === 'admin';
+    const targetUserId = isAdmin ? String(req.params.userId) : callerId;
+
+    if (!targetUserId) {
+      res.status(400).json({ success: false, message: 'User ID is required' });
+      return;
+    }
+
     const progressList = await prisma.videoProgress.findMany({
-      where: { userId },
+      where: { userId: targetUserId },
     });
     res.status(200).json({ success: true, count: progressList.length, data: progressList });
   } catch (error: any) {
@@ -19,17 +27,20 @@ export const getUserProgress = async (req: Request, res: Response): Promise<void
 // @route   POST /api/progress
 export const saveProgress = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { userId, moduleId, seriesId, isCompleted, progressPercent } = req.body;
+    const { moduleId, seriesId, isCompleted, progressPercent } = req.body;
+    const callerId = req.user?.id;
+    const isAdmin = req.user?.type === 'admin';
+    const targetUserId = isAdmin && req.body.userId ? String(req.body.userId) : callerId;
 
-    if (!userId || !moduleId) {
-      res.status(400).json({ success: false, message: 'userId and moduleId are required' });
+    if (!targetUserId || !moduleId) {
+      res.status(400).json({ success: false, message: 'Authenticated user and moduleId are required' });
       return;
     }
 
     const record = await prisma.videoProgress.upsert({
       where: {
         userId_moduleId: {
-          userId,
+          userId: targetUserId,
           moduleId,
         },
       },
@@ -40,7 +51,7 @@ export const saveProgress = async (req: Request, res: Response): Promise<void> =
         ...(seriesId && { seriesId }),
       },
       create: {
-        userId,
+        userId: targetUserId,
         moduleId,
         seriesId: seriesId || null,
         isCompleted: typeof isCompleted === 'boolean' ? isCompleted : true,

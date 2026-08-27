@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { PageId } from '../layout/Navbar';
+import { PageSEO } from '../ui/PageSEO';
 import { TiltCard } from '../ui/TiltCard';
 import { BankSlipUploadModal } from '../ui/BankSlipUploadModal';
 import { parsePrice, formatPrice } from '../../utils/priceFormatter';
@@ -8,10 +9,12 @@ import { api } from '../../services/api';
 
 interface ProductPageProps {
   setActivePage: (page: PageId) => void;
+  onSelectCourse?: (courseSlug: string) => void;
 }
 
-export const ProductPage: React.FC<ProductPageProps> = ({ setActivePage }) => {
+export const ProductPage: React.FC<ProductPageProps> = ({ setActivePage, onSelectCourse }) => {
   const [filter, setFilter] = useState<'all' | 'bmb' | 'leadership' | 'ignit'>('all');
+  const [searchQuery, setSearchQuery] = useState('');
   const [slipModalOpen, setSlipModalOpen] = useState(false);
   const [selectedCourseForSlip, setSelectedCourseForSlip] = useState('bmb');
 
@@ -19,21 +22,23 @@ export const ProductPage: React.FC<ProductPageProps> = ({ setActivePage }) => {
     {
       id: 'bmb',
       category: 'bmb',
-      title: 'Blind Mind Breaker (BMB)',
+      title: 'Beyond Mind Boundaries (BMB)',
       subtitle: 'Subconscious Mind Optimization Protocol',
       duration: '5 Days Intensive',
-      price: 'RS. 12,000',
+      price: 'RS. 15,000',
       period: 'per operative',
       icon: 'psychology',
       color: 'tertiary',
-      borderColor: 'border-tertiary/50',
+      borderColor: 'border-secondary/50',
+      rating: 4.98,
+      instructor: 'Commander Janith Perera',
       description: 'Deconstruct subconscious mental barriers, eliminate fear responses, and install peak-performance neural patterns.',
       features: [
         'Subconscious Paradigm Rewiring',
         'Fear & Anxiety Elimination',
         'Peak State Anchoring & Triggers',
         'Daily Neuro-Coaching Protocols',
-        '1-on-1 Cognitive Assessment',
+        'Official Verified Certificate Included',
       ],
       badge: 'MIND DIVISION',
       seatsLeft: 6,
@@ -43,62 +48,112 @@ export const ProductPage: React.FC<ProductPageProps> = ({ setActivePage }) => {
       category: 'leadership',
       title: 'UWE Leadership Academy',
       subtitle: 'Command & Control Training',
-      duration: '8-Week Tactical Program',
-      price: 'RS. 100,000',
+      duration: '4-Week Tactical Program',
+      price: 'RS. 25,000',
       period: 'per officer',
       icon: 'military_tech',
       color: 'error-container',
-      borderColor: 'border-error-container/50',
+      borderColor: 'border-[#00D2FF]/50',
+      rating: 4.95,
+      instructor: 'Suranjith Godagama',
       description: 'Master tactical decision-making under high stakes, command authority with integrity, and build high-cohesion units.',
       features: [
         'Tactical Command & Control Frameworks',
         'High-Stakes Crisis Management',
         'Unit Cohesion & Dynamic Leadership',
         'Executive Presence & Voice Command',
-        'Live Simulated Combat & Simulations',
+        'Live Boardroom Simulations',
       ],
       badge: 'COMMAND DIVISION',
       seatsLeft: 4,
+    },
+    {
+      id: 'ignit',
+      category: 'ignit',
+      title: 'UWE IGNIT Enterprise Incubator',
+      subtitle: 'Venture Creation & AI Systems',
+      duration: '6-Week Accelerator',
+      price: 'RS. 35,000',
+      period: 'per founder',
+      icon: 'rocket_launch',
+      color: 'tertiary',
+      borderColor: 'border-[#00FF66]/50',
+      rating: 4.92,
+      instructor: 'Dilshan Madusanka',
+      description: 'Zero-to-one venture creation blueprint equipping founders with AI automation pipelines, digital systems, and investor pitch models.',
+      features: [
+        'Venture Validation in 30 Days',
+        'AI Automation & No-Code Pipelines',
+        'Unit Economics & Customer Acquisition',
+        'Venture Pitch Deck & Investor Prep',
+        'Incubator Mentorship Access',
+      ],
+      badge: 'ENTERPRISE DIVISION',
+      seatsLeft: 8,
     },
   ];
 
   const [programs, setPrograms] = useState(defaultPrograms);
 
-  // Fetch live prices & seat counts from Supabase via API
+  // Fetch live courses from Supabase via API
   useEffect(() => {
     const fetchLivePrices = async () => {
       try {
         const json = await api.getCourses();
         if (json.data && json.data.length > 0) {
-          setPrograms((prev) =>
-            prev.map((p) => {
-              const dbCourse = json.data.find((c: any) => c.slug === p.id);
-              if (dbCourse) {
-                const numericPrice = parsePrice(dbCourse.price);
-                return {
-                  ...p,
-                  price: formatPrice(numericPrice, dbCourse.currency || 'RS.'),
-                  duration: dbCourse.duration || p.duration,
-                  seatsLeft: dbCourse.batches?.[0]?.availableSeats ?? p.seatsLeft,
-                };
-              }
-              return p;
-            })
-          );
+          const mapped = json.data.map((c: any) => {
+            const numericPrice = parsePrice(c.price);
+            const defaultMatch = defaultPrograms.find((p) => p.id === c.slug);
+            const category = c.category?.toLowerCase() || (c.slug === 'leadership' ? 'leadership' : c.slug === 'ignit' ? 'ignit' : 'bmb');
+            return {
+              id: c.slug,
+              category,
+              title: c.title,
+              subtitle: c.subtitle || defaultMatch?.subtitle || 'Tactical Directive',
+              duration: c.duration || defaultMatch?.duration || '5 Days Intensive',
+              price: formatPrice(numericPrice, c.currency || 'RS.'),
+              period: 'per operative',
+              icon: c.slug === 'leadership' ? 'military_tech' : c.slug === 'ignit' ? 'rocket_launch' : 'psychology',
+              color: c.slug === 'leadership' ? 'error-container' : 'tertiary',
+              borderColor: c.slug === 'leadership' ? 'border-[#00D2FF]/50' : c.slug === 'ignit' ? 'border-[#00FF66]/50' : 'border-secondary/50',
+              rating: defaultMatch?.rating || 4.95,
+              instructor: defaultMatch?.instructor || 'Commander Janith Perera',
+              description: c.description || defaultMatch?.description || 'Tactical mind and command protocol.',
+              features: defaultMatch?.features || [
+                'Subconscious Paradigm Rewiring',
+                'Tactical Command & Control',
+                'Official Verified Certificate Included',
+              ],
+              badge: c.badge || defaultMatch?.badge || 'MIND DIVISION',
+              seatsLeft: c.batches?.[0]?.availableSeats ?? defaultMatch?.seatsLeft ?? 20,
+            };
+          });
+          setPrograms(mapped);
         }
       } catch {
-        // API offline — use hardcoded defaults
+        // API offline
       }
     };
     fetchLivePrices();
   }, []);
 
-  const filteredPrograms = filter === 'all'
-    ? programs
-    : programs.filter((p) => p.category === filter);
+  const filteredPrograms = programs.filter((p) => {
+    const matchesCategory = filter === 'all' || p.category === filter;
+    const matchesSearch =
+      searchQuery.trim() === '' ||
+      p.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      p.subtitle.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      p.description.toLowerCase().includes(searchQuery.toLowerCase());
+    return matchesCategory && matchesSearch;
+  });
 
   return (
     <div className="pt-xl md:pt-[120px] pb-xl flex-grow bg-transparent relative">
+      <PageSEO
+        title="Training Programs"
+        description="Explore UWE transformational programs: Blind Mind Breaker (BMB), Leadership Academy, and IGNIT Startup Accelerator."
+        canonical="/programs"
+      />
       {/* Header & Filter Tabs */}
       <section className="max-w-container-max mx-auto px-4 md:px-lg py-lg text-center">
         <motion.h1
@@ -107,18 +162,42 @@ export const ProductPage: React.FC<ProductPageProps> = ({ setActivePage }) => {
           transition={{ duration: 0.5 }}
           className="font-display-xl text-3xl sm:text-4xl md:text-display-xl text-on-surface mb-sm font-black"
         >
-          Elite Training <span className="text-secondary text-glow-gold">Programs</span>
+          Elite Training <span className="text-secondary text-glow-gold">Directives</span>
         </motion.h1>
         <motion.p
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.5, delay: 0.1 }}
-          className="font-body-lg text-sm sm:text-base md:text-body-lg text-on-surface-variant max-w-2xl mx-auto mb-lg"
+          className="font-body-lg text-sm sm:text-base md:text-body-lg text-on-surface-variant max-w-2xl mx-auto mb-6"
         >
-          Battle-tested protocols designed to optimize mind, command leadership, and launch dominant business empires.
+          Battle-tested protocols designed to optimize mind, command leadership, and launch dominant enterprise ventures.
         </motion.p>
 
-        {/* Interactive Filter Tabs with Framer Motion layout transition */}
+        {/* Search Bar & Instant Autocomplete */}
+        <div className="max-w-md mx-auto mb-6">
+          <div className="relative">
+            <span className="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-secondary text-lg">
+              search
+            </span>
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search syllabus, directives, keywords..."
+              className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-[#0F1422]/90 border border-outline-variant/40 font-mono-data text-xs text-on-surface placeholder:text-on-surface-variant focus:border-secondary focus:shadow-[0_0_15px_rgba(255,184,0,0.2)] outline-none"
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery('')}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant hover:text-on-surface text-xs font-mono-data"
+              >
+                CLEAR
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Interactive Filter Tabs */}
         <div className="flex justify-center gap-2 sm:gap-xs flex-wrap mb-xl">
           {[
             { id: 'all', label: 'All Divisions' },
@@ -131,10 +210,11 @@ export const ProductPage: React.FC<ProductPageProps> = ({ setActivePage }) => {
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={() => setFilter(tab.id as any)}
-              className={`relative min-h-[44px] px-4 sm:px-md py-2 rounded font-label-caps text-xs sm:text-label-caps uppercase transition-all cursor-pointer ${filter === tab.id
-                ? 'bg-secondary text-surface-container-lowest font-bold shadow-[0_0_20px_rgba(255,184,0,0.5)]'
-                : 'glass-panel text-on-surface-variant hover:text-on-surface'
-                }`}
+              className={`relative min-h-[44px] px-4 sm:px-md py-2 rounded-xl font-label-caps text-xs uppercase transition-all cursor-pointer ${
+                filter === tab.id
+                  ? 'bg-secondary text-surface-container-lowest font-bold shadow-[0_0_20px_rgba(255,184,0,0.5)]'
+                  : 'glass-panel text-on-surface-variant hover:text-on-surface'
+              }`}
             >
               {tab.label}
             </motion.button>
@@ -142,7 +222,7 @@ export const ProductPage: React.FC<ProductPageProps> = ({ setActivePage }) => {
         </div>
       </section>
 
-      {/* Animated Program Cards Grid with Layout Animations matching Projects.jsx */}
+      {/* Animated Program Cards Grid */}
       <section className="max-w-container-max mx-auto px-4 md:px-lg mb-xl">
         <motion.div layout className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-lg">
           <AnimatePresence mode="popLayout">
@@ -158,16 +238,21 @@ export const ProductPage: React.FC<ProductPageProps> = ({ setActivePage }) => {
                 className="h-full"
               >
                 <TiltCard
-                  className={`glass-card rounded-xl p-6 md:p-lg flex flex-col justify-between border ${prog.borderColor} hover:shadow-[0_10px_40px_rgba(0,0,0,0.6)] transition-colors duration-300 h-full`}
+                  className={`glass-card rounded-2xl p-6 md:p-lg flex flex-col justify-between border ${prog.borderColor} hover:shadow-[0_10px_40px_rgba(0,0,0,0.6)] transition-colors duration-300 h-full`}
                 >
                   <div>
                     <div className="flex justify-between items-center mb-md">
                       <span className="material-symbols-outlined text-4xl text-secondary">
                         {prog.icon}
                       </span>
-                      <span className="font-label-caps text-xs px-2.5 py-1 rounded bg-surface-variant text-on-surface-variant border border-outline-variant/30">
-                        {prog.badge}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono-data text-xs text-[#FFB800] font-bold">
+                          ★ {prog.rating}
+                        </span>
+                        <span className="font-label-caps text-xs px-2.5 py-1 rounded bg-surface-variant text-on-surface-variant border border-outline-variant/30">
+                          {prog.badge}
+                        </span>
+                      </div>
                     </div>
 
                     <h3 className="font-headline-md text-headline-md text-on-surface mb-xs font-bold">
@@ -175,6 +260,10 @@ export const ProductPage: React.FC<ProductPageProps> = ({ setActivePage }) => {
                     </h3>
                     <p className="font-mono-data text-xs text-secondary mb-md font-semibold">
                       {prog.subtitle}
+                    </p>
+
+                    <p className="font-mono-data text-[11px] text-on-surface-variant mb-2">
+                      Lead Faculty: <strong className="text-on-surface">{prog.instructor}</strong>
                     </p>
 
                     <div className="flex items-baseline gap-xs mb-md">
@@ -192,7 +281,7 @@ export const ProductPage: React.FC<ProductPageProps> = ({ setActivePage }) => {
 
                     <div className="border-t border-outline-variant/20 pt-md mb-md">
                       <span className="font-label-caps text-xs text-on-surface uppercase tracking-wider block mb-sm">
-                        CORE MODULES INCLUDED:
+                        CURRICULUM INCLUDED:
                       </span>
                       <ul className="space-y-2">
                         {prog.features.map((feat, idx) => (
@@ -206,23 +295,33 @@ export const ProductPage: React.FC<ProductPageProps> = ({ setActivePage }) => {
                   </div>
 
                   <div className="flex flex-col gap-2 mt-sm">
+                    {/* View Details / Syllabus Button */}
+                    <button
+                      onClick={() => onSelectCourse ? onSelectCourse(prog.id) : setActivePage('contact')}
+                      className="w-full py-2.5 rounded-xl bg-secondary/15 border border-secondary/60 text-secondary hover:bg-secondary hover:text-black transition-all font-mono-data text-xs font-bold uppercase flex items-center justify-center gap-1.5 cursor-pointer shadow-[0_0_15px_rgba(255,184,0,0.15)]"
+                    >
+                      <span className="material-symbols-outlined text-sm">menu_book</span>
+                      <span>VIEW SYLLABUS &amp; DETAILS</span>
+                    </button>
+
                     <motion.button
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.96 }}
                       onClick={() => setActivePage('contact')}
-                      className="btn-elite min-h-[44px] w-full py-2.5 rounded-lg font-label-caps text-xs uppercase tracking-widest cursor-pointer shadow-[0_0_15px_rgba(255,184,0,0.3)]"
+                      className="btn-elite min-h-[40px] w-full py-2 rounded-xl font-label-caps text-xs uppercase tracking-widest cursor-pointer shadow-[0_0_15px_rgba(255,184,0,0.3)]"
                     >
                       APPLY FOR ADMISSION
                     </motion.button>
+
                     <button
                       onClick={() => {
                         setSelectedCourseForSlip(prog.id);
                         setSlipModalOpen(true);
                       }}
-                      className="w-full py-2 rounded-lg bg-[#131929] border border-secondary/40 text-secondary hover:bg-secondary/20 transition-all font-mono-data text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer"
+                      className="w-full py-2 rounded-xl bg-[#131929] border border-outline-variant/40 text-on-surface-variant hover:text-on-surface hover:bg-surface-variant/40 transition-all font-mono-data text-xs flex items-center justify-center gap-1.5 cursor-pointer"
                     >
-                      <span className="material-symbols-outlined text-sm">receipt_long</span>
-                      <span>UPLOAD BANK SLIP</span>
+                      <span className="material-symbols-outlined text-sm text-secondary">receipt_long</span>
+                      <span>Upload Bank Transfer Receipt</span>
                     </button>
                   </div>
                 </TiltCard>

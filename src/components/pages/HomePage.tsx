@@ -3,6 +3,7 @@ import { motion, useSpring, useMotionValue } from 'framer-motion';
 import type { Variants } from 'framer-motion';
 import type { PageId } from '../layout/Navbar';
 import { TiltCard } from '../ui/TiltCard';
+import { PageSEO } from '../ui/PageSEO';
 import heroEmblemAsset from '../../assets/images/uwe_shield_isolated.png';
 
 interface HomePageProps {
@@ -84,6 +85,11 @@ export const HomePage: React.FC<HomePageProps> = ({ setActivePage }) => {
 
   return (
     <div className="flex-grow pt-[100px] relative">
+      <PageSEO
+        title="Home"
+        description="Unity Warriors Empire — unlock your ultimate potential through mind optimization, tactical leadership, and enterprise incubation programs in Sri Lanka."
+        canonical="/"
+      />
       {/* Framer Motion Mouse-Follow Ambient Glow (matching Home.jsx L52-65) */}
       <motion.div
         style={{

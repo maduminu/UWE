@@ -6,6 +6,8 @@ interface BankSlipUploadModalProps {
   isOpen: boolean;
   onClose: () => void;
   defaultCourseSlug?: string;
+  initialCourse?: string;
+  initialAmount?: number;
   onSuccess?: () => void;
 }
 
@@ -13,28 +15,82 @@ export const BankSlipUploadModal: React.FC<BankSlipUploadModalProps> = ({
   isOpen,
   onClose,
   defaultCourseSlug = 'bmb',
+  initialCourse,
+  initialAmount,
   onSuccess,
 }) => {
-  const [courseSlug, setCourseSlug] = useState(defaultCourseSlug);
+  const [courseSlug, setCourseSlug] = useState(initialCourse || defaultCourseSlug);
   const [studentName, setStudentName] = useState('');
   const [studentPhone, setStudentPhone] = useState('');
   const [studentEmail, setStudentEmail] = useState('');
   const [slipUrl, setSlipUrl] = useState('');
-  const [amount, setAmount] = useState('');
+  const [amount, setAmount] = useState(initialAmount ? String(initialAmount) : '');
   const [bankReference, setBankReference] = useState('');
   const [notes, setNotes] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
+  // Coupon state
+  const [couponCode, setCouponCode] = useState('');
+  const [couponDiscount, setCouponDiscount] = useState<number | null>(null);
+  const [couponMsg, setCouponMsg] = useState<string | null>(null);
+  const [validatingCoupon, setValidatingCoupon] = useState(false);
+
   if (!isOpen) return null;
+
+  const handleApplyCoupon = async () => {
+    if (!couponCode.trim()) return;
+    setValidatingCoupon(true);
+    setCouponMsg(null);
+
+    try {
+      const currentPrice = amount ? parseFloat(amount) : 15000;
+      const res = await api.validateCoupon(couponCode.trim(), courseSlug, currentPrice);
+
+      if (res.success && res.data) {
+        setCouponDiscount(res.data.discountAmount);
+        setAmount(String(res.data.finalPrice));
+        setCouponMsg(`✓ Coupon Applied: Saved Rs. ${res.data.discountAmount.toLocaleString()}`);
+      } else {
+        setCouponDiscount(null);
+        setCouponMsg(`⚠️ ${res.message || 'Invalid coupon code.'}`);
+      }
+    } catch (err: any) {
+      setCouponDiscount(null);
+      setCouponMsg('⚠️ Failed to validate coupon.');
+    } finally {
+      setValidatingCoupon(false);
+    }
+  };
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+
+    // 3MB Client-side limit (base64 encoding adds ~33%, so 3MB file → ~4MB payload, safely within Vercel's 4.5MB limit)
+    const MAX_FILE_BYTES = 3 * 1024 * 1024;
+    if (file.size > MAX_FILE_BYTES) {
+      setErrorMessage(`Receipt file is too large (${(file.size / (1024 * 1024)).toFixed(1)}MB). Maximum allowed size is 3MB. Try taking a screenshot or compressing the image.`);
+      e.target.value = '';
+      return;
+    }
+
+    // Supported MIME types check
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/jpg', 'application/pdf'];
+    if (!allowedTypes.includes(file.type) && !file.type.startsWith('image/')) {
+      setErrorMessage('Unsupported file format. Please upload a JPG, PNG, WebP image, or PDF receipt.');
+      e.target.value = '';
+      return;
+    }
+
+    setErrorMessage(null);
     const reader = new FileReader();
     reader.onload = () => {
       setSlipUrl(reader.result as string);
+    };
+    reader.onerror = () => {
+      setErrorMessage('Failed to read image file. Please try selecting a different file.');
     };
     reader.readAsDataURL(file);
   };
@@ -164,9 +220,40 @@ export const BankSlipUploadModal: React.FC<BankSlipUploadModalProps> = ({
                 </div>
               </div>
 
+              {/* Coupon / Promo Code Input */}
+              <div className="p-3 rounded-xl bg-[#101626] border border-outline-variant/30 space-y-2">
+                <label className="text-secondary font-bold block text-[11px] uppercase">
+                  Have a Promo / Coupon Code?
+                </label>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={couponCode}
+                    onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                    placeholder="e.g. EMPIRE20"
+                    className="input-field flex-1 p-2 rounded-lg bg-[#131929] border-secondary/40 text-secondary uppercase font-bold text-xs"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleApplyCoupon}
+                    disabled={validatingCoupon || !couponCode.trim()}
+                    className="px-3 py-2 rounded-lg bg-secondary/20 border border-secondary text-secondary font-bold text-xs hover:bg-secondary hover:text-black transition-all cursor-pointer disabled:opacity-50"
+                  >
+                    {validatingCoupon ? '...' : 'APPLY'}
+                  </button>
+                </div>
+                {couponMsg && (
+                  <p className={`text-[10px] ${couponDiscount ? 'text-[#00FF66]' : 'text-red-400'}`}>
+                    {couponMsg}
+                  </p>
+                )}
+              </div>
+
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-on-surface-variant block mb-1">Transfer Amount (RS.)</label>
+                  <label className="text-on-surface-variant block mb-1">
+                    Transfer Amount (RS.) {couponDiscount ? <span className="text-[#00FF66]">(Discounted)</span> : ''}
+                  </label>
                   <input
                     type="number"
                     value={amount}

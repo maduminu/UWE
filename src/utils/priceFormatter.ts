@@ -24,8 +24,8 @@ export function parsePrice(input: string | number): number {
 
   const raw = String(input).trim();
 
-  // Remove currency prefixes like "RS.", "RS", "$", spaces
-  const cleanStr = raw.replace(/^[^\d.,]+/, '').trim();
+  // Remove currency prefixes like "RS.", "RS", "LKR", "$", spaces
+  const cleanStr = raw.replace(/^(?:RS\.?|LKR|\$|[a-zA-Z\s])+/i, '').trim();
 
   // Case 1: Standard comma thousands separator + optional decimal dot e.g. "12,500.00" or "12,500"
   if (cleanStr.includes(',') && !cleanStr.includes('.')) {

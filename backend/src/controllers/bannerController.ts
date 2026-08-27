@@ -1,18 +1,27 @@
 import { Request, Response } from 'express';
 import { prisma } from '../config/db';
+import { cacheGet, cacheSet, cacheDel } from '../config/redis';
 
-// @desc    Get active announcement banner
+// @desc    Get active announcement banner (cached)
 // @route   GET /api/banners/active
 export const getActiveBanner = async (_req: Request, res: Response): Promise<void> => {
   try {
+    const cached = await cacheGet('banners:active');
+    if (cached !== null) {
+      res.status(200).json({ success: true, data: cached, cached: true });
+      return;
+    }
+
     const banner = await prisma.announcementBanner.findFirst({
       where: { isActive: true },
       orderBy: { createdAt: 'desc' },
     });
 
+    await cacheSet('banners:active', banner || null, 3600);
     res.status(200).json({ success: true, data: banner || null });
   } catch (error: any) {
-    res.status(500).json({ success: false, message: error.message });
+    console.error('[getActiveBanner]', error);
+    res.status(500).json({ success: false, message: 'Failed to retrieve active announcement.' });
   }
 };
 
@@ -23,7 +32,12 @@ export const createBanner = async (req: Request, res: Response): Promise<void> =
     const { message, badgeText, linkUrl, bannerType, isActive } = req.body;
 
     if (!message) {
-      res.status(400).json({ success: false, message: 'Message text is required for announcement banner' });
+      res.status(400).json({ success: false, message: 'Message text is required for announcement banner.' });
+      return;
+    }
+
+    if (message.trim().length > 300) {
+      res.status(400).json({ success: false, message: 'Message must be under 300 characters.' });
       return;
     }
 
@@ -36,17 +50,19 @@ export const createBanner = async (req: Request, res: Response): Promise<void> =
 
     const newBanner = await prisma.announcementBanner.create({
       data: {
-        message,
-        badgeText: badgeText || 'ALERT',
-        linkUrl,
+        message: message.trim(),
+        badgeText: (badgeText || 'ALERT').trim(),
+        linkUrl: linkUrl ? linkUrl.trim() : null,
         bannerType: bannerType || 'URGENT',
         isActive: typeof isActive === 'boolean' ? isActive : true,
       },
     });
 
+    await cacheDel('banners:active');
     res.status(201).json({ success: true, data: newBanner });
   } catch (error: any) {
-    res.status(500).json({ success: false, message: error.message });
+    console.error('[createBanner]', error);
+    res.status(500).json({ success: false, message: 'Failed to create announcement banner.' });
   }
 };
 
@@ -60,7 +76,7 @@ export const updateBanner = async (req: Request, res: Response): Promise<void> =
     // Check if banner exists
     const existing = await prisma.announcementBanner.findUnique({ where: { id } });
     if (!existing) {
-      res.status(404).json({ success: false, message: 'Announcement banner record not found' });
+      res.status(404).json({ success: false, message: 'Announcement banner record not found.' });
       return;
     }
 
@@ -75,16 +91,18 @@ export const updateBanner = async (req: Request, res: Response): Promise<void> =
     const updated = await prisma.announcementBanner.update({
       where: { id },
       data: {
-        ...(typeof message === 'string' && { message }),
-        ...(typeof badgeText === 'string' && { badgeText }),
-        ...(typeof linkUrl === 'string' && { linkUrl }),
+        ...(typeof message === 'string' && { message: message.trim() }),
+        ...(typeof badgeText === 'string' && { badgeText: badgeText.trim() }),
+        ...(typeof linkUrl === 'string' && { linkUrl: linkUrl.trim() }),
         ...(bannerType && { bannerType }),
         ...(typeof isActive === 'boolean' && { isActive }),
       },
     });
 
+    await cacheDel('banners:active');
     res.status(200).json({ success: true, data: updated });
   } catch (error: any) {
-    res.status(500).json({ success: false, message: error.message });
+    console.error('[updateBanner]', error);
+    res.status(500).json({ success: false, message: 'Failed to update announcement banner.' });
   }
 };

@@ -26,10 +26,28 @@ export const NeuralParticleField: React.FC = () => {
     let width = (canvas.width = window.innerWidth);
     let height = (canvas.height = window.innerHeight);
 
+    const colors = ['#47d6ff', '#ffba20', '#ffffff'];
+    const MAX_PARTICLES = Math.min(80, Math.floor((width * height) / 12000) + 30);
+    const particles: Particle[] = [];
+
+    for (let i = 0; i < MAX_PARTICLES; i++) {
+      particles.push({
+        x: Math.random() * width,
+        y: Math.random() * height,
+        vx: (Math.random() - 0.5) * 0.8,
+        vy: (Math.random() - 0.5) * 0.8,
+        radius: Math.random() * 2 + 1,
+        baseAlpha: Math.random() * 0.4 + 0.2,
+        targetAlpha: Math.random() * 0.5 + 0.3,
+        alphaSpeed: Math.random() * 0.01 + 0.005,
+        color: colors[Math.floor(Math.random() * colors.length)],
+      });
+    }
+
     const mouse = {
       x: -1000,
       y: -1000,
-      grabDistance: 160,
+      grabDistance: 150,
     };
 
     const handleMouseMove = (e: MouseEvent) => {
@@ -53,16 +71,19 @@ export const NeuralParticleField: React.FC = () => {
       const clickX = e.clientX;
       const clickY = e.clientY;
 
-      for (let i = 0; i < 3; i++) {
+      for (let i = 0; i < 2; i++) {
+        if (particles.length >= MAX_PARTICLES + 6) {
+          particles.shift();
+        }
         particles.push({
           x: clickX,
           y: clickY,
           vx: (Math.random() - 0.5) * 2,
           vy: (Math.random() - 0.5) * 2,
-          radius: Math.random() * 2.5 + 1,
+          radius: Math.random() * 2 + 1,
           baseAlpha: 0.8,
-          targetAlpha: 0.5,
-          alphaSpeed: 0.01,
+          targetAlpha: 0.4,
+          alphaSpeed: 0.02,
           color: colors[Math.floor(Math.random() * colors.length)],
         });
       }
@@ -81,24 +102,6 @@ export const NeuralParticleField: React.FC = () => {
     window.addEventListener('mouseleave', handleMouseLeave);
     window.addEventListener('touchend', handleMouseLeave);
     window.addEventListener('click', handleClick);
-
-    const colors = ['#47d6ff', '#ffba20', '#ffffff'];
-    const particleCount = Math.floor((width * height) / 9000) + 45;
-    const particles: Particle[] = [];
-
-    for (let i = 0; i < particleCount; i++) {
-      particles.push({
-        x: Math.random() * width,
-        y: Math.random() * height,
-        vx: (Math.random() - 0.5) * 0.9,
-        vy: (Math.random() - 0.5) * 0.9,
-        radius: Math.random() * 2.5 + 1.2,
-        baseAlpha: Math.random() * 0.4 + 0.2,
-        targetAlpha: Math.random() * 0.5 + 0.3,
-        alphaSpeed: Math.random() * 0.01 + 0.005,
-        color: colors[Math.floor(Math.random() * colors.length)],
-      });
-    }
 
     const animate = () => {
       ctx.clearRect(0, 0, width, height);
