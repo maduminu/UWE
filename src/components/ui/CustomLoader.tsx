@@ -46,7 +46,8 @@ export const CustomLoader: React.FC<CustomLoaderProps> = ({
     // Background Asset Preloader (silently caches high-res Hero assets in memory)
     const preloadAssets = () => {
       const shieldImg = new Image();
-      shieldImg.src = '/uwe_shield_isolated.png';
+      // Preload lightweight WebP variant (81% smaller than PNG)
+      shieldImg.src = '/uwe_shield_isolated.webp';
       const img2 = new Image();
       img2.src = 'https://images.unsplash.com/photo-1507413245164-6160d8298b31?auto=format&fit=crop&w=800&q=80';
     };

@@ -282,6 +282,7 @@ export const DemoPage: React.FC<DemoPageProps> = ({ setActivePage }) => {
                     poster={activeVideo.poster}
                     controls
                     autoPlay
+                    preload="none"
                     className="w-full h-full object-contain"
                   />
                 )}

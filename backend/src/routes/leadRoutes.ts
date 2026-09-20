@@ -4,11 +4,13 @@ import { authenticate } from '../middlewares/authenticate';
 import { requireAdmin } from '../middlewares/requireAdmin';
 import { requireRole } from '../middlewares/requireRole';
 import { validateBody, leadSchema } from '../middlewares/validate';
+import { idempotency } from '../middlewares/idempotency';
+import { verifyCaptcha } from '../middlewares/captcha';
 
 const router = Router();
 
-// Public lead submission (rate-limited in index.ts with Zod validation)
-router.post('/', validateBody(leadSchema), createLead);
+// Public lead submission (idempotency, CAPTCHA, and Zod validation)
+router.post('/', idempotency({ scope: 'leads' }), verifyCaptcha(), validateBody(leadSchema), createLead);
 
 // Admin-only CRM leads viewing, status updates, and management (SUPER_ADMIN, COMMANDER, RECRUITER)
 router.get('/', authenticate, requireAdmin, requireRole(['SUPER_ADMIN', 'COMMANDER', 'RECRUITER']), getAllLeads);

@@ -1,6 +1,8 @@
 import { Request, Response } from 'express';
 import { prisma } from '../config/db';
 import { generateCertificatePDF } from '../services/pdfService';
+import { queueService } from '../services/queueService';
+import { cacheGet } from '../config/redis';
 
 // @desc    Get or issue a completion certificate for a student
 // @route   POST /api/certificates/claim
@@ -143,6 +145,19 @@ export const downloadCertificatePDF = async (req: Request, res: Response): Promi
   try {
     const certId = String(req.params.certId || '').trim();
 
+    // Check if certId is a background job ID with cached artifact
+    if (certId.startsWith('job_')) {
+      const cached = await cacheGet<any>(`cert_artifact:${certId}`);
+      if (cached?.base64Pdf) {
+        const buffer = Buffer.from(cached.base64Pdf, 'base64');
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `attachment; filename="${cached.filename || 'UWE-Certificate.pdf'}"`);
+        res.setHeader('Content-Length', buffer.length);
+        res.status(200).send(buffer);
+        return;
+      }
+    }
+
     const cert = await prisma.certificate.findFirst({
       where: {
         OR: [
@@ -166,6 +181,40 @@ export const downloadCertificatePDF = async (req: Request, res: Response): Promi
   } catch (error: any) {
     console.error('[downloadCertificatePDF]', error);
     res.status(500).json({ success: false, message: 'Failed to generate certificate PDF.' });
+  }
+};
+
+// @desc    Asynchronously enqueue PDF certificate generation via background job queue
+// @route   POST /api/certificates/generate-async
+export const enqueueCertificatePDF = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { studentName, courseSlug, courseTitle, certificateNo, gradeScore, signatureBy } = req.body;
+
+    if (!studentName || !courseTitle) {
+      res.status(400).json({ success: false, message: 'studentName and courseTitle are required.' });
+      return;
+    }
+
+    const certNo = certificateNo || `UWE-CERT-${Date.now().toString(36).toUpperCase()}`;
+
+    const job = await queueService.enqueueJob('GENERATE_CERTIFICATE', {
+      studentName,
+      courseSlug: courseSlug || 'bmb',
+      courseTitle,
+      certificateNo: certNo,
+      gradeScore: gradeScore || 'HONORS (DISTINCTION)',
+      signatureBy: signatureBy || 'COMMAND COUNCIL',
+    });
+
+    res.status(202).json({
+      success: true,
+      message: 'Certificate generation accepted for background execution',
+      jobId: job.id,
+      status: job.status,
+      checkUrl: `/api/background-jobs/${job.id}`,
+    });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: `Failed to enqueue certificate: ${error.message}` });
   }
 };
 

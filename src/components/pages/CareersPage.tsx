@@ -3,6 +3,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import type { PageId } from '../layout/Navbar';
 import { PageSEO } from '../ui/PageSEO';
 import { api } from '../../services/api';
+import { authService } from '../../services/auth';
+import { safeGetStorage } from '../../utils/storage';
 
 interface CareersPageProps {
   setActivePage?: (page: PageId) => void;
@@ -22,6 +24,7 @@ interface JobVacancy {
 }
 
 export const CareersPage: React.FC<CareersPageProps> = () => {
+  const loggedInUser = authService.getStudentUser() || safeGetStorage<any>('uwe_user_account', null);
   const [vacancies, setVacancies] = useState<JobVacancy[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedDept, setSelectedDept] = useState<string>('all');
@@ -31,9 +34,9 @@ export const CareersPage: React.FC<CareersPageProps> = () => {
   const [successMessage, setSuccessMessage] = useState(false);
 
   const [applicant, setApplicant] = useState({
-    name: '',
-    phone: '',
-    email: '',
+    name: loggedInUser?.name || '',
+    phone: loggedInUser?.phone || '',
+    email: loggedInUser?.email || '',
     experience: '',
   });
 
@@ -64,10 +67,19 @@ export const CareersPage: React.FC<CareersPageProps> = () => {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const handleOpenApply = (job: JobVacancy) => {
+    const activeUser = authService.getStudentUser() || safeGetStorage<any>('uwe_user_account', null);
     setSelectedJob(job);
     setApplyModalOpen(true);
     setSuccessMessage(false);
     setErrorMessage(null);
+    if (activeUser) {
+      setApplicant((prev) => ({
+        ...prev,
+        name: prev.name || activeUser.name || '',
+        phone: prev.phone || activeUser.phone || '',
+        email: prev.email || activeUser.email || '',
+      }));
+    }
   };
 
   const handleApplySubmit = async (e: React.FormEvent) => {

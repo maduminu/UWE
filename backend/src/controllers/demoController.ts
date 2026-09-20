@@ -1,6 +1,8 @@
 import { Request, Response } from 'express';
 import { prisma } from '../config/db';
 import { cacheGet, cacheSet, cacheDelPattern } from '../config/redis';
+import { logger } from '../utils/logger';
+import { sendError, ErrorCode } from '../utils/apiResponse';
 
 // @desc    Get all demo video reels (cached)
 // @route   GET /api/demos
@@ -24,7 +26,8 @@ export const getAllDemos = async (req: Request, res: Response): Promise<void> =>
     await cacheSet(cacheKey, payload, 3600); // 1 hour TTL
     res.status(200).json(payload);
   } catch (error: any) {
-    res.status(500).json({ success: false, message: error.message });
+    logger.error(`[getAllDemos] ${error.message}`, 'DEMOS');
+    sendError(res, 500, ErrorCode.INTERNAL_SERVER_ERROR, 'Failed to retrieve demo videos.', req);
   }
 };
 
@@ -50,7 +53,8 @@ export const createDemo = async (req: Request, res: Response): Promise<void> => 
     await cacheDelPattern('demos:');
     res.status(201).json({ success: true, data: newDemo });
   } catch (error: any) {
-    res.status(500).json({ success: false, message: error.message });
+    logger.error(`[createDemo] ${error.message}`, 'DEMOS');
+    sendError(res, 500, ErrorCode.INTERNAL_SERVER_ERROR, 'Failed to create demo video.', req);
   }
 };
 
@@ -78,7 +82,8 @@ export const updateDemo = async (req: Request, res: Response): Promise<void> => 
     await cacheDelPattern('demos:');
     res.status(200).json({ success: true, data: updated });
   } catch (error: any) {
-    res.status(500).json({ success: false, message: error.message });
+    logger.error(`[updateDemo] ${error.message}`, 'DEMOS');
+    sendError(res, 500, ErrorCode.INTERNAL_SERVER_ERROR, 'Failed to update demo video.', req);
   }
 };
 
@@ -92,8 +97,7 @@ export const deleteDemo = async (req: Request, res: Response): Promise<void> => 
     await cacheDelPattern('demos:');
     res.status(200).json({ success: true, message: 'Demo video deleted successfully' });
   } catch (error: any) {
-    res.status(500).json({ success: false, message: error.message });
+    logger.error(`[deleteDemo] ${error.message}`, 'DEMOS');
+    sendError(res, 500, ErrorCode.INTERNAL_SERVER_ERROR, 'Failed to delete demo video.', req);
   }
 };
-
-

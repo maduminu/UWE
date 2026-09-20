@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { API_BASE } from '../../services/api';
 
@@ -27,6 +28,17 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  React.useEffect(() => {
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('auth:modal_state', { detail: { isOpen } }));
+    }
+    return () => {
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('auth:modal_state', { detail: { isOpen: false } }));
+      }
+    };
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
@@ -81,9 +93,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     onClose();
   };
 
-  return (
+  const modalContent = (
     <AnimatePresence>
-      <div className="fixed inset-0 z-[9999] bg-[#0B0E14]/90 backdrop-blur-2xl flex items-center justify-center p-4">
+      <div className="fixed inset-0 z-[99999] bg-[#0B0E14]/90 backdrop-blur-2xl flex items-center justify-center p-4">
         <motion.div
           initial={{ scale: 0.9, y: 30, opacity: 0 }}
           animate={{ scale: 1, y: 0, opacity: 1 }}
@@ -101,21 +113,32 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
           {/* Header */}
           <div className="text-center mb-6">
-            <div className="w-12 h-12 rounded-full bg-secondary/20 border border-secondary text-secondary mx-auto flex items-center justify-center font-bold mb-3 shadow-[0_0_15px_rgba(255,184,0,0.5)]">
-              <span className="material-symbols-outlined text-2xl">lock</span>
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-secondary/10 border border-secondary/30 mb-3">
+              <span className="w-1.5 h-1.5 rounded-full bg-secondary animate-pulse" />
+              <span className="font-mono-data text-[10px] text-secondary font-bold uppercase tracking-widest">
+                CLEARANCE LEVEL 4
+              </span>
             </div>
-            <h3 className="font-headline-md text-2xl text-on-surface font-black uppercase">
-              Operative <span className="text-secondary text-glow-gold">Authentication</span>
+            <h3 className="font-display text-2xl sm:text-3xl font-black text-on-surface uppercase tracking-wider">
+              {mode === 'login' ? 'OPERATIVE LOGIN' : 'RECRUIT INITIATION'}
             </h3>
             <p className="font-mono-data text-xs text-on-surface-variant mt-1">
-              {mode === 'login' ? 'Sign in to unlock full category video series' : 'Create an account to gain operative training access'}
+              {mode === 'login'
+                ? 'Enter your credentials to access the video vault & student directives'
+                : 'Create your account to unlock program materials and begin training'}
             </p>
           </div>
 
+          {/* Error Banner */}
           {error && (
-            <div className="p-3 rounded-lg bg-red-500/20 border border-red-500/50 text-red-300 font-mono-data text-xs mb-4 text-center">
-              {error}
-            </div>
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="p-3 mb-4 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 font-mono-data text-xs flex items-center gap-2"
+            >
+              <span className="material-symbols-outlined text-sm">error</span>
+              <span>{error}</span>
+            </motion.div>
           )}
 
           {/* Form */}
@@ -123,64 +146,80 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             {mode === 'signup' && (
               <>
                 <div>
-                  <label className="font-mono-data text-xs text-on-surface-variant block mb-1">Full Name</label>
+                  <label className="font-mono-data text-xs text-on-surface-variant block mb-1">
+                    OPERATIVE NAME
+                  </label>
                   <input
                     type="text"
                     required
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    placeholder="Operative Name"
-                    className="input-field w-full px-3 py-2.5 rounded-lg text-sm font-mono-data"
+                    placeholder="Kasun Fernando"
+                    className="input-field w-full py-2.5 px-3 text-xs font-mono-data rounded-xl"
                   />
                 </div>
                 <div>
-                  <label className="font-mono-data text-xs text-on-surface-variant block mb-1">Phone Number (WhatsApp)</label>
+                  <label className="font-mono-data text-xs text-on-surface-variant block mb-1">
+                    WHATSAPP PHONE
+                  </label>
                   <input
-                    type="text"
+                    type="tel"
+                    required
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
-                    placeholder="071 709 6386"
-                    className="input-field w-full px-3 py-2.5 rounded-lg text-sm font-mono-data"
+                    placeholder="077 123 4567"
+                    className="input-field w-full py-2.5 px-3 text-xs font-mono-data rounded-xl"
                   />
                 </div>
               </>
             )}
 
             <div>
-              <label className="font-mono-data text-xs text-on-surface-variant block mb-1">Email Address</label>
+              <label className="font-mono-data text-xs text-on-surface-variant block mb-1">
+                EMAIL ADDRESS
+              </label>
               <input
                 type="email"
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="operative@uwe.lk"
-                className="input-field w-full px-3 py-2.5 rounded-lg text-sm font-mono-data"
+                placeholder="operative@empire.com"
+                className="input-field w-full py-2.5 px-3 text-xs font-mono-data rounded-xl"
               />
             </div>
 
             <div>
-              <label className="font-mono-data text-xs text-on-surface-variant block mb-1">Password</label>
+              <label className="font-mono-data text-xs text-on-surface-variant block mb-1">
+                PASSWORD
+              </label>
               <input
                 type="password"
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-                className="input-field w-full px-3 py-2.5 rounded-lg text-sm font-mono-data"
+                placeholder="••••••••••••"
+                className="input-field w-full py-2.5 px-3 text-xs font-mono-data rounded-xl"
               />
             </div>
 
             <button
               type="submit"
               disabled={loading}
-              className="btn-elite w-full py-3 rounded-lg font-label-caps text-xs uppercase tracking-widest font-bold cursor-pointer transition-all shadow-[0_0_20px_rgba(255,184,0,0.4)]"
+              className="btn-elite w-full py-3 rounded-xl font-label-caps text-xs uppercase tracking-widest font-black flex items-center justify-center gap-2 cursor-pointer shadow-[0_0_20px_rgba(255,184,0,0.3)] disabled:opacity-50 mt-6"
             >
-              {loading ? 'AUTHENTICATING...' : mode === 'login' ? 'LOG IN & UNLOCK CONTENT' : 'CREATE OPERATIVE ACCOUNT'}
+              {loading ? (
+                <div className="w-4 h-4 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+              ) : (
+                <>
+                  <span className="material-symbols-outlined text-sm">lock_open</span>
+                  <span>{mode === 'login' ? 'AUTHENTICATE & ENTER' : 'INITIATE REGISTRATION'}</span>
+                </>
+              )}
             </button>
           </form>
 
-          {/* Quick Demo Login */}
-          <div className="mt-4 pt-4 border-t border-outline-variant/30 text-center">
+          {/* Quick Demo Login Option */}
+          <div className="mt-4 pt-4 border-t border-outline-variant/20">
             <button
               onClick={handleDemoLogin}
               className="w-full py-2 rounded bg-surface-container-high border border-secondary/40 text-secondary font-mono-data text-xs font-bold hover:bg-secondary/20 transition-all cursor-pointer flex items-center justify-center gap-2"
@@ -202,4 +241,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       </div>
     </AnimatePresence>
   );
+
+  return typeof document !== 'undefined' ? createPortal(modalContent, document.body) : modalContent;
 };

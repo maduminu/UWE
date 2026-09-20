@@ -4,6 +4,8 @@ import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
 import { recordAdminAudit } from '../utils/auditLogger';
 import { revokeUserSessions } from '../services/tokenService';
+import { logger } from '../utils/logger';
+import { sendError, ErrorCode } from '../utils/apiResponse';
 
 export const SAFE_USER_SELECT = {
   id: true,
@@ -26,7 +28,7 @@ export const SAFE_USER_SELECT = {
 
 // @desc    Get all registered student users/operatives (CMS Admin HQ)
 // @route   GET /api/users
-export const getAllUsers = async (_req: Request, res: Response): Promise<void> => {
+export const getAllUsers = async (req: Request, res: Response): Promise<void> => {
   try {
     const users = await prisma.user.findMany({
       select: SAFE_USER_SELECT,
@@ -35,7 +37,8 @@ export const getAllUsers = async (_req: Request, res: Response): Promise<void> =
 
     res.status(200).json({ success: true, count: users.length, data: users });
   } catch (error: any) {
-    res.status(500).json({ success: false, message: error.message });
+    logger.error(`[getAllUsers] ${error.message}`, 'USERS');
+    sendError(res, 500, ErrorCode.INTERNAL_SERVER_ERROR, 'Failed to retrieve operatives directory.', req);
   }
 };
 
@@ -49,12 +52,13 @@ export const getUserById = async (req: Request, res: Response): Promise<void> =>
       select: SAFE_USER_SELECT,
     });
     if (!user) {
-      res.status(404).json({ success: false, message: 'User not found' });
+      sendError(res, 404, ErrorCode.NOT_FOUND, 'User not found', req);
       return;
     }
     res.status(200).json({ success: true, data: user });
   } catch (error: any) {
-    res.status(500).json({ success: false, message: error.message });
+    logger.error(`[getUserById] ${error.message}`, 'USERS');
+    sendError(res, 500, ErrorCode.INTERNAL_SERVER_ERROR, 'Failed to retrieve user profile.', req);
   }
 };
 
@@ -65,18 +69,21 @@ export const createUser = async (req: Request, res: Response): Promise<void> => 
     const { name, email, phone, password, enrolledCourseSlugs, isEnrolled } = req.body;
 
     if (!name || !email) {
-      res.status(400).json({ success: false, message: 'Name and Email are required' });
+      sendError(res, 400, ErrorCode.VALIDATION_ERROR, 'Name and Email are required', req);
       return;
     }
 
     const existing = await prisma.user.findUnique({ where: { email: email.trim().toLowerCase() } });
     if (existing) {
-      res.status(400).json({ success: false, message: 'User with this email already exists' });
+      sendError(res, 400, ErrorCode.CONFLICT, 'User with this email already exists', req);
       return;
     }
 
     const rawPassword = password && password.trim() ? password.trim() : crypto.randomBytes(6).toString('hex');
     const passwordHash = await bcrypt.hash(rawPassword, 12);
+
+    const isEnrollmentExplicit = typeof isEnrolled === 'boolean';
+    const normalizedCourseSlugs = typeof enrolledCourseSlugs === 'string' ? enrolledCourseSlugs.trim() : '';
 
     const newUser = await prisma.user.create({
       data: {
@@ -84,8 +91,8 @@ export const createUser = async (req: Request, res: Response): Promise<void> => 
         email: email.trim().toLowerCase(),
         phone: phone ? phone.trim() : null,
         passwordHash,
-        isEnrolled: typeof isEnrolled === 'boolean' ? isEnrolled : true,
-        enrolledCourseSlugs: enrolledCourseSlugs || 'bmb,leadership,ignit',
+        isEnrolled: isEnrollmentExplicit ? isEnrolled : false,
+        enrolledCourseSlugs: normalizedCourseSlugs,
       },
       select: SAFE_USER_SELECT,
     });
@@ -102,7 +109,8 @@ export const createUser = async (req: Request, res: Response): Promise<void> => 
 
     res.status(201).json({ success: true, data: newUser });
   } catch (error: any) {
-    res.status(500).json({ success: false, message: error.message });
+    logger.error(`[createUser] ${error.message}`, 'USERS');
+    sendError(res, 500, ErrorCode.INTERNAL_SERVER_ERROR, 'Failed to create user operative.', req);
   }
 };
 
@@ -111,92 +119,130 @@ export const createUser = async (req: Request, res: Response): Promise<void> => 
 export const updateUser = async (req: Request, res: Response): Promise<void> => {
   try {
     const id = String(req.params.id);
-    const { name, email, phone, enrolledCourseSlugs, isEnrolled } = req.body;
+    const isAdmin = req.user?.type === 'admin';
+    const { name, email, phone, password, enrolledCourseSlugs, isEnrolled } = req.body;
+
+    const dataToUpdate: any = {};
+    if (typeof name === 'string') {
+      const trimmedName = name.trim();
+      if (trimmedName.length < 2 || trimmedName.length > 100) {
+        sendError(res, 400, ErrorCode.VALIDATION_ERROR, 'Name must be between 2 and 100 characters.', req);
+        return;
+      }
+      dataToUpdate.name = trimmedName;
+    }
+
+    if (typeof phone === 'string') {
+      const trimmedPhone = phone.trim();
+      if (trimmedPhone.length > 30) {
+        sendError(res, 400, ErrorCode.VALIDATION_ERROR, 'Phone number must be under 30 characters.', req);
+        return;
+      }
+      dataToUpdate.phone = trimmedPhone;
+    }
+
+    // Privileged fields can only be modified by admins
+    if (isAdmin) {
+      if (typeof email === 'string') dataToUpdate.email = email.trim().toLowerCase();
+      if (typeof enrolledCourseSlugs === 'string') dataToUpdate.enrolledCourseSlugs = enrolledCourseSlugs;
+      if (typeof isEnrolled === 'boolean') dataToUpdate.isEnrolled = isEnrolled;
+      if (typeof password === 'string' && password.trim().length >= 6) {
+        dataToUpdate.passwordHash = await bcrypt.hash(password.trim(), 12);
+        dataToUpdate.tokenVersion = { increment: 1 };
+      }
+    }
 
     const updated = await prisma.user.update({
       where: { id },
-      data: {
-        ...(typeof name === 'string' && { name: name.trim() }),
-        ...(typeof email === 'string' && { email: email.trim().toLowerCase() }),
-        ...(typeof phone === 'string' && { phone: phone.trim() }),
-        ...(typeof enrolledCourseSlugs === 'string' && { enrolledCourseSlugs }),
-        ...(typeof isEnrolled === 'boolean' && { isEnrolled }),
-      },
+      data: dataToUpdate,
       select: SAFE_USER_SELECT,
     });
 
-    if (isEnrolled === false) {
+    if (isAdmin && isEnrolled === false) {
       await revokeUserSessions(id, 'student');
+    }
+
+    if (isAdmin) {
+      await recordAdminAudit({
+        adminId: req.user?.id,
+        adminEmail: req.user?.email,
+        action: 'USER_UPDATED',
+        targetEntity: 'User',
+        targetId: updated.id,
+        details: dataToUpdate,
+        ipAddress: req.ip,
+      });
     }
 
     res.status(200).json({ success: true, data: updated });
   } catch (error: any) {
-    res.status(500).json({ success: false, message: error.message });
+    logger.error(`[updateUser] ${error.message}`, 'USERS');
+    sendError(res, 500, ErrorCode.INTERNAL_SERVER_ERROR, 'Failed to update operative account.', req);
   }
 };
 
 // @desc    Get all available coaches from database (Instructors, Admin Coaches, Staff)
 // @route   GET /api/users/coaches
-export const getAvailableCoaches = async (_req: Request, res: Response): Promise<void> => {
+export const getAvailableCoaches = async (req: Request, res: Response): Promise<void> => {
   try {
     // 1. Fetch instructors
     const instructors = await prisma.instructor.findMany({
       where: { isActive: true },
       select: { id: true, name: true, title: true },
+      orderBy: { createdAt: 'asc' },
     });
 
     // 2. Fetch admin coaches / commanders
     const adminCoaches = await prisma.adminUser.findMany({
       where: { role: { in: ['COACH', 'COMMANDER', 'SUPER_ADMIN'] } },
       select: { id: true, name: true, role: true },
+      orderBy: { name: 'asc' },
     });
 
-    // 3. Fetch staff members
-    const staffCoaches = await prisma.staffMember.findMany({
+    // 3. Fetch active staff members
+    const staffMembers = await prisma.staffMember.findMany({
       where: { isActive: true },
-      select: { id: true, name: true, role: true },
+      select: { id: true, name: true, role: true, department: true },
+      orderBy: { name: 'asc' },
     });
 
-    // Combine and deduplicate by name
-    const coachMap = new Map<string, { id: string; name: string; title: string }>();
+    // Normalize and consolidate into a unified coach list
+    const coachList: Array<{ id: string; name: string; type: string; title: string }> = [
+      ...instructors.map((ins) => ({
+        id: ins.id,
+        name: ins.name,
+        type: 'INSTRUCTOR',
+        title: ins.title,
+      })),
+      ...adminCoaches.map((adm) => ({
+        id: adm.id,
+        name: adm.name,
+        type: 'ADMIN_COACH',
+        title: `${adm.role.replace('_', ' ')} (HQ)`,
+      })),
+      ...staffMembers.map((st) => ({
+        id: st.id,
+        name: st.name,
+        type: 'STAFF',
+        title: `${st.role} • ${st.department}`,
+      })),
+    ];
 
-    for (const inst of instructors) {
-      coachMap.set(inst.name.toLowerCase(), {
-        id: inst.id,
-        name: inst.name,
-        title: inst.title || 'Master Instructor',
-      });
-    }
+    // Deduplicate by name just in case
+    const uniqueCoaches = Array.from(new Map(coachList.map((c) => [c.name, c])).values());
 
-    for (const admin of adminCoaches) {
-      if (!coachMap.has(admin.name.toLowerCase())) {
-        coachMap.set(admin.name.toLowerCase(), {
-          id: admin.id,
-          name: admin.name,
-          title: `Command ${admin.role.replace('_', ' ')}`,
-        });
-      }
-    }
-
-    for (const staff of staffCoaches) {
-      if (!coachMap.has(staff.name.toLowerCase())) {
-        coachMap.set(staff.name.toLowerCase(), {
-          id: staff.id,
-          name: staff.name,
-          title: staff.role || 'Staff Coach',
-        });
-      }
-    }
-
-    const coachesList = Array.from(coachMap.values());
-    res.status(200).json({ success: true, count: coachesList.length, data: coachesList });
+    res.status(200).json({
+      success: true,
+      count: uniqueCoaches.length,
+      data: uniqueCoaches,
+    });
   } catch (error: any) {
-    console.error('[getAvailableCoaches]', error);
-    res.status(500).json({ success: false, message: 'Failed to retrieve available coaches.' });
+    logger.error(`[getAvailableCoaches] ${error.message}`, 'USERS');
+    sendError(res, 500, ErrorCode.INTERNAL_SERVER_ERROR, 'Failed to fetch available coaches directory.', req);
   }
 };
 
-// @desc    Assign dedicated coach and cohort tag to student user (Admin / Commander)
+// @desc    Assign a Tactical Coach to a student operative
 // @route   PUT /api/users/:id/assign-coach
 export const assignCoach = async (req: Request, res: Response): Promise<void> => {
   try {
@@ -229,7 +275,8 @@ export const assignCoach = async (req: Request, res: Response): Promise<void> =>
       data: updated,
     });
   } catch (error: any) {
-    res.status(500).json({ success: false, message: error.message });
+    logger.error(`[assignCoach] ${error.message}`, 'USERS');
+    sendError(res, 500, ErrorCode.INTERNAL_SERVER_ERROR, 'Failed to assign coach to student.', req);
   }
 };
 
@@ -255,7 +302,7 @@ export const deleteUser = async (req: Request, res: Response): Promise<void> => 
 
     res.status(200).json({ success: true, message: 'User account deleted successfully' });
   } catch (error: any) {
-    res.status(500).json({ success: false, message: error.message });
+    logger.error(`[deleteUser] ${error.message}`, 'USERS');
+    sendError(res, 500, ErrorCode.INTERNAL_SERVER_ERROR, 'Failed to delete user account.', req);
   }
 };
-

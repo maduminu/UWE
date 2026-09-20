@@ -6,6 +6,8 @@ import {
   updateBatch,
   updateBatchSeats,
   createCourse,
+  createBatch,
+  deleteBatch,
 } from '../controllers/courseController';
 import { authenticate } from '../middlewares/authenticate';
 import { requireAdmin } from '../middlewares/requireAdmin';
@@ -21,7 +23,9 @@ router.get('/:slug', getCourseBySlug);
 // Admin-only management endpoints (SUPER_ADMIN & COMMANDER only)
 router.post('/', authenticate, requireAdmin, requireRole(['SUPER_ADMIN', 'COMMANDER']), createCourse);
 router.put('/:id', authenticate, requireAdmin, requireRole(['SUPER_ADMIN', 'COMMANDER']), updateCourse);
+router.post('/batches', authenticate, requireAdmin, requireRole(['SUPER_ADMIN', 'COMMANDER']), createBatch);
 router.put('/batches/:batchId', authenticate, requireAdmin, requireRole(['SUPER_ADMIN', 'COMMANDER']), validate(batchUpdateSchema), updateBatch);
 router.put('/batches/:batchId/seats', authenticate, requireAdmin, requireRole(['SUPER_ADMIN', 'COMMANDER']), updateBatchSeats);
+router.delete('/batches/:batchId', authenticate, requireAdmin, requireRole(['SUPER_ADMIN', 'COMMANDER']), deleteBatch);
 
 export default router;

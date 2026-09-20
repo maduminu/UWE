@@ -367,7 +367,20 @@ export const LeadsTab: React.FC<LeadsTabProps> = ({
                   </div>
                   <div>
                     <div className="flex items-center gap-2 flex-wrap">
-                      <h4 className="font-headline-md text-sm text-on-surface font-bold">{lead.name}</h4>
+                      <h4 className="font-headline-md text-sm text-on-surface font-bold flex items-center gap-2">
+                        {lead.name}
+                        {lead.callLockUntil && new Date(lead.callLockUntil) > new Date() && (
+                          <span className="px-2 py-0.5 rounded-full bg-red-500/20 text-red-400 border border-red-500/40 text-[10px] font-bold animate-pulse flex items-center gap-1">
+                            <span className="material-symbols-outlined text-[10px]">lock</span>
+                            {lead.callLockBy}
+                          </span>
+                        )}
+                        {lead.funnelStage && (
+                          <span className="px-2 py-0.5 rounded-full bg-primary/20 text-primary border border-primary/40 text-[10px] font-bold">
+                            {lead.funnelStage.replace('_', ' ')}
+                          </span>
+                        )}
+                      </h4>
                       {isAbandoned && (
                         <span className="px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40 text-[10px] font-mono-data font-bold flex items-center gap-1">
                           <span className="material-symbols-outlined text-xs">warning</span>

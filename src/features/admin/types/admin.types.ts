@@ -12,12 +12,27 @@ export type AdminTab =
   | 'coupons'
   | 'reviews'
   | 'instructors'
-  | 'mastermind';
+  | 'partners'
+  | 'mastermind'
+  | 'calls';
 
 export interface ToastMessage {
   id: number;
   text: string;
   type: 'success' | 'error' | 'info';
+}
+
+export interface CourseBatchRecord {
+  id: string;
+  courseId: string;
+  batchNumber: number;
+  startDate?: string | Date;
+  scheduleText: string;
+  totalSeats: number;
+  availableSeats: number;
+  zoomLink?: string | null;
+  status: 'UPCOMING' | 'ACTIVE' | 'COMPLETED';
+  assignedCoachName?: string | null;
 }
 
 export interface CourseRecord {
@@ -33,6 +48,7 @@ export interface CourseRecord {
   totalSeats?: number;
   zoomLink?: string;
   batchId?: string;
+  batches?: CourseBatchRecord[];
   color: string;
   dirty: boolean;
 }
@@ -47,6 +63,14 @@ export interface LeadRecord {
   date: string;
   status: 'NEW' | 'CONTACTED' | 'ENROLLED' | 'REJECTED';
   value: string;
+  isPositiveContact?: boolean;
+  isAbandoned?: boolean;
+  hoursPending?: number;
+  funnelStage?: string;
+  callLockUntil?: string;
+  callLockBy?: string;
+  totalCallAttempts?: number;
+  lastCallOutcome?: string;
 }
 
 export interface AnnouncementRecord {

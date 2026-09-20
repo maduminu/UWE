@@ -2,6 +2,8 @@ import { Request, Response } from 'express';
 import { prisma } from '../config/db';
 import bcrypt from 'bcryptjs';
 import { logger } from '../utils/logger';
+import { recordAdminAudit } from '../utils/auditLogger';
+import { sendError, ErrorCode } from '../utils/apiResponse';
 import {
   generateTokenPair,
   rotateRefreshToken,
@@ -10,6 +12,53 @@ import {
 } from '../services/tokenService';
 
 export { generateTokenPair };
+
+/**
+ * Set Refresh Token in HttpOnly, Secure, SameSite Cookie
+ */
+export const setRefreshTokenCookie = (res: Response, refreshToken: string): void => {
+  const isProd = process.env.NODE_ENV === 'production';
+  res.cookie('refreshToken', refreshToken, {
+    httpOnly: true,
+    secure: isProd,
+    sameSite: isProd ? 'strict' : 'lax',
+    path: '/api/auth',
+    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+  });
+};
+
+/**
+ * Clear Refresh Token HttpOnly Cookie
+ */
+export const clearRefreshTokenCookie = (res: Response): void => {
+  const isProd = process.env.NODE_ENV === 'production';
+  res.clearCookie('refreshToken', {
+    httpOnly: true,
+    secure: isProd,
+    sameSite: isProd ? 'strict' : 'lax',
+    path: '/api/auth',
+  });
+};
+
+/**
+ * Extract Refresh Token from HttpOnly cookie or request body (for API / backward compatibility)
+ */
+export const extractRefreshToken = (req: Request): string | undefined => {
+  if (req.headers.cookie) {
+    const cookies = req.headers.cookie.split(';').reduce((acc: Record<string, string>, c) => {
+      const [k, ...v] = c.trim().split('=');
+      if (k) acc[k] = decodeURIComponent(v.join('='));
+      return acc;
+    }, {});
+    if (cookies.refreshToken) {
+      return cookies.refreshToken;
+    }
+  }
+  if (req.body && typeof req.body.refreshToken === 'string') {
+    return req.body.refreshToken;
+  }
+  return undefined;
+};
 
 // @desc    Register new student operative user account
 // @route   POST /api/auth/register
@@ -41,10 +90,15 @@ export const registerUser = async (req: Request, res: Response): Promise<void> =
         name,
         phone,
         passwordHash,
-        isEnrolled: true,
-        enrolledCourseSlugs: 'bmb,leadership,ignit',
+        isEnrolled: false,
+        enrolledCourseSlugs: '',
       },
     });
+
+    const enrolledCourseSlugs = (user.enrolledCourseSlugs || '')
+      .split(',')
+      .map((slug) => slug.trim().toLowerCase())
+      .filter(Boolean);
 
     const tokenVersion = user.tokenVersion || 1;
     const tokens = await generateTokenPair({
@@ -53,6 +107,9 @@ export const registerUser = async (req: Request, res: Response): Promise<void> =
       type: 'student',
       tokenVersion,
     });
+
+    // Set HttpOnly refresh token cookie
+    setRefreshTokenCookie(res, tokens.refreshToken);
 
     logger.info(`Student operative registered: ${user.email}`, 'AUTH');
 
@@ -64,7 +121,8 @@ export const registerUser = async (req: Request, res: Response): Promise<void> =
         name: user.name,
         email: user.email,
         ...tokens,
-        enrolledCourseSlugs: user.enrolledCourseSlugs.split(','),
+        enrolledCourseSlugs,
+        isEnrolled: user.isEnrolled,
       },
     });
   } catch (error: any) {
@@ -91,10 +149,8 @@ export const loginUser = async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
-    // Enforce cryptographic bcrypt verification
-    const passwordMatch = user.passwordHash.startsWith('$2')
-      ? await bcrypt.compare(password, user.passwordHash)
-      : false;
+    // Strictly verify cryptographic bcrypt hash (rejects any non-bcrypt or legacy values)
+    const passwordMatch = await bcrypt.compare(password, user.passwordHash).catch(() => false);
 
     if (!passwordMatch) {
       res.status(401).json({ success: false, message: 'Invalid credentials' });
@@ -109,6 +165,11 @@ export const loginUser = async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
+    const enrolledCourseSlugs = (user.enrolledCourseSlugs || '')
+      .split(',')
+      .map((slug) => slug.trim().toLowerCase())
+      .filter(Boolean);
+
     const tokenVersion = user.tokenVersion || 1;
     const tokens = await generateTokenPair({
       id: user.id,
@@ -116,6 +177,9 @@ export const loginUser = async (req: Request, res: Response): Promise<void> => {
       type: 'student',
       tokenVersion,
     });
+
+    // Set HttpOnly refresh token cookie
+    setRefreshTokenCookie(res, tokens.refreshToken);
 
     logger.info(`Student operative logged in: ${user.email}`, 'AUTH');
 
@@ -127,7 +191,8 @@ export const loginUser = async (req: Request, res: Response): Promise<void> => {
         name: user.name,
         email: user.email,
         ...tokens,
-        enrolledCourseSlugs: user.enrolledCourseSlugs.split(','),
+        enrolledCourseSlugs,
+        isEnrolled: user.isEnrolled,
       },
     });
   } catch (error: any) {
@@ -148,11 +213,13 @@ export const adminLogin = async (req: Request, res: Response): Promise<void> => 
     }
 
     // Support 'admin' or 'admin@uwe.lk'
-    const targetEmail = username === 'admin' ? 'admin@uwe.lk' : username.toLowerCase();
+    const trimmedUsername = username.trim();
+    const targetEmail = trimmedUsername.toLowerCase() === 'admin' ? 'admin@uwe.lk' : trimmedUsername.toLowerCase();
 
+    // SEC-CRIT-1 Fix: Enforce exact identity match instead of wildcard substring searching
     const admin = await prisma.adminUser.findFirst({
       where: {
-        OR: [{ email: targetEmail }, { name: { contains: username } }],
+        OR: [{ email: targetEmail }, { name: trimmedUsername }],
       },
     });
 
@@ -161,10 +228,8 @@ export const adminLogin = async (req: Request, res: Response): Promise<void> => 
       return;
     }
 
-    // Enforce cryptographic bcrypt verification
-    const passwordMatch = admin.passwordHash.startsWith('$2')
-      ? await bcrypt.compare(password, admin.passwordHash)
-      : false;
+    // Strictly verify cryptographic bcrypt hash (rejects any non-bcrypt or legacy values)
+    const passwordMatch = await bcrypt.compare(password, admin.passwordHash).catch(() => false);
 
     if (!passwordMatch) {
       res.status(401).json({ success: false, message: 'Invalid Admin Credentials' });
@@ -179,6 +244,9 @@ export const adminLogin = async (req: Request, res: Response): Promise<void> => 
       type: 'admin',
       tokenVersion,
     });
+
+    // Set HttpOnly refresh token cookie
+    setRefreshTokenCookie(res, tokens.refreshToken);
 
     logger.info(`Admin HQ authenticated: ${admin.email} (${admin.role})`, 'AUTH');
 
@@ -199,11 +267,11 @@ export const adminLogin = async (req: Request, res: Response): Promise<void> => 
   }
 };
 
-// @desc    Refresh expired Access Token using Refresh Token with Token Rotation & Replay Protection
+// @desc    Refresh expired Access Token using Refresh Token (reads HttpOnly cookie or request body)
 // @route   POST /api/auth/refresh
 export const refreshAuthToken = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { refreshToken } = req.body;
+    const refreshToken = extractRefreshToken(req);
 
     if (!refreshToken) {
       res.status(400).json({ success: false, message: 'Refresh token is required' });
@@ -212,16 +280,18 @@ export const refreshAuthToken = async (req: Request, res: Response): Promise<voi
 
     const newTokens = await rotateRefreshToken(refreshToken);
 
+    // Set rotated refresh token in HttpOnly cookie
+    setRefreshTokenCookie(res, newTokens.refreshToken);
+
     res.status(200).json({
       success: true,
       message: 'Token refreshed successfully',
       data: newTokens,
     });
   } catch (error: any) {
-    res.status(401).json({
-      success: false,
-      message: error.message || 'Invalid or revoked refresh token.',
-    });
+    clearRefreshTokenCookie(res);
+    logger.warn(`[refreshAuthToken] ${error.message}`, 'AUTH');
+    sendError(res, 401, ErrorCode.UNAUTHORIZED, 'Invalid or Revoked refresh token.', req);
   }
 };
 
@@ -229,7 +299,7 @@ export const refreshAuthToken = async (req: Request, res: Response): Promise<voi
 // @route   POST /api/auth/logout
 export const logoutUser = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { refreshToken } = req.body;
+    const refreshToken = extractRefreshToken(req);
     const userId = req.user?.id;
 
     if (userId) {
@@ -237,7 +307,6 @@ export const logoutUser = async (req: Request, res: Response): Promise<void> => 
     }
     if (refreshToken && typeof refreshToken === 'string') {
       try {
-        const { getJwtSecret } = await import('../middlewares/authenticate');
         const jwt = await import('jsonwebtoken');
         const decoded = jwt.default.decode(refreshToken) as any;
         if (decoded?.id && decoded?.jti) {
@@ -248,8 +317,12 @@ export const logoutUser = async (req: Request, res: Response): Promise<void> => 
       }
     }
 
+    // Clear HttpOnly cookie on logout
+    clearRefreshTokenCookie(res);
+
     res.status(200).json({ success: true, message: 'Logged out successfully.' });
   } catch (error: any) {
+    clearRefreshTokenCookie(res);
     res.status(500).json({ success: false, message: 'Logout failed.' });
   }
 };
@@ -265,6 +338,7 @@ export const revokeAllSessions = async (req: Request, res: Response): Promise<vo
     }
 
     await revokeUserSessions(user.id, user.type);
+    clearRefreshTokenCookie(res);
 
     res.status(200).json({
       success: true,
@@ -272,5 +346,63 @@ export const revokeAllSessions = async (req: Request, res: Response): Promise<vo
     });
   } catch (error: any) {
     res.status(500).json({ success: false, message: 'Failed to revoke sessions.' });
+  }
+};
+
+// @desc    Update Admin User Role and immediately revoke all active sessions (Super Admin only)
+// @route   PUT /api/auth/admins/:id/role
+export const updateAdminRole = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const id = String(req.params.id);
+    const { role } = req.body;
+
+    const VALID_ROLES = ['SUPER_ADMIN', 'COMMANDER', 'COACH', 'RECRUITER'];
+    if (!role || !VALID_ROLES.includes(role)) {
+      res.status(400).json({
+        success: false,
+        message: `Invalid role. Must be one of: ${VALID_ROLES.join(', ')}`,
+      });
+      return;
+    }
+
+    const existingAdmin = await prisma.adminUser.findUnique({ where: { id } });
+    if (!existingAdmin) {
+      res.status(404).json({ success: false, message: 'Admin user not found.' });
+      return;
+    }
+
+    const oldRole = existingAdmin.role;
+
+    // 1. Update role in DB
+    const updatedAdmin = await prisma.adminUser.update({
+      where: { id },
+      data: { role: role as any },
+      select: { id: true, email: true, name: true, role: true, tokenVersion: true, updatedAt: true },
+    });
+
+    // 2. Explicitly revoke all active sessions for this admin (SEC-1)
+    await revokeUserSessions(id, 'admin');
+
+    logger.info(`[ADMIN_ROLE_CHANGED] Admin ${existingAdmin.email} role changed from ${oldRole} to ${role}. All sessions revoked.`, 'AUTH');
+
+    // 3. Record immutable audit log
+    await recordAdminAudit({
+      adminId: req.user?.id,
+      adminEmail: req.user?.email,
+      action: 'ADMIN_ROLE_CHANGED',
+      targetEntity: 'AdminUser',
+      targetId: id,
+      details: { adminEmail: existingAdmin.email, oldRole, newRole: role },
+      ipAddress: req.ip,
+    });
+
+    res.status(200).json({
+      success: true,
+      message: `Admin role updated to ${role}. All active sessions have been revoked.`,
+      data: updatedAdmin,
+    });
+  } catch (error: any) {
+    logger.error(`[updateAdminRole] ${error.message}`, 'AUTH');
+    res.status(500).json({ success: false, message: 'Failed to update admin role.' });
   }
 };

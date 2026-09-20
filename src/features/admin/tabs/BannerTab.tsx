@@ -25,6 +25,41 @@ export const BannerTab: React.FC<BannerTabProps> = ({
   setSaving,
   addToast,
 }) => {
+  const handleToggleStatus = async () => {
+    const nextStatus = !announcement.enabled;
+    const bannerType = ['URGENT', 'PROMO', 'INFO'].includes(announcement.type)
+      ? announcement.type
+      : 'URGENT';
+
+    // Optimistically update the UI button immediately
+    setAnnouncement((prev) => ({ ...prev, enabled: nextStatus }));
+
+    try {
+      if (announcement.id) {
+        await api.updateBanner(announcement.id, {
+          message: announcement.text,
+          isActive: nextStatus,
+          bannerType,
+        });
+        setAnnouncement((prev) => ({ ...prev, enabled: nextStatus, dirty: false, type: bannerType }));
+        addToast(nextStatus ? '✅ Banner is now ONLINE on public site' : '⚠️ Banner is now OFFLINE (hidden from visitors)');
+      } else {
+        const res = await api.createBanner({
+          message: announcement.text,
+          isActive: nextStatus,
+          bannerType,
+        });
+        const createdId = res?.data?.id || '';
+        setAnnouncement((prev) => ({ ...prev, id: createdId, enabled: nextStatus, dirty: false, type: bannerType }));
+        addToast(nextStatus ? '✅ Banner created & ONLINE' : '⚠️ Banner created as OFFLINE');
+      }
+    } catch (err: any) {
+      // Revert on failure
+      setAnnouncement((prev) => ({ ...prev, enabled: !nextStatus }));
+      addToast('❌ Failed to update banner status. Please verify permissions.', 'error');
+    }
+  };
+
   const saveBanner = async () => {
     setSaving(true);
     try {
@@ -32,6 +67,7 @@ export const BannerTab: React.FC<BannerTabProps> = ({
         ? announcement.type
         : 'URGENT';
 
+      let savedId = announcement.id;
       if (announcement.id) {
         await api.updateBanner(announcement.id, {
           message: announcement.text,
@@ -44,10 +80,10 @@ export const BannerTab: React.FC<BannerTabProps> = ({
           isActive: announcement.enabled,
           bannerType,
         });
-        if (res.data) setAnnouncement((prev) => ({ ...prev, id: res.data.id }));
+        if (res.data?.id) savedId = res.data.id;
       }
-      setAnnouncement((prev) => ({ ...prev, dirty: false, type: bannerType }));
-      addToast('✅ Banner alert updated');
+      setAnnouncement((prev) => ({ ...prev, id: savedId, dirty: false, type: bannerType }));
+      addToast(`✅ Banner alert updated (${announcement.enabled ? 'ONLINE' : 'OFFLINE'})`);
     } catch {
       addToast('❌ Failed to update banner', 'error');
     } finally {
@@ -67,19 +103,21 @@ export const BannerTab: React.FC<BannerTabProps> = ({
         <div>
           <h3 className="font-headline-md text-lg text-on-surface font-bold">Live Ticker Announcement</h3>
           <p className="font-mono-data text-xs text-on-surface-variant">
-            Edit the ticker message & toggle visibility. Click SAVE to push to Supabase.
+            Click ONLINE/OFFLINE to toggle visibility instantly, or edit text and click SAVE.
           </p>
         </div>
         <div className="flex items-center gap-2">
           <button
-            onClick={() => setAnnouncement((prev) => ({ ...prev, enabled: !prev.enabled, dirty: true }))}
-            className={`px-4 py-2 rounded font-label-caps text-xs uppercase font-bold transition-all cursor-pointer ${
+            onClick={handleToggleStatus}
+            title={announcement.enabled ? 'Click to deactivate banner (take OFFLINE)' : 'Click to activate banner (publish ONLINE)'}
+            className={`px-4 py-2 rounded font-label-caps text-xs uppercase font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
               announcement.enabled
-                ? 'bg-[#2ED573] text-black shadow-[0_0_15px_rgba(46,213,115,0.4)]'
-                : 'bg-[#131929] text-on-surface-variant border border-outline-variant/40'
+                ? 'bg-[#2ED573] text-black shadow-[0_0_15px_rgba(46,213,115,0.4)] hover:brightness-110'
+                : 'bg-[#131929] text-on-surface-variant border border-outline-variant/40 hover:border-secondary/60 hover:text-secondary'
             }`}
           >
-            {announcement.enabled ? 'ONLINE' : 'OFFLINE'}
+            <span className="inline-block w-2 h-2 rounded-full bg-current animate-pulse" />
+            <span>{announcement.enabled ? 'ONLINE' : 'OFFLINE'}</span>
           </button>
         </div>
       </div>

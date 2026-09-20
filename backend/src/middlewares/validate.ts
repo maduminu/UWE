@@ -17,10 +17,13 @@ export const validateBody = (schema: ZodSchema) => {
 
         const errorSummary = formattedErrors.map((e: any) => `${e.field}: ${e.message}`).join(', ');
 
+        const requestId = (req.headers['x-request-id'] as string) || (res.getHeader('X-Request-Id') as string) || undefined;
         res.status(400).json({
           success: false,
+          code: 'VALIDATION_ERROR',
           message: `Validation failed: ${errorSummary}`,
           errors: formattedErrors,
+          ...(requestId ? { requestId } : {}),
         });
         return;
       }
@@ -28,9 +31,12 @@ export const validateBody = (schema: ZodSchema) => {
       req.body = result.data;
       next();
     } catch (err: any) {
+      const requestId = (req.headers['x-request-id'] as string) || (res.getHeader('X-Request-Id') as string) || undefined;
       res.status(400).json({
         success: false,
-        message: `Invalid request payload format: ${err?.message || 'Unknown error'}`,
+        code: 'VALIDATION_ERROR',
+        message: 'Invalid request payload format.',
+        ...(requestId ? { requestId } : {}),
       });
     }
   };
@@ -53,11 +59,14 @@ export const validateQuery = (schema: ZodSchema) => {
         }));
 
         const errorSummary = formattedErrors.map((e: any) => `${e.field}: ${e.message}`).join(', ');
+        const requestId = (req.headers['x-request-id'] as string) || (res.getHeader('X-Request-Id') as string) || undefined;
 
         res.status(400).json({
           success: false,
+          code: 'VALIDATION_ERROR',
           message: `Invalid query parameters: ${errorSummary}`,
           errors: formattedErrors,
+          ...(requestId ? { requestId } : {}),
         });
         return;
       }
@@ -65,9 +74,12 @@ export const validateQuery = (schema: ZodSchema) => {
       req.query = result.data as any;
       next();
     } catch (err: any) {
+      const requestId = (req.headers['x-request-id'] as string) || (res.getHeader('X-Request-Id') as string) || undefined;
       res.status(400).json({
         success: false,
-        message: `Invalid query parameters: ${err?.message || 'Unknown error'}`,
+        code: 'VALIDATION_ERROR',
+        message: 'Invalid query parameters.',
+        ...(requestId ? { requestId } : {}),
       });
     }
   };
@@ -93,7 +105,7 @@ export const adminLoginSchema = z.object({
 });
 
 export const refreshTokenSchema = z.object({
-  refreshToken: z.string().min(1, 'Refresh token is required'),
+  refreshToken: z.string().optional(),
 });
 
 export const leadSchema = z.object({
@@ -155,6 +167,8 @@ export const reviewSchema = z.object({
   rating: z.number().int().min(1).max(5),
   comment: z.string().min(5, 'Review comment must be at least 5 characters'),
   title: z.string().optional(),
+  userId: z.string().optional().nullable(),
+  avatarUrl: z.string().optional().nullable(),
 });
 
 export const bannerSchema = z.object({

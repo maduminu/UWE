@@ -65,6 +65,25 @@ describe('Phase 7: Enterprise Enhancements Integration Tests', () => {
     expect(res.body.message).toContain('Invalid email address');
   });
 
+  it('POST /api/auth/register does not assign all courses by default for a brand new user', async () => {
+    const email = `new-default-access-${Date.now()}@uwe.lk`;
+    const res = await request(app)
+      .post('/api/auth/register')
+      .send({
+        name: 'Restricted Access User',
+        email,
+        password: 'password123',
+      });
+
+    expect(res.status).toBe(201);
+    expect(res.body.success).toBe(true);
+    expect(res.body.data.enrolledCourseSlugs).toEqual([]);
+    expect(res.body.data.isEnrolled).toBe(false);
+
+    const { prisma } = await import('../config/db');
+    await prisma.user.delete({ where: { email } });
+  });
+
   it('POST /api/leads fails with 400 when name is too short', async () => {
     const res = await request(app)
       .post('/api/leads')

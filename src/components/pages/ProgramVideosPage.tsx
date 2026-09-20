@@ -4,6 +4,7 @@ import type { PageId } from '../layout/Navbar';
 import { PageSEO } from '../ui/PageSEO';
 import { AuthModal } from '../ui/AuthModal';
 import { SecureVideoPlayer } from '../ui/SecureVideoPlayer';
+import { ProgramSeriesSkeleton } from '../ui/ShimmerSkeletons';
 import { api, API_BASE } from '../../services/api';
 import { safeGetStorage, safeSetStorage } from '../../utils/storage';
 
@@ -40,6 +41,7 @@ export const ProgramVideosPage: React.FC<ProgramVideosPageProps> = () => {
   const [selectedFilter, setSelectedFilter] = useState<'all' | 'bmb' | 'leadership' | 'ignit'>('all');
   const [activeVideo, setActiveVideo] = useState<{ mod: VideoModule; series: VideoSeries } | null>(null);
   const [completedModuleIds, setCompletedModuleIds] = useState<string[]>([]);
+  const [savingModuleIds, setSavingModuleIds] = useState<Set<string>>(new Set());
 
   // Derive enrolled slugs — always from the live-fetched user (not stale localStorage)
   const enrolledSlugs = (() => {
@@ -56,7 +58,7 @@ export const ProgramVideosPage: React.FC<ProgramVideosPageProps> = () => {
   const [seriesData, setSeriesData] = useState<VideoSeries[]>([]);
   const [seriesLoading, setSeriesLoading] = useState(true);
 
-  // ── Fetch live user data from DB (bypasses stale localStorage) ──
+  // ── Fetch live user data and progress from DB (bypasses stale localStorage) ──
   useEffect(() => {
     const loadUserFromDB = async () => {
       setUserLoading(true);
@@ -67,33 +69,36 @@ export const ProgramVideosPage: React.FC<ProgramVideosPageProps> = () => {
           setUserLoading(false);
           return;
         }
-        // Fetch fresh enrolledCourseSlugs from backend
-        const res = await fetch(`${API_BASE}/users/${localUser.id}`);
-        if (res.ok) {
-          const json = await res.json();
-          const freshUser = json.data || json;
-          const updated = {
-            ...localUser,
-            enrolledCourseSlugs: freshUser.enrolledCourseSlugs || '',
-            isEnrolled: freshUser.isEnrolled,
-          };
-          // Sync updated access back into localStorage
-          safeSetStorage('uwe_user_account', updated);
-          setCurrentUser(updated);
 
-          // Fetch watch progress from LMS
-          try {
-            const progRes = await api.getProgress(localUser.id);
-            if (progRes.data) {
-              setCompletedModuleIds(progRes.data.filter((p: any) => p.isCompleted).map((p: any) => p.moduleId));
-            }
-          } catch { /* ignore */ }
-        } else {
-          // Backend unreachable — fall back to localStorage
+        // 1. Fetch live watch progress from LMS database unconditionally
+        try {
+          const progRes = await api.getProgress(localUser.id);
+          if (progRes.data && Array.isArray(progRes.data)) {
+            setCompletedModuleIds(progRes.data.filter((p: any) => p.isCompleted).map((p: any) => p.moduleId));
+          }
+        } catch (progErr) {
+          console.warn('[ProgramVideosPage] Failed to fetch progress from DB:', progErr);
+        }
+
+        // 2. Fetch fresh user account / enrollment from backend with authenticated api.getUserById
+        try {
+          const res = await api.getUserById(localUser.id);
+          if (res.success && res.data) {
+            const freshUser = res.data;
+            const updated = {
+              ...localUser,
+              enrolledCourseSlugs: freshUser.enrolledCourseSlugs || '',
+              isEnrolled: freshUser.isEnrolled,
+            };
+            safeSetStorage('uwe_user_account', updated);
+            setCurrentUser(updated);
+          } else {
+            setCurrentUser(localUser);
+          }
+        } catch {
           setCurrentUser(localUser);
         }
       } catch {
-        // Fallback: use localStorage as-is
         const localUser = safeGetStorage<any>('uwe_user_account', null);
         setCurrentUser(localUser);
       } finally {
@@ -103,19 +108,38 @@ export const ProgramVideosPage: React.FC<ProgramVideosPageProps> = () => {
     loadUserFromDB();
   }, []);
 
+  // Warn user if they try to leave while progress is saving
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (savingModuleIds.size > 0) {
+        e.preventDefault();
+        e.returnValue = '';
+        return '';
+      }
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [savingModuleIds]);
+
   const toggleModuleCompletion = async (moduleId: string, seriesId?: string) => {
     if (!currentUser) {
       setAuthModalOpen(true);
       return;
     }
+
+    // Mark module as saving
+    setSavingModuleIds((prev) => new Set([...prev, moduleId]));
+
     const isCompleted = completedModuleIds.includes(moduleId);
     const newCompleted = isCompleted
       ? completedModuleIds.filter((id) => id !== moduleId)
       : [...completedModuleIds, moduleId];
 
+    // Optimistic update
     setCompletedModuleIds(newCompleted);
 
     try {
+      // 1. Persist directly into database
       await api.saveProgress({
         userId: currentUser.id,
         moduleId,
@@ -124,7 +148,7 @@ export const ProgramVideosPage: React.FC<ProgramVideosPageProps> = () => {
         progressPercent: !isCompleted ? 100 : 0,
       });
 
-      // Award XP for tactical completion
+      // 2. Award XP for tactical completion
       if (!isCompleted) {
         try {
           await api.awardXp({
@@ -134,9 +158,33 @@ export const ProgramVideosPage: React.FC<ProgramVideosPageProps> = () => {
           });
         } catch { /* silent */ }
       }
-    } catch {
+
+      // 3. Reload fresh progress state from DB to guarantee 100% database synchronization
+      try {
+        const freshProg = await api.getProgress(currentUser.id);
+        if (freshProg.data && Array.isArray(freshProg.data)) {
+          setCompletedModuleIds(freshProg.data.filter((p: any) => p.isCompleted).map((p: any) => p.moduleId));
+        }
+      } catch { /* keep optimistic state */ }
+
+      // 4. Notify other views (e.g. Student Dashboard) to synchronize progress
+      window.dispatchEvent(new CustomEvent('progress:updated', { detail: { moduleId, isCompleted: !isCompleted } }));
+
+      // Save confirmed — mark as done
+      setSavingModuleIds((prev) => {
+        const next = new Set(prev);
+        next.delete(moduleId);
+        return next;
+      });
+    } catch (err) {
       // Rollback on network error
       setCompletedModuleIds(completedModuleIds);
+      setSavingModuleIds((prev) => {
+        const next = new Set(prev);
+        next.delete(moduleId);
+        return next;
+      });
+      console.error('Failed to save progress:', err);
     }
   };
 
@@ -168,6 +216,8 @@ export const ProgramVideosPage: React.FC<ProgramVideosPageProps> = () => {
         }
       } catch {
         // Fallback to defaults
+      } finally {
+        setSeriesLoading(false);
       }
     };
     fetchSeries();
@@ -201,10 +251,22 @@ export const ProgramVideosPage: React.FC<ProgramVideosPageProps> = () => {
       />
       {/* Loading guard while DB access check runs */}
       {userLoading && (
-        <div className="fixed inset-0 z-[9999] bg-[#06080D]/90 flex items-center justify-center">
-          <div className="text-center space-y-3">
-            <div className="w-12 h-12 rounded-full border-2 border-secondary/30 border-t-secondary animate-spin mx-auto" />
-            <p className="font-mono-data text-xs text-secondary">VERIFYING OPERATIVE ACCESS...</p>
+        <div className="fixed inset-0 z-[9999] bg-[#06080D]/80 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="glass-card p-8 rounded-2xl border border-secondary/40 text-center space-y-4 max-w-sm w-full mx-4 shadow-[0_0_50px_rgba(255,184,0,0.15)]">
+            <div className="relative flex items-center justify-center">
+              <div className="w-16 h-16 rounded-full border border-dashed border-secondary/50 animate-spin" style={{ animationDuration: '6s' }} />
+              <div className="w-10 h-10 rounded-full bg-secondary/15 border border-secondary flex items-center justify-center absolute">
+                <span className="material-symbols-outlined text-secondary text-xl">shield</span>
+              </div>
+            </div>
+            <div className="space-y-1">
+              <p className="font-mono-data text-xs text-secondary font-bold tracking-widest uppercase">
+                VERIFYING OPERATIVE ACCESS...
+              </p>
+              <p className="font-mono-data text-[10px] text-on-surface-variant">
+                Synchronizing security clearance &amp; LMS progress ledger
+              </p>
+            </div>
           </div>
         </div>
       )}
@@ -282,7 +344,15 @@ export const ProgramVideosPage: React.FC<ProgramVideosPageProps> = () => {
 
       {/* Series Cards Display */}
       <section className="max-w-container-max mx-auto px-4 md:px-lg space-y-xl relative z-10">
-        {filteredSeries.map((series) => {
+        {seriesLoading ? (
+          <ProgramSeriesSkeleton count={2} />
+        ) : filteredSeries.length === 0 ? (
+          <div className="glass-card p-12 text-center rounded-2xl border border-outline-variant/30 space-y-3">
+            <span className="material-symbols-outlined text-4xl text-on-surface-variant">video_library</span>
+            <p className="font-mono-data text-sm text-on-surface">No video modules found for this division filter.</p>
+          </div>
+        ) : (
+          filteredSeries.map((series) => {
           const programLocked = currentUser && !hasAccessToProgram(series.courseSlug);
           const completedCount = series.modules.filter((m) => completedModuleIds.includes(m.id)).length;
           const progressPercent = Math.round((completedCount / (series.modules.length || 1)) * 100);
@@ -433,7 +503,8 @@ export const ProgramVideosPage: React.FC<ProgramVideosPageProps> = () => {
             </div>
           </div>
           );
-        })}
+        })
+        )}
       </section>
 
       {/* Video Modal Player */}
@@ -500,24 +571,35 @@ export const ProgramVideosPage: React.FC<ProgramVideosPageProps> = () => {
               {/* Player Bottom Completion Bar */}
               <div className="p-3.5 bg-[#0D111A] border-t border-outline-variant/30 flex justify-between items-center flex-wrap gap-2">
                 <span className="font-mono-data text-xs text-on-surface-variant">
-                  {completedModuleIds.includes(activeVideo.mod.id)
+                  {savingModuleIds.has(activeVideo.mod.id)
+                    ? '⏳ Saving progress to database...'
+                    : completedModuleIds.includes(activeVideo.mod.id)
                     ? '🎉 You have completed this lesson module!'
                     : 'Watch progress is tracked automatically. Module completes at 100%.'}
                 </span>
 
                 <button
                   onClick={() => toggleModuleCompletion(activeVideo.mod.id, activeVideo.series.id)}
-                  className={`px-4 py-2 rounded-xl font-mono-data text-xs font-bold uppercase flex items-center gap-1.5 transition-all cursor-pointer ${
-                    completedModuleIds.includes(activeVideo.mod.id)
-                      ? 'bg-[#2ED573]/20 border border-[#2ED573] text-[#2ED573]'
-                      : 'btn-elite shadow-[0_0_15px_rgba(255,184,0,0.3)]'
+                  disabled={savingModuleIds.has(activeVideo.mod.id)}
+                  className={`px-4 py-2 rounded-xl font-mono-data text-xs font-bold uppercase flex items-center gap-1.5 transition-all ${
+                    savingModuleIds.has(activeVideo.mod.id)
+                      ? 'opacity-50 cursor-not-allowed bg-surface-container border border-outline-variant text-on-surface-variant'
+                      : completedModuleIds.includes(activeVideo.mod.id)
+                      ? 'bg-[#2ED573]/20 border border-[#2ED573] text-[#2ED573] cursor-pointer hover:bg-[#2ED573]/30'
+                      : 'btn-elite shadow-[0_0_15px_rgba(255,184,0,0.3)] cursor-pointer hover:shadow-[0_0_25px_rgba(255,184,0,0.5)]'
                   }`}
                 >
                   <span className="material-symbols-outlined text-sm">
-                    {completedModuleIds.includes(activeVideo.mod.id) ? 'check_circle' : 'radio_button_unchecked'}
+                    {savingModuleIds.has(activeVideo.mod.id)
+                      ? 'hourglass_empty'
+                      : completedModuleIds.includes(activeVideo.mod.id)
+                      ? 'check_circle'
+                      : 'radio_button_unchecked'}
                   </span>
                   <span>
-                    {completedModuleIds.includes(activeVideo.mod.id)
+                    {savingModuleIds.has(activeVideo.mod.id)
+                      ? 'SAVING...'
+                      : completedModuleIds.includes(activeVideo.mod.id)
                       ? 'COMPLETED (CLICK TO RESET)'
                       : 'MARK AS FINISHED'}
                   </span>

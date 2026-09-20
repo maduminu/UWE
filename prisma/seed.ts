@@ -3,6 +3,11 @@ import { PrismaClient } from '@prisma/client';
 const prisma = new PrismaClient();
 
 async function main() {
+  if (process.env.NODE_ENV === 'production' && !process.env.ALLOW_PROD_SEED) {
+    console.error('🚫 FATAL: prisma/seed.ts is disabled in production to protect production data.');
+    process.exit(1);
+  }
+
   console.log('🌱 Starting UWE Database Seed — Full Realistic Data Set...');
 
   // ─────────────────────────────────────────────────────────────

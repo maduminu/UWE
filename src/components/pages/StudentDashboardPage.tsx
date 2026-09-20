@@ -1,8 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { api } from '../../services/api';
 import { authService } from '../../services/auth';
 import { safeGetStorage, safeSetStorage } from '../../utils/storage';
+import { useRealtimeEvent } from '../../services/realtime';
 import { CertificateModal } from '../ui/CertificateModal';
 import { AuthModal } from '../ui/AuthModal';
 import { BankSlipUploadModal } from '../ui/BankSlipUploadModal';
@@ -57,7 +59,7 @@ export const StudentDashboardPage: React.FC<StudentDashboardPageProps> = ({ setA
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [slipModalOpen, setSlipModalOpen] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'courses' | 'certificates' | 'schedule' | 'payments'>('courses');
+  const [activeTab, setActiveTab] = useState<'courses' | 'certificates' | 'schedule' | 'qa' | 'payments'>('courses');
   const [expandedCourseSlug, setExpandedCourseSlug] = useState<string | null>(null);
 
   // Sync auth state in real-time across tabs and components
@@ -69,9 +71,11 @@ export const StudentDashboardPage: React.FC<StudentDashboardPageProps> = ({ setA
 
     window.addEventListener('storage', handleAuthSync);
     window.addEventListener('auth:logout', handleAuthSync);
+    window.addEventListener('progress:updated', fetchUserData);
     return () => {
       window.removeEventListener('storage', handleAuthSync);
       window.removeEventListener('auth:logout', handleAuthSync);
+      window.removeEventListener('progress:updated', fetchUserData);
     };
   }, []);
 
@@ -95,54 +99,8 @@ export const StudentDashboardPage: React.FC<StudentDashboardPageProps> = ({ setA
   const [reviewSubmitting, setReviewSubmitting] = useState(false);
   const [reviewSuccessMsg, setReviewSuccessMsg] = useState<string | null>(null);
 
-  // Default fallback courses
-  const [coursesData, setCoursesData] = useState<EnrolledCourseCard[]>([
-    {
-      slug: 'bmb',
-      title: 'Beyond Mind Boundaries (BMB)',
-      subtitle: 'Subconscious Reprogramming & Identity Transcendence',
-      division: 'MIND ARCHITECTURE',
-      badgeColor: '#FFB800',
-      totalModules: 5,
-      completedModules: 0,
-      progressPercent: 0,
-      lastEpisodeTitle: 'Module 01: Neural Deconditioning & Calibration',
-      instructorName: 'Commander Janith Perera',
-      nextBatch: {
-        scheduleText: '2026-08-25 (Zoom Live 8:30 PM)',
-      },
-    },
-    {
-      slug: 'leadership',
-      title: 'Leadership & Command Academy',
-      subtitle: 'Executive Authority & Tactical Delegation',
-      division: 'TACTICAL COMMAND',
-      badgeColor: '#00D2FF',
-      totalModules: 4,
-      completedModules: 0,
-      progressPercent: 0,
-      lastEpisodeTitle: 'Module 01: The Sovereign Command Philosophy',
-      instructorName: 'Suranjith Godagama',
-      nextBatch: {
-        scheduleText: '2026-09-02 (Weekend Mastermind)',
-      },
-    },
-    {
-      slug: 'ignit',
-      title: 'IGNIT Enterprise Incubator',
-      subtitle: 'Zero-to-One Venture Launch & AI Automation',
-      division: 'ENTERPRISE VENTURES',
-      badgeColor: '#00FF66',
-      totalModules: 4,
-      completedModules: 0,
-      progressPercent: 0,
-      lastEpisodeTitle: 'Module 01: Venture Ideation & Market Validation',
-      instructorName: 'Dilshan Madusanka',
-      nextBatch: {
-        scheduleText: '2026-09-15 (Incubator Access)',
-      },
-    },
-  ]);
+  // Enrolled courses state (loaded from live database)
+  const [coursesData, setCoursesData] = useState<EnrolledCourseCard[]>([]);
 
   const fetchUserData = async () => {
     const activeUser = currentUser || authService.getStudentUser();
@@ -156,7 +114,7 @@ export const StudentDashboardPage: React.FC<StudentDashboardPageProps> = ({ setA
       if (dashRes.success && dashRes.data) {
         const { enrolledCourses, certificates, paymentSlips: slips, stats } = dashRes.data;
 
-        if (enrolledCourses && enrolledCourses.length > 0) {
+        if (Array.isArray(enrolledCourses)) {
           const mapped: EnrolledCourseCard[] = enrolledCourses.map((c: any) => ({
             id: c.id,
             slug: c.slug,
@@ -209,6 +167,11 @@ export const StudentDashboardPage: React.FC<StudentDashboardPageProps> = ({ setA
   useEffect(() => {
     fetchUserData();
   }, [currentUser]);
+
+  // Real-time updates: refresh dashboard live when admin approves slip or updates user
+  useRealtimeEvent('slip:verified', () => fetchUserData());
+  useRealtimeEvent('slip:rejected', () => fetchUserData());
+  useRealtimeEvent('user:updated', () => fetchUserData());
 
   const handleClaimCertificate = async (course: EnrolledCourseCard) => {
     if (!currentUser) {
@@ -329,7 +292,7 @@ export const StudentDashboardPage: React.FC<StudentDashboardPageProps> = ({ setA
   const operativeId = currentUser.id ? `#UWE-OP-${currentUser.id.substring(0, 6).toUpperCase()}` : '#UWE-OP-0842';
 
   return (
-    <div className="min-h-screen bg-[#070A12] text-on-surface py-10 px-4 md:px-8 max-w-7xl mx-auto space-y-8">
+    <div className="min-h-screen bg-[#070A12] text-on-surface py-6 sm:py-10 px-3 sm:px-4 md:px-8 max-w-7xl mx-auto space-y-6 sm:space-y-8 w-full overflow-x-hidden">
       <PageSEO
         title="Operative Command Dashboard"
         description="Access enrolled course directives, live training progress, and verified credential certificates."
@@ -337,50 +300,50 @@ export const StudentDashboardPage: React.FC<StudentDashboardPageProps> = ({ setA
       />
 
       {/* ── 1. Tactical Operative Header ── */}
-      <div className="relative rounded-3xl bg-gradient-to-r from-[#0C1220] via-[#0F172C] to-[#070A12] border border-secondary/40 p-6 md:p-8 shadow-[0_0_50px_rgba(255,184,0,0.15)] overflow-hidden">
+      <div className="relative rounded-2xl sm:rounded-3xl bg-gradient-to-r from-[#0C1220] via-[#0F172C] to-[#070A12] border border-secondary/40 p-3.5 sm:p-6 md:p-8 shadow-[0_0_50px_rgba(255,184,0,0.15)] overflow-hidden w-full">
         <div className="absolute -top-12 -right-12 w-80 h-80 bg-secondary/15 rounded-full blur-3xl pointer-events-none" />
         <div className="absolute -bottom-12 -left-12 w-80 h-80 bg-[#00D2FF]/10 rounded-full blur-3xl pointer-events-none" />
 
-        <div className="relative z-10 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
+        <div className="relative z-10 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 sm:gap-6 w-full">
           {/* Operative Identity */}
-          <div className="flex items-start sm:items-center gap-4 md:gap-5">
-            <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-gradient-to-br from-secondary/30 via-[#0A0E18] to-secondary/10 border-2 border-secondary flex items-center justify-center text-secondary font-display font-black text-2xl sm:text-3xl shadow-[0_0_25px_rgba(255,184,0,0.3)] shrink-0">
+          <div className="flex items-start sm:items-center gap-3 sm:gap-4 md:gap-5 min-w-0 w-full lg:w-auto">
+            <div className="w-12 h-12 sm:w-20 sm:h-20 rounded-2xl bg-gradient-to-br from-secondary/30 via-[#0A0E18] to-secondary/10 border-2 border-secondary flex items-center justify-center text-secondary font-display font-black text-xl sm:text-3xl shadow-[0_0_25px_rgba(255,184,0,0.3)] shrink-0">
               {currentUser.name ? currentUser.name.charAt(0).toUpperCase() : 'U'}
             </div>
-            <div className="space-y-1">
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="px-2.5 py-0.5 rounded-full bg-secondary/20 border border-secondary/50 font-mono-data text-[10px] text-secondary font-bold uppercase tracking-wider flex items-center gap-1">
-                  <span className="material-symbols-outlined text-xs">
+            <div className="space-y-1 min-w-0 flex-1">
+              <div className="flex items-center gap-1 sm:gap-1.5 flex-wrap min-w-0">
+                <span className="px-2 py-0.5 rounded-full bg-secondary/20 border border-secondary/50 font-mono-data text-[9px] sm:text-[10px] text-secondary font-bold uppercase tracking-wider flex items-center gap-1 truncate max-w-full">
+                  <span className="material-symbols-outlined text-xs shrink-0">
                     {gamificationProfile?.rankInfo?.badgeIcon || 'military_tech'}
                   </span>
-                  {gamificationProfile?.rankInfo?.rankTitle || 'NOVICE OPERATIVE'}
+                  <span className="truncate">{gamificationProfile?.rankInfo?.rankTitle || 'NOVICE OPERATIVE'}</span>
                 </span>
-                <span className="px-2 py-0.5 rounded bg-amber-500/20 border border-amber-500/50 font-mono-data text-[10px] text-amber-300 font-bold flex items-center gap-1">
+                <span className="px-2 py-0.5 rounded bg-amber-500/20 border border-amber-500/50 font-mono-data text-[9px] sm:text-[10px] text-amber-300 font-bold flex items-center gap-1 shrink-0">
                   <span>🔥</span>
-                  <span>{gamificationProfile?.streakDays || 1}D COMBAT STREAK</span>
+                  <span>{gamificationProfile?.streakDays || 1}D STREAK</span>
                 </span>
-                <span className="px-2 py-0.5 rounded bg-[#00FF66]/15 border border-[#00FF66]/40 font-mono-data text-[10px] text-[#00FF66] font-bold">
+                <span className="px-2 py-0.5 rounded bg-[#00FF66]/15 border border-[#00FF66]/40 font-mono-data text-[9px] sm:text-[10px] text-[#00FF66] font-bold shrink-0">
                   {operativeId}
                 </span>
-                <span className="flex items-center gap-1 font-mono-data text-[10px] text-on-surface-variant">
+                <span className="hidden sm:flex items-center gap-1 font-mono-data text-[10px] text-on-surface-variant">
                   <span className="w-2 h-2 rounded-full bg-[#00FF66] animate-pulse inline-block" />
                   DATABASE SYNCED
                 </span>
               </div>
 
-              <h1 className="font-display text-2xl sm:text-3xl md:text-4xl font-black text-on-surface uppercase tracking-wide">
+              <h1 className="font-display text-xl sm:text-3xl md:text-4xl font-black text-on-surface uppercase tracking-wide truncate">
                 {currentUser.name ? currentUser.name : 'Sovereign Operative'}
               </h1>
-              <p className="font-mono-data text-xs text-on-surface-variant">
+              <p className="font-mono-data text-[11px] sm:text-xs text-on-surface-variant truncate">
                 {currentUser.email} • Enrolled in <span className="text-secondary font-bold">{coursesData.length} Core Directives</span>
               </p>
 
               {/* Multi-Coach & Cohort Assignment Indicator */}
               {(currentUser.assignedCoachName || gamificationProfile?.assignedCoachName) && (
                 <div className="pt-1 flex items-center gap-2">
-                  <span className="px-2.5 py-0.5 rounded-lg bg-blue-500/20 text-blue-300 border border-blue-500/40 text-[11px] font-mono-data font-bold flex items-center gap-1.5 shadow-[0_0_10px_rgba(59,130,246,0.2)]">
+                  <span className="px-2.5 py-0.5 rounded-lg bg-blue-500/20 text-blue-300 border border-blue-500/40 text-[10px] sm:text-[11px] font-mono-data font-bold flex items-center gap-1.5 shadow-[0_0_10px_rgba(59,130,246,0.2)] flex-wrap">
                     <span className="material-symbols-outlined text-xs">school</span>
-                    ASSIGNED COMMAND COACH: {currentUser.assignedCoachName || gamificationProfile?.assignedCoachName}
+                    COACH: {currentUser.assignedCoachName || gamificationProfile?.assignedCoachName}
                     <span className="text-blue-400/70">({currentUser.cohortTag || gamificationProfile?.cohortTag || 'ALPHA COHORT'})</span>
                   </span>
                 </div>
@@ -389,63 +352,64 @@ export const StudentDashboardPage: React.FC<StudentDashboardPageProps> = ({ setA
           </div>
 
           {/* Action Hub */}
-          <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap w-full lg:w-auto shrink-0">
+          <div className="grid grid-cols-2 sm:flex sm:flex-wrap lg:flex-nowrap gap-1.5 sm:gap-2 w-full lg:w-auto shrink-0 min-w-0">
             <button
               onClick={() => setLeaderboardOpen(true)}
-              className="px-3 py-2 rounded-xl bg-[#1A2234] border border-secondary/50 text-secondary font-mono-data text-xs font-bold hover:bg-secondary hover:text-black transition-all flex items-center gap-1.5 cursor-pointer shadow-[0_0_15px_rgba(255,184,0,0.2)] shrink-0"
+              className="px-2 py-2 sm:px-3 rounded-xl bg-[#1A2234] border border-secondary/50 text-secondary font-mono-data text-[11px] sm:text-xs font-bold hover:bg-secondary hover:text-black transition-all flex items-center justify-center gap-1 sm:gap-1.5 cursor-pointer shadow-[0_0_15px_rgba(255,184,0,0.2)] text-center min-w-0 truncate"
             >
-              <span className="material-symbols-outlined text-sm">trophy</span>
-              <span>STANDINGS</span>
+              <span className="material-symbols-outlined text-xs sm:text-sm shrink-0">trophy</span>
+              <span className="truncate">STANDINGS</span>
             </button>
             <button
               onClick={() => setActivePage('program-videos')}
-              className="px-3.5 py-2 rounded-xl bg-secondary text-black font-mono-data text-xs font-bold hover:bg-secondary-container transition-all flex items-center gap-1.5 cursor-pointer shadow-[0_0_20px_rgba(255,184,0,0.35)] shrink-0"
+              className="px-2 py-2 sm:px-3.5 rounded-xl bg-secondary text-black font-mono-data text-[11px] sm:text-xs font-bold hover:bg-secondary-container transition-all flex items-center justify-center gap-1 sm:gap-1.5 cursor-pointer shadow-[0_0_20px_rgba(255,184,0,0.35)] text-center min-w-0 truncate"
             >
-              <span className="material-symbols-outlined text-sm">play_circle</span>
-              <span>VIDEO VAULT</span>
+              <span className="material-symbols-outlined text-xs sm:text-sm shrink-0">play_circle</span>
+              <span className="truncate">VIDEO VAULT</span>
             </button>
             <button
               onClick={() => setSlipModalOpen(true)}
-              className="px-3 py-2 rounded-xl bg-surface-variant/40 border border-outline-variant/40 font-mono-data text-xs text-on-surface hover:bg-surface-variant transition-all flex items-center gap-1.5 cursor-pointer shrink-0"
+              className="px-2 py-2 sm:px-3 rounded-xl bg-surface-variant/40 border border-outline-variant/40 font-mono-data text-[11px] sm:text-xs text-on-surface hover:bg-surface-variant transition-all flex items-center justify-center gap-1 sm:gap-1.5 cursor-pointer text-center min-w-0 truncate"
             >
-              <span className="material-symbols-outlined text-sm text-secondary">receipt_long</span>
-              <span>UPLOAD SLIP</span>
+              <span className="material-symbols-outlined text-xs sm:text-sm text-secondary shrink-0">receipt_long</span>
+              <span className="truncate">UPLOAD SLIP</span>
             </button>
             <button
               onClick={() => setReviewModalOpen(true)}
-              className="px-3 py-2 rounded-xl bg-surface-variant/40 border border-outline-variant/40 font-mono-data text-xs text-on-surface hover:bg-surface-variant transition-all flex items-center gap-1.5 cursor-pointer shrink-0"
+              className="px-2 py-2 sm:px-3 rounded-xl bg-surface-variant/40 border border-outline-variant/40 font-mono-data text-[11px] sm:text-xs text-on-surface hover:bg-surface-variant transition-all flex items-center justify-center gap-1 sm:gap-1.5 cursor-pointer text-center min-w-0 truncate"
             >
-              <span className="material-symbols-outlined text-sm text-secondary">rate_review</span>
-              <span>WRITE REVIEW</span>
+              <span className="material-symbols-outlined text-xs sm:text-sm text-secondary shrink-0">rate_review</span>
+              <span className="truncate">WRITE REVIEW</span>
             </button>
             <button
               onClick={handleLogout}
-              className="p-2 rounded-xl bg-red-500/15 border border-red-500/30 text-red-400 font-mono-data text-xs hover:bg-red-500/25 transition-all flex items-center justify-center cursor-pointer shrink-0"
+              className="col-span-2 sm:col-span-1 p-2 sm:px-3 rounded-xl bg-red-500/15 border border-red-500/30 text-red-400 font-mono-data text-[11px] sm:text-xs hover:bg-red-500/25 transition-all flex items-center justify-center gap-1 cursor-pointer shrink-0 text-center min-w-0"
               title="Logout session"
             >
-              <span className="material-symbols-outlined text-base">logout</span>
+              <span className="material-symbols-outlined text-base shrink-0">logout</span>
+              <span className="sm:hidden font-bold">LOGOUT</span>
             </button>
           </div>
         </div>
 
         {/* ── Operative XP Progression Bar ── */}
-        <div className="mt-6 pt-5 border-t border-outline-variant/30 font-mono-data">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 mb-2">
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-bold text-secondary flex items-center gap-1">
-                <span className="material-symbols-outlined text-sm">bolt</span>
-                TACTICAL XP PROGRESSION:
+        <div className="mt-4 sm:mt-6 pt-3 sm:pt-5 border-t border-outline-variant/30 font-mono-data">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-1.5 sm:gap-2 mb-2">
+            <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap min-w-0">
+              <span className="text-[10px] sm:text-xs font-bold text-secondary flex items-center gap-1">
+                <span className="material-symbols-outlined text-xs sm:text-sm">bolt</span>
+                XP PROGRESSION:
               </span>
-              <span className="text-xs text-on-surface font-extrabold">
+              <span className="text-[10px] sm:text-xs text-on-surface font-extrabold">
                 {gamificationProfile?.xp || 0} XP
               </span>
-              <span className="text-[11px] text-on-surface-variant">
-                / {gamificationProfile?.rankInfo?.nextRankXp || 150} XP for next tier
+              <span className="text-[9px] sm:text-[11px] text-on-surface-variant">
+                / {gamificationProfile?.rankInfo?.nextRankXp || 150} XP
               </span>
             </div>
             <div className="flex items-center gap-2">
               {gamificationProfile?.badges && gamificationProfile.badges.length > 0 && (
-                <div className="flex items-center gap-1">
+                <div className="flex items-center gap-1 flex-wrap">
                   {gamificationProfile.badges.map((b: string) => (
                     <span
                       key={b}
@@ -460,7 +424,7 @@ export const StudentDashboardPage: React.FC<StudentDashboardPageProps> = ({ setA
           </div>
 
           {/* Progress track */}
-          <div className="w-full h-2.5 bg-black/60 rounded-full overflow-hidden border border-outline-variant/30 relative">
+          <div className="w-full h-2 sm:h-2.5 bg-black/60 rounded-full overflow-hidden border border-outline-variant/30 relative">
             <div
               className="h-full bg-gradient-to-r from-secondary/80 to-secondary rounded-full transition-all duration-500 shadow-[0_0_10px_rgba(255,184,0,0.5)]"
               style={{ width: `${gamificationProfile?.rankInfo?.progressPercent || 0}%` }}
@@ -469,47 +433,48 @@ export const StudentDashboardPage: React.FC<StudentDashboardPageProps> = ({ setA
         </div>
 
         {/* Tactical KPI Counters */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mt-5 font-mono-data">
-          <div className="p-4 rounded-2xl bg-[#090E1A] border border-outline-variant/20 flex flex-col justify-between">
-            <span className="text-[11px] text-on-surface-variant uppercase">DIRECTIVES ENROLLED</span>
-            <div className="flex items-baseline gap-2 mt-2">
-              <span className="font-display text-2xl md:text-3xl font-black text-secondary">{coursesData.length}</span>
-              <span className="text-[10px] text-on-surface-variant">Active Programs</span>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3 md:gap-4 mt-4 sm:mt-5 font-mono-data w-full">
+          <div className="p-2.5 sm:p-4 rounded-xl sm:rounded-2xl bg-[#090E1A] border border-outline-variant/20 flex flex-col justify-between min-w-0 overflow-hidden">
+            <span className="text-[9px] sm:text-[11px] text-on-surface-variant uppercase truncate block">DIRECTIVES</span>
+            <div className="flex items-baseline gap-1 sm:gap-2 mt-1 sm:mt-2 min-w-0">
+              <span className="font-display text-lg sm:text-2xl md:text-3xl font-black text-secondary shrink-0">{coursesData.length}</span>
+              <span className="text-[8px] sm:text-[10px] text-on-surface-variant truncate">Enrolled</span>
             </div>
           </div>
 
-          <div className="p-4 rounded-2xl bg-[#090E1A] border border-outline-variant/20 flex flex-col justify-between">
-            <span className="text-[11px] text-on-surface-variant uppercase">OVERALL PROGRESS</span>
-            <div className="flex items-baseline gap-2 mt-2">
-              <span className="font-display text-2xl md:text-3xl font-black text-[#00FF66]">{overallProgress}%</span>
-              <span className="text-[10px] text-on-surface-variant">LMS Completion</span>
+          <div className="p-2.5 sm:p-4 rounded-xl sm:rounded-2xl bg-[#090E1A] border border-outline-variant/20 flex flex-col justify-between min-w-0 overflow-hidden">
+            <span className="text-[9px] sm:text-[11px] text-on-surface-variant uppercase truncate block">PROGRESS</span>
+            <div className="flex items-baseline gap-1 sm:gap-2 mt-1 sm:mt-2 min-w-0">
+              <span className="font-display text-lg sm:text-2xl md:text-3xl font-black text-[#00FF66] shrink-0">{overallProgress}%</span>
+              <span className="text-[8px] sm:text-[10px] text-on-surface-variant truncate">Completed</span>
             </div>
           </div>
 
-          <div className="p-4 rounded-2xl bg-[#090E1A] border border-outline-variant/20 flex flex-col justify-between">
-            <span className="text-[11px] text-on-surface-variant uppercase">COHORT STATUS</span>
-            <div className="flex items-baseline gap-2 mt-2">
-              <span className="font-display text-2xl md:text-3xl font-black text-[#00D2FF]">{inProgressCount}</span>
-              <span className="text-[10px] text-on-surface-variant">In Training</span>
+          <div className="p-2.5 sm:p-4 rounded-xl sm:rounded-2xl bg-[#090E1A] border border-outline-variant/20 flex flex-col justify-between min-w-0 overflow-hidden">
+            <span className="text-[9px] sm:text-[11px] text-on-surface-variant uppercase truncate block">COHORT STATUS</span>
+            <div className="flex items-baseline gap-1 sm:gap-2 mt-1 sm:mt-2 min-w-0">
+              <span className="font-display text-lg sm:text-2xl md:text-3xl font-black text-[#00D2FF] shrink-0">{inProgressCount}</span>
+              <span className="text-[8px] sm:text-[10px] text-on-surface-variant truncate">In Training</span>
             </div>
           </div>
 
-          <div className="p-4 rounded-2xl bg-[#090E1A] border border-outline-variant/20 flex flex-col justify-between">
-            <span className="text-[11px] text-on-surface-variant uppercase">CREDENTIALS ISSUED</span>
-            <div className="flex items-baseline gap-2 mt-2">
-              <span className="font-display text-2xl md:text-3xl font-black text-[#FFB800]">{userCertificates.length || completedCount}</span>
-              <span className="text-[10px] text-on-surface-variant">Certified</span>
+          <div className="p-2.5 sm:p-4 rounded-xl sm:rounded-2xl bg-[#090E1A] border border-outline-variant/20 flex flex-col justify-between min-w-0 overflow-hidden">
+            <span className="text-[9px] sm:text-[11px] text-on-surface-variant uppercase truncate block">CREDENTIALS</span>
+            <div className="flex items-baseline gap-1 sm:gap-2 mt-1 sm:mt-2 min-w-0">
+              <span className="font-display text-lg sm:text-2xl md:text-3xl font-black text-[#FFB800] shrink-0">{userCertificates.length || completedCount}</span>
+              <span className="text-[8px] sm:text-[10px] text-on-surface-variant truncate">Certified</span>
             </div>
           </div>
         </div>
       </div>
 
       {/* ── 2. Interactive Workspace Tabs ── */}
-      <div className="border-b border-outline-variant/30 flex gap-2 sm:gap-4 overflow-x-auto pb-1">
+      <div className="border-b border-outline-variant/30 flex gap-2 sm:gap-3 overflow-x-auto pb-2 scrollbar-none touch-pan-x w-full">
         {[
-          { id: 'courses', label: `Directives & Progress (${coursesData.length})`, icon: 'school' },
-          { id: 'certificates', label: `Official Credentials (${userCertificates.length})`, icon: 'workspace_premium' },
-          { id: 'schedule', label: 'Live Masterminds & Zoom', icon: 'event' },
+          { id: 'courses', label: `Directives (${coursesData.length})`, icon: 'school' },
+          { id: 'certificates', label: `Credentials (${userCertificates.length})`, icon: 'workspace_premium' },
+          { id: 'schedule', label: 'Live Cohorts', icon: 'event' },
+          { id: 'qa', label: 'Mastermind Q&A', icon: 'forum' },
           { id: 'payments', label: `Payment Slips (${paymentSlips.length})`, icon: 'receipt_long' },
         ].map((tab) => {
           const isActive = activeTab === tab.id;
@@ -517,7 +482,7 @@ export const StudentDashboardPage: React.FC<StudentDashboardPageProps> = ({ setA
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id as any)}
-              className={`px-4 py-3 rounded-xl font-mono-data text-xs uppercase tracking-wider flex items-center gap-2 transition-all cursor-pointer whitespace-nowrap ${
+              className={`px-3.5 sm:px-4 py-2.5 sm:py-3 rounded-xl font-mono-data text-xs uppercase tracking-wider flex items-center gap-1.5 sm:gap-2 transition-all cursor-pointer whitespace-nowrap shrink-0 ${
                 isActive
                   ? 'bg-secondary text-black font-bold shadow-[0_0_20px_rgba(255,184,0,0.4)]'
                   : 'bg-[#0A0F1D] text-on-surface-variant hover:text-on-surface border border-outline-variant/30'
@@ -559,147 +524,190 @@ export const StudentDashboardPage: React.FC<StudentDashboardPageProps> = ({ setA
               </button>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {coursesData.map((course) => {
-                const isCompleted = course.progressPercent >= 100;
-                const isExpanded = expandedCourseSlug === course.slug;
+            {coursesData.length === 0 ? (
+              <div className="p-8 sm:p-12 rounded-2xl bg-gradient-to-b from-[#0F1424] via-[#0B0F1C] to-[#070A12] border border-secondary/40 text-center space-y-5 shadow-2xl">
+                <div className="w-16 h-16 rounded-full bg-secondary/15 border border-secondary/40 flex items-center justify-center text-secondary mx-auto shadow-[0_0_25px_rgba(255,184,0,0.3)]">
+                  <span className="material-symbols-outlined text-3xl">school</span>
+                </div>
+                <div className="max-w-md mx-auto space-y-2">
+                  <h4 className="font-display text-xl font-black text-on-surface uppercase tracking-wide">
+                    No Active Directives Enrolled
+                  </h4>
+                  <p className="font-mono-data text-xs text-on-surface-variant leading-relaxed">
+                    You are logged in as a registered operative. Enroll in a course program or submit your bank deposit slip to activate your curriculum directives.
+                  </p>
+                </div>
 
-                return (
-                  <motion.div
-                    key={course.slug}
-                    whileHover={{ y: -4 }}
-                    className="rounded-2xl bg-[#0B0F1C] border border-outline-variant/30 p-6 flex flex-col justify-between shadow-xl relative overflow-hidden"
+                {paymentSlips.some((s) => s.status === 'PENDING') && (
+                  <div className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-amber-500/15 border border-amber-500/40 text-amber-300 font-mono-data text-xs font-bold">
+                    <span className="w-2 h-2 rounded-full bg-amber-400 animate-ping" />
+                    <span>⏳ Bank Transfer Slip Submitted &amp; Pending Admin Verification — Courses will unlock automatically upon approval</span>
+                  </div>
+                )}
+
+                <div className="flex gap-3 justify-center flex-wrap pt-2">
+                  <button
+                    onClick={() => setActivePage('product')}
+                    className="btn-elite px-6 py-3 rounded-xl font-mono-data text-xs uppercase tracking-wider font-bold cursor-pointer shadow-[0_0_20px_rgba(255,184,0,0.3)] flex items-center gap-2"
                   >
-                    {/* Accent Top Bar */}
-                    <div
-                      className="absolute top-0 left-0 right-0 h-1.5"
-                      style={{ backgroundColor: course.badgeColor }}
-                    />
+                    <span className="material-symbols-outlined text-base">explore</span>
+                    <span>EXPLORE PROGRAMS &amp; ENROLL</span>
+                  </button>
+                  <button
+                    onClick={() => setSlipModalOpen(true)}
+                    className="px-6 py-3 rounded-xl bg-surface-variant/40 hover:bg-surface-variant border border-outline-variant/40 font-mono-data text-xs text-on-surface font-bold uppercase transition-all cursor-pointer flex items-center gap-2"
+                  >
+                    <span className="material-symbols-outlined text-base text-secondary">receipt_long</span>
+                    <span>UPLOAD PAYMENT SLIP</span>
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {coursesData.map((course) => {
+                  const isCompleted = course.progressPercent >= 100;
+                  const isExpanded = expandedCourseSlug === course.slug;
 
-                    <div className="space-y-4">
-                      <div className="flex justify-between items-start">
-                        <span
-                          className="px-2.5 py-1 rounded-md text-[10px] font-mono-data font-bold uppercase tracking-wider border"
-                          style={{
-                            backgroundColor: `${course.badgeColor}15`,
-                            borderColor: `${course.badgeColor}40`,
-                            color: course.badgeColor,
-                          }}
-                        >
-                          {course.division}
-                        </span>
-                        <span className="font-mono-data text-xs font-bold text-on-surface-variant">
-                          {course.completedModules} / {course.totalModules} Lessons
-                        </span>
-                      </div>
+                  return (
+                    <motion.div
+                      key={course.slug}
+                      whileHover={{ y: -4 }}
+                      className="rounded-2xl bg-[#0B0F1C] border border-outline-variant/30 p-6 flex flex-col justify-between shadow-xl relative overflow-hidden"
+                    >
+                      {/* Accent Top Bar */}
+                      <div
+                        className="absolute top-0 left-0 right-0 h-1.5"
+                        style={{ backgroundColor: course.badgeColor }}
+                      />
 
-                      <div>
-                        <h3
-                          className="font-display text-lg font-bold text-on-surface hover:text-secondary transition-colors cursor-pointer"
-                          onClick={() => onSelectCourse ? onSelectCourse(course.slug) : setActivePage('product')}
-                        >
-                          {course.title}
-                        </h3>
-                        {course.subtitle && (
-                          <p className="font-mono-data text-[11px] text-secondary mt-0.5 line-clamp-1">
-                            {course.subtitle}
-                          </p>
-                        )}
-                        <p className="font-mono-data text-[11px] text-on-surface-variant mt-1">
-                          Faculty: <span className="text-on-surface">{course.instructorName}</span>
-                        </p>
-                      </div>
-
-                      {/* Progress Bar with Glow */}
-                      <div className="space-y-1.5 pt-2">
-                        <div className="flex justify-between text-xs font-mono-data">
-                          <span className="text-on-surface-variant">Directive Mastery</span>
-                          <span className="font-bold" style={{ color: course.badgeColor }}>
-                            {course.progressPercent}%
+                      <div className="space-y-4">
+                        <div className="flex justify-between items-start">
+                          <span
+                            className="px-2.5 py-1 rounded-md text-[10px] font-mono-data font-bold uppercase tracking-wider border"
+                            style={{
+                              backgroundColor: `${course.badgeColor}15`,
+                              borderColor: `${course.badgeColor}40`,
+                              color: course.badgeColor,
+                            }}
+                          >
+                            {course.division}
+                          </span>
+                          <span className="font-mono-data text-xs font-bold text-on-surface-variant">
+                            {course.completedModules} / {course.totalModules} Lessons
                           </span>
                         </div>
-                        <div className="w-full h-2.5 rounded-full bg-[#161D2E] overflow-hidden p-0.5">
-                          <motion.div
-                            initial={{ width: 0 }}
-                            animate={{ width: `${course.progressPercent}%` }}
-                            transition={{ duration: 1, ease: 'easeOut' }}
-                            className="h-full rounded-full shadow-[0_0_10px_currentColor]"
-                            style={{ backgroundColor: course.badgeColor, color: course.badgeColor }}
-                          />
-                        </div>
-                      </div>
 
-                      {/* Current Milestone / Last Watched */}
-                      <div className="p-3 rounded-xl bg-[#0E1424] border border-outline-variant/20 text-xs font-mono-data">
-                        <p className="text-[10px] text-on-surface-variant uppercase">Current Status:</p>
-                        <p className="text-on-surface truncate font-bold mt-0.5">{course.lastEpisodeTitle}</p>
-                      </div>
-
-                      {/* Expandable Module Breakdown */}
-                      {course.modules && course.modules.length > 0 && (
-                        <div className="pt-2">
-                          <button
-                            onClick={() => setExpandedCourseSlug(isExpanded ? null : course.slug)}
-                            className="w-full py-1.5 px-3 rounded-lg bg-[#111728] border border-outline-variant/20 text-on-surface-variant text-[11px] font-mono-data hover:text-on-surface flex items-center justify-between cursor-pointer"
+                        <div>
+                          <h3
+                            className="font-display text-lg font-bold text-on-surface hover:text-secondary transition-colors cursor-pointer"
+                            onClick={() => onSelectCourse ? onSelectCourse(course.slug) : setActivePage('product')}
                           >
-                            <span>{isExpanded ? 'Hide Modules' : `View ${course.modules.length} Lessons Breakdown`}</span>
-                            <span className="material-symbols-outlined text-sm">
-                              {isExpanded ? 'expand_less' : 'expand_more'}
-                            </span>
-                          </button>
-
-                          <AnimatePresence>
-                            {isExpanded && (
-                              <motion.div
-                                initial={{ height: 0, opacity: 0 }}
-                                animate={{ height: 'auto', opacity: 1 }}
-                                exit={{ height: 0, opacity: 0 }}
-                                className="mt-2 space-y-1.5 max-h-48 overflow-y-auto pr-1"
-                              >
-                                {course.modules.map((mod) => (
-                                  <div
-                                    key={mod.id}
-                                    className="p-2 rounded bg-[#080C16] border border-outline-variant/20 flex items-center justify-between text-[10px] font-mono-data"
-                                  >
-                                    <span className="truncate pr-2 text-on-surface">
-                                      0{mod.episodeNumber}. {mod.title}
-                                    </span>
-                                    <span className={mod.isCompleted ? 'text-[#00FF66] font-bold' : 'text-on-surface-variant'}>
-                                      {mod.isCompleted ? '✓ DONE' : mod.duration}
-                                    </span>
-                                  </div>
-                                ))}
-                              </motion.div>
-                            )}
-                          </AnimatePresence>
+                            {course.title}
+                          </h3>
+                          {course.subtitle && (
+                            <p className="font-mono-data text-[11px] text-secondary mt-0.5 line-clamp-1">
+                              {course.subtitle}
+                            </p>
+                          )}
+                          <p className="font-mono-data text-[11px] text-on-surface-variant mt-1">
+                            Faculty: <span className="text-on-surface">{course.instructorName}</span>
+                          </p>
                         </div>
-                      )}
-                    </div>
 
-                    {/* Bottom Action Card */}
-                    <div className="pt-5 mt-4 border-t border-outline-variant/20 flex gap-2">
-                      {isCompleted ? (
-                        <button
-                          onClick={() => handleClaimCertificate(course)}
-                          className="w-full py-2.5 rounded-xl bg-gradient-to-r from-secondary to-[#FFD700] text-black font-mono-data text-xs font-black uppercase hover:opacity-95 transition-all flex items-center justify-center gap-1.5 shadow-[0_0_20px_rgba(255,184,0,0.3)] cursor-pointer"
-                        >
-                          <span className="material-symbols-outlined text-base">workspace_premium</span>
-                          <span>CLAIM CERTIFICATE</span>
-                        </button>
-                      ) : (
-                        <button
-                          onClick={() => setActivePage('program-videos')}
-                          className="w-full py-2.5 rounded-xl bg-secondary/15 border border-secondary/50 text-secondary font-mono-data text-xs font-bold uppercase hover:bg-secondary hover:text-black transition-all flex items-center justify-center gap-1.5 cursor-pointer"
-                        >
-                          <span className="material-symbols-outlined text-base">play_arrow</span>
-                          <span>RESUME LEARNING</span>
-                        </button>
-                      )}
-                    </div>
-                  </motion.div>
-                );
-              })}
-            </div>
+                        {/* Progress Bar with Glow */}
+                        <div className="space-y-1.5 pt-2">
+                          <div className="flex justify-between text-xs font-mono-data">
+                            <span className="text-on-surface-variant">Directive Mastery</span>
+                            <span className="font-bold" style={{ color: course.badgeColor }}>
+                              {course.progressPercent}%
+                            </span>
+                          </div>
+                          <div className="w-full h-2.5 rounded-full bg-[#161D2E] overflow-hidden p-0.5">
+                            <motion.div
+                              initial={{ width: 0 }}
+                              animate={{ width: `${course.progressPercent}%` }}
+                              transition={{ duration: 1, ease: 'easeOut' }}
+                              className="h-full rounded-full shadow-[0_0_10px_currentColor]"
+                              style={{ backgroundColor: course.badgeColor, color: course.badgeColor }}
+                            />
+                          </div>
+                        </div>
+
+                        {/* Current Milestone / Last Watched */}
+                        <div className="p-3 rounded-xl bg-[#0E1424] border border-outline-variant/20 text-xs font-mono-data">
+                          <p className="text-[10px] text-on-surface-variant uppercase">Current Status:</p>
+                          <p className="text-on-surface truncate font-bold mt-0.5">{course.lastEpisodeTitle}</p>
+                        </div>
+
+                        {/* Expandable Module Breakdown */}
+                        {course.modules && course.modules.length > 0 && (
+                          <div className="pt-1">
+                            <button
+                              onClick={() => setExpandedCourseSlug(isExpanded ? null : course.slug)}
+                              className="w-full py-1.5 px-3 rounded-lg bg-surface-variant/30 hover:bg-surface-variant/50 text-[11px] font-mono-data text-secondary flex items-center justify-between transition-colors cursor-pointer border border-outline-variant/20"
+                            >
+                              <span>{isExpanded ? 'Hide Modules' : 'View Module Directives'}</span>
+                              <span className="material-symbols-outlined text-sm">
+                                {isExpanded ? 'expand_less' : 'expand_more'}
+                              </span>
+                            </button>
+
+                            <AnimatePresence>
+                              {isExpanded && (
+                                <motion.div
+                                  initial={{ opacity: 0, height: 0 }}
+                                  animate={{ opacity: 1, height: 'auto' }}
+                                  exit={{ opacity: 0, height: 0 }}
+                                  className="mt-2 space-y-1.5 overflow-hidden"
+                                >
+                                  {course.modules.map((mod) => (
+                                    <div
+                                      key={mod.id}
+                                      className="p-2 rounded-lg bg-[#080B14] border border-outline-variant/15 flex items-center justify-between text-[11px] font-mono-data"
+                                    >
+                                      <div className="flex items-center gap-2 truncate">
+                                        <span className={`material-symbols-outlined text-xs ${mod.isCompleted ? 'text-[#00FF66]' : 'text-on-surface-variant'}`}>
+                                          {mod.isCompleted ? 'check_circle' : 'radio_button_unchecked'}
+                                        </span>
+                                        <span className="truncate text-on-surface">{mod.episodeNumber}. {mod.title}</span>
+                                      </div>
+                                      <span className="text-[10px] text-on-surface-variant shrink-0 ml-2">
+                                        {mod.isCompleted ? '✓ DONE' : mod.duration}
+                                      </span>
+                                    </div>
+                                  ))}
+                                </motion.div>
+                              )}
+                            </AnimatePresence>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Bottom Action Card */}
+                      <div className="pt-5 mt-4 border-t border-outline-variant/20 flex gap-2">
+                        {isCompleted ? (
+                          <button
+                            onClick={() => handleClaimCertificate(course)}
+                            className="w-full py-2.5 rounded-xl bg-gradient-to-r from-secondary to-[#FFD700] text-black font-mono-data text-xs font-black uppercase hover:opacity-95 transition-all flex items-center justify-center gap-1.5 shadow-[0_0_20px_rgba(255,184,0,0.3)] cursor-pointer"
+                          >
+                            <span className="material-symbols-outlined text-base">workspace_premium</span>
+                            <span>CLAIM CERTIFICATE</span>
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => setActivePage('program-videos')}
+                            className="w-full py-2.5 rounded-xl bg-secondary/15 border border-secondary/50 text-secondary font-mono-data text-xs font-bold uppercase hover:bg-secondary hover:text-black transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                          >
+                            <span className="material-symbols-outlined text-base">play_arrow</span>
+                            <span>RESUME LEARNING</span>
+                          </button>
+                        )}
+                      </div>
+                    </motion.div>
+                  );
+                })}
+              </div>
+            )}
           </motion.div>
         )}
 
@@ -848,7 +856,7 @@ export const StudentDashboardPage: React.FC<StudentDashboardPageProps> = ({ setA
             {/* Live Mastermind Q&A & Coach Drill Feedback Board */}
             <div className="mt-8">
               <MastermindQABoard
-                currentCourseSlug={coursesData[0]?.slug || 'bmb'}
+                currentCourseSlug={coursesData[0]?.slug || 'all'}
                 currentUser={{
                   id: currentUser?.id,
                   name: currentUser?.name,
@@ -856,6 +864,26 @@ export const StudentDashboardPage: React.FC<StudentDashboardPageProps> = ({ setA
                 }}
               />
             </div>
+          </motion.div>
+        )}
+
+        {/* Tab 4: Dedicated Mastermind Q&A */}
+        {activeTab === 'qa' && (
+          <motion.div
+            key="qa"
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -15 }}
+            className="space-y-6"
+          >
+            <MastermindQABoard
+              currentCourseSlug={coursesData[0]?.slug || 'all'}
+              currentUser={{
+                id: currentUser?.id,
+                name: currentUser?.name,
+                role: currentUser?.role,
+              }}
+            />
           </motion.div>
         )}
 
@@ -963,20 +991,20 @@ export const StudentDashboardPage: React.FC<StudentDashboardPageProps> = ({ setA
       />
 
       {/* Review Submission Modal */}
-      {reviewModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+      {reviewModalOpen && typeof document !== 'undefined' && createPortal(
+        <div className="fixed inset-0 z-[99999] flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-md overflow-y-auto font-sans">
           <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.95 }}
-            className="w-full max-w-lg bg-[#0C101C] border border-secondary/40 rounded-2xl p-6 sm:p-8 shadow-2xl space-y-4 font-mono-data text-xs"
+            initial={{ opacity: 0, scale: 0.95, y: 15 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: 15 }}
+            className="w-full max-w-lg bg-[#0C101C] border border-secondary/40 rounded-2xl p-5 sm:p-7 shadow-2xl space-y-4 font-mono-data text-xs max-h-[92vh] overflow-y-auto my-auto"
           >
             <div className="flex justify-between items-center pb-2 border-b border-outline-variant/30">
               <div>
-                <h3 className="font-display text-lg font-black text-secondary uppercase">
+                <h3 className="font-display text-base sm:text-lg font-black text-secondary uppercase">
                   Transmit Course Review
                 </h3>
-                <p className="text-on-surface-variant text-[11px]">
+                <p className="text-on-surface-variant text-[10px] sm:text-[11px]">
                   Share your transformation with future cohort operatives
                 </p>
               </div>
@@ -994,15 +1022,15 @@ export const StudentDashboardPage: React.FC<StudentDashboardPageProps> = ({ setA
               </div>
             )}
 
-            <form onSubmit={handleReviewSubmit} className="space-y-4">
+            <form onSubmit={handleReviewSubmit} className="space-y-3.5">
               <div>
-                <label className="block text-on-surface-variant mb-1 uppercase">
+                <label className="block text-on-surface-variant mb-1 uppercase text-[10px] sm:text-xs">
                   Select Directive
                 </label>
                 <select
                   value={reviewCourseSlug}
                   onChange={(e) => setReviewCourseSlug(e.target.value)}
-                  className="w-full p-2.5 rounded-xl bg-[#111728] border border-outline-variant/40 text-on-surface focus:border-secondary outline-none"
+                  className="w-full p-2.5 rounded-xl bg-[#111728] border border-outline-variant/40 text-on-surface focus:border-secondary outline-none text-xs"
                 >
                   <option value="bmb">Beyond Mind Boundaries (BMB)</option>
                   <option value="leadership">Leadership &amp; Command Academy</option>
@@ -1011,10 +1039,10 @@ export const StudentDashboardPage: React.FC<StudentDashboardPageProps> = ({ setA
               </div>
 
               <div>
-                <label className="block text-on-surface-variant mb-1 uppercase">
+                <label className="block text-on-surface-variant mb-1 uppercase text-[10px] sm:text-xs">
                   Rating (1 to 5 Stars)
                 </label>
-                <div className="flex gap-2 items-center">
+                <div className="flex gap-2 items-center flex-wrap">
                   {[1, 2, 3, 4, 5].map((star) => (
                     <button
                       type="button"
@@ -1027,14 +1055,14 @@ export const StudentDashboardPage: React.FC<StudentDashboardPageProps> = ({ setA
                       ★
                     </button>
                   ))}
-                  <span className="text-secondary font-bold ml-2">
+                  <span className="text-secondary font-bold ml-1 text-xs">
                     {reviewRating} / 5 Stars
                   </span>
                 </div>
               </div>
 
               <div>
-                <label className="block text-on-surface-variant mb-1 uppercase">
+                <label className="block text-on-surface-variant mb-1 uppercase text-[10px] sm:text-xs">
                   Headline / Key Shift (Optional)
                 </label>
                 <input
@@ -1042,12 +1070,12 @@ export const StudentDashboardPage: React.FC<StudentDashboardPageProps> = ({ setA
                   value={reviewTitle}
                   onChange={(e) => setReviewTitle(e.target.value)}
                   placeholder="e.g. Total neurological breakthrough in 5 days"
-                  className="w-full p-2.5 rounded-xl bg-[#111728] border border-outline-variant/40 text-on-surface focus:border-secondary outline-none"
+                  className="w-full p-2.5 rounded-xl bg-[#111728] border border-outline-variant/40 text-on-surface focus:border-secondary outline-none text-xs"
                 />
               </div>
 
               <div>
-                <label className="block text-on-surface-variant mb-1 uppercase">
+                <label className="block text-on-surface-variant mb-1 uppercase text-[10px] sm:text-xs">
                   Your Tactical Review *
                 </label>
                 <textarea
@@ -1056,29 +1084,30 @@ export const StudentDashboardPage: React.FC<StudentDashboardPageProps> = ({ setA
                   value={reviewComment}
                   onChange={(e) => setReviewComment(e.target.value)}
                   placeholder="Detail how this program shifted your execution, mindset, and results..."
-                  className="w-full p-3 rounded-xl bg-[#111728] border border-outline-variant/40 text-on-surface focus:border-secondary outline-none resize-none"
+                  className="w-full p-3 rounded-xl bg-[#111728] border border-outline-variant/40 text-on-surface focus:border-secondary outline-none resize-none text-xs"
                 />
               </div>
 
-              <div className="pt-2 flex justify-end gap-2">
+              <div className="pt-2 flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
                 <button
                   type="button"
                   onClick={() => setReviewModalOpen(false)}
-                  className="px-4 py-2 rounded-xl bg-surface-variant/40 text-on-surface"
+                  className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-surface-variant/40 text-on-surface font-mono-data text-xs text-center cursor-pointer"
                 >
                   CANCEL
                 </button>
                 <button
                   type="submit"
                   disabled={reviewSubmitting}
-                  className="px-5 py-2 rounded-xl bg-secondary text-black font-bold hover:bg-secondary-container transition-all cursor-pointer"
+                  className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-secondary text-black font-bold hover:bg-secondary-container transition-all cursor-pointer text-xs text-center"
                 >
                   {reviewSubmitting ? 'TRANSMITTING...' : 'POST REVIEW'}
                 </button>
               </div>
             </form>
           </motion.div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* ── Global Operative Leaderboard Modal ── */}

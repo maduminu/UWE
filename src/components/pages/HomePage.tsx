@@ -5,6 +5,11 @@ import type { PageId } from '../layout/Navbar';
 import { TiltCard } from '../ui/TiltCard';
 import { PageSEO } from '../ui/PageSEO';
 import heroEmblemAsset from '../../assets/images/uwe_shield_isolated.png';
+import heroEmblemWebp from '../../assets/images/uwe_shield_isolated.webp';
+import heroEmblemWebpMd from '../../assets/images/uwe_shield_isolated-md.webp';
+import heroEmblemWebpSm from '../../assets/images/uwe_shield_isolated-sm.webp';
+import { OptimizedPicture } from '../ui/OptimizedPicture';
+import { TestimonialsMarquee } from '../ui/TestimonialsMarquee';
 
 interface HomePageProps {
   setActivePage: (page: PageId) => void;
@@ -165,10 +170,12 @@ export const HomePage: React.FC<HomePageProps> = ({ setActivePage }) => {
                   transition: 'transform 0.15s cubic-bezier(0.2, 0.8, 0.2, 1)',
                 }}
               >
-                <img
-                  className="w-full h-full object-contain p-2 relative z-10 drop-shadow-[0_20px_45px_rgba(0,102,255,0.45)] filter"
-                  src={heroEmblemAsset}
+                <OptimizedPicture
+                  webpSrcSet={`${heroEmblemWebpSm} 320w, ${heroEmblemWebpMd} 640w, ${heroEmblemWebp} 1024w`}
+                  fallbackSrc={heroEmblemAsset}
                   alt="Unity Warriors Empire Isolated Metallic Shield Emblem"
+                  priority={true}
+                  className="w-full h-full object-contain p-2 relative z-10 drop-shadow-[0_20px_45px_rgba(0,102,255,0.45)] filter"
                 />
               </div>
             </div>
@@ -381,6 +388,9 @@ export const HomePage: React.FC<HomePageProps> = ({ setActivePage }) => {
           </motion.div>
         </div>
       </section>
+
+      {/* Verified Operative Testimonials Infinite Marquee */}
+      <TestimonialsMarquee onNavigatePartners={() => setActivePage('partners')} />
 
       {/* CTA Section */}
       <section className="py-xl px-lg max-w-container-max mx-auto">

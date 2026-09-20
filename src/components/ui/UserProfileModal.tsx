@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { api } from '../../services/api';
 import { safeGetStorage, safeSetStorage } from '../../utils/storage';
+import { useRealtimeEvent } from '../../services/realtime';
 
 export interface AuthUser {
   id: string;
@@ -30,23 +31,53 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
   onNavigateToDashboard,
   onUserUpdate,
 }) => {
+  const [currentUserData, setCurrentUserData] = useState<AuthUser | null>(user);
   const [editingPhone, setEditingPhone] = useState(false);
   const [phoneValue, setPhoneValue] = useState('');
   const [saving, setSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
 
+  useEffect(() => {
+    if (user) setCurrentUserData(user);
+  }, [user]);
+
+  const refreshUserData = useCallback(async () => {
+    const targetId = user?.id || currentUserData?.id;
+    if (!targetId) return;
+    try {
+      const res = await api.getUserById(targetId);
+      if (res.success && res.data) {
+        const stored = safeGetStorage<any>('uwe_user_account', user);
+        const fresh = { ...stored, ...res.data };
+        safeSetStorage('uwe_user_account', fresh);
+        setCurrentUserData(fresh);
+        if (onUserUpdate) onUserUpdate(fresh);
+      }
+    } catch { /* silent */ }
+  }, [user, currentUserData?.id, onUserUpdate]);
+
+  useEffect(() => {
+    if (isOpen) {
+      refreshUserData();
+    }
+  }, [isOpen, refreshUserData]);
+
+  useRealtimeEvent('user:updated', refreshUserData);
+  useRealtimeEvent('slip:verified', refreshUserData);
+
   if (!isOpen || !user) return null;
 
-  const enrolledSlugsStr = Array.isArray(user.enrolledCourseSlugs)
-    ? user.enrolledCourseSlugs.join(',')
-    : user.enrolledCourseSlugs || 'bmb,leadership,ignit';
+  const activeUser = currentUserData || user;
+  const enrolledSlugsStr = Array.isArray(activeUser.enrolledCourseSlugs)
+    ? activeUser.enrolledCourseSlugs.join(',')
+    : activeUser.enrolledCourseSlugs || '';
 
   const hasBmb = enrolledSlugsStr.toLowerCase().includes('bmb');
   const hasLeadership = enrolledSlugsStr.toLowerCase().includes('leadership');
   const hasIgnit = enrolledSlugsStr.toLowerCase().includes('ignit');
 
   const handleStartEditPhone = () => {
-    setPhoneValue(user.phone || '');
+    setPhoneValue(activeUser.phone || '');
     setEditingPhone(true);
     setSaveMessage(null);
   };
@@ -56,11 +87,12 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
     setSaving(true);
     setSaveMessage(null);
     try {
-      await api.updateUser(user.id, { phone: phoneValue.trim() });
+      await api.updateUser(activeUser.id, { phone: phoneValue.trim() });
       // Update localStorage session with new phone safely
-      const stored = safeGetStorage<any>('uwe_user_account', user);
+      const stored = safeGetStorage<any>('uwe_user_account', activeUser);
       const updatedUser = { ...stored, phone: phoneValue.trim() };
       safeSetStorage('uwe_user_account', updatedUser);
+      setCurrentUserData(updatedUser);
 
       if (onUserUpdate) onUserUpdate(updatedUser);
       setEditingPhone(false);

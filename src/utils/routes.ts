@@ -24,6 +24,10 @@ export const pageToPath = (page: PageId, slug?: string): string => {
       return '/posters';
     case 'dashboard':
       return '/dashboard';
+    case 'partners':
+      return '/partners';
+    case 'partner-detail':
+      return slug ? `/partners/${slug}` : '/partners';
     case 'admin':
       return '/admin';
     default:
@@ -39,6 +43,8 @@ export const pathToPage = (pathname: string): PageId => {
   if (cleanPath === '/vision') return 'vision';
   if (cleanPath === '/programs') return 'product';
   if (cleanPath.startsWith('/programs/')) return 'course-detail';
+  if (cleanPath === '/partners') return 'partners';
+  if (cleanPath.startsWith('/partners/')) return 'partner-detail';
   if (cleanPath === '/demos') return 'demos';
   if (cleanPath === '/careers') return 'careers';
   if (cleanPath === '/contact') return 'contact';

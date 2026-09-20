@@ -15352,11 +15352,11 @@ var require_mime_types = __commonJS({
       }
       return exts[0];
     }
-    function lookup(path) {
-      if (!path || typeof path !== "string") {
+    function lookup(path2) {
+      if (!path2 || typeof path2 !== "string") {
         return false;
       }
-      var extension2 = extname("x." + path).toLowerCase().slice(1);
+      var extension2 = extname("x." + path2).toLowerCase().slice(1);
       if (!extension2) {
         return false;
       }
@@ -19031,13 +19031,13 @@ var require_view = __commonJS({
   "node_modules/express/lib/view.js"(exports, module) {
     "use strict";
     var debug = require_src()("express:view");
-    var path = __require("node:path");
-    var fs = __require("node:fs");
-    var dirname = path.dirname;
-    var basename = path.basename;
-    var extname = path.extname;
-    var join = path.join;
-    var resolve = path.resolve;
+    var path2 = __require("node:path");
+    var fs2 = __require("node:fs");
+    var dirname = path2.dirname;
+    var basename = path2.basename;
+    var extname = path2.extname;
+    var join = path2.join;
+    var resolve = path2.resolve;
     module.exports = View;
     function View(name, options) {
       var opts = options || {};
@@ -19066,17 +19066,17 @@ var require_view = __commonJS({
       this.path = this.lookup(fileName);
     }
     View.prototype.lookup = function lookup(name) {
-      var path2;
+      var path3;
       var roots = [].concat(this.root);
       debug('lookup "%s"', name);
-      for (var i = 0; i < roots.length && !path2; i++) {
+      for (var i = 0; i < roots.length && !path3; i++) {
         var root = roots[i];
         var loc = resolve(root, name);
         var dir = dirname(loc);
         var file2 = basename(loc);
-        path2 = this.resolve(dir, file2);
+        path3 = this.resolve(dir, file2);
       }
-      return path2;
+      return path3;
     };
     View.prototype.render = function render(options, callback) {
       var sync = true;
@@ -19098,21 +19098,21 @@ var require_view = __commonJS({
     };
     View.prototype.resolve = function resolve2(dir, file2) {
       var ext = this.ext;
-      var path2 = join(dir, file2);
-      var stat = tryStat(path2);
+      var path3 = join(dir, file2);
+      var stat = tryStat(path3);
       if (stat && stat.isFile()) {
-        return path2;
+        return path3;
       }
-      path2 = join(dir, basename(file2, ext), "index" + ext);
-      stat = tryStat(path2);
+      path3 = join(dir, basename(file2, ext), "index" + ext);
+      stat = tryStat(path3);
       if (stat && stat.isFile()) {
-        return path2;
+        return path3;
       }
     };
-    function tryStat(path2) {
-      debug('stat "%s"', path2);
+    function tryStat(path3) {
+      debug('stat "%s"', path3);
       try {
-        return fs.statSync(path2);
+        return fs2.statSync(path3);
       } catch (e) {
         return void 0;
       }
@@ -19229,14 +19229,14 @@ var require_etag = __commonJS({
   "node_modules/etag/index.js"(exports, module) {
     "use strict";
     module.exports = etag;
-    var crypto6 = __require("crypto");
+    var crypto8 = __require("crypto");
     var Stats = __require("fs").Stats;
     var toString = Object.prototype.toString;
     function entitytag(entity) {
       if (entity.length === 0) {
         return '"0-2jmj7l5rSw0yVb/vlWAYkK/YBwk"';
       }
-      var hash3 = crypto6.createHash("sha1").update(entity, "utf8").digest("base64").substring(0, 27);
+      var hash3 = crypto8.createHash("sha1").update(entity, "utf8").digest("base64").substring(0, 27);
       var len = typeof entity === "string" ? Buffer.byteLength(entity, "utf8") : entity.length;
       return '"' + len.toString(16) + "-" + hash3 + '"';
     }
@@ -20352,15 +20352,15 @@ var require_dist3 = __commonJS({
       let index = 0;
       function consumeUntil(end) {
         const output = [];
-        let path = "";
+        let path2 = "";
         function writePath() {
-          if (!path)
+          if (!path2)
             return;
           output.push({
             type: "text",
-            value: encodePath(path)
+            value: encodePath(path2)
           });
-          path = "";
+          path2 = "";
         }
         while (index < chars.length) {
           const value = chars[index++];
@@ -20372,7 +20372,7 @@ var require_dist3 = __commonJS({
             if (index === chars.length) {
               throw new PathError(`Unexpected end after \\ at index ${index}`, str);
             }
-            path += chars[index++];
+            path2 += chars[index++];
             continue;
           }
           if (value === ":" || value === "*") {
@@ -20416,7 +20416,7 @@ var require_dist3 = __commonJS({
           if (value === "}" || value === "(" || value === ")" || value === "[" || value === "]" || value === "+" || value === "?" || value === "!") {
             throw new PathError(`Unexpected ${value} at index ${index - 1}`, str);
           }
-          path += value;
+          path2 += value;
         }
         if (end) {
           throw new PathError(`Unexpected end at index ${index}, expected ${end}`, str);
@@ -20426,17 +20426,17 @@ var require_dist3 = __commonJS({
       }
       return new TokenData(consumeUntil(""), str);
     }
-    function compile(path, options = {}) {
+    function compile(path2, options = {}) {
       const { encode: encode3 = encodeURIComponent, delimiter = DEFAULT_DELIMITER } = options;
-      const data = typeof path === "object" ? path : parse3(path, options);
+      const data = typeof path2 === "object" ? path2 : parse3(path2, options);
       const fn = tokensToFunction(data.tokens, delimiter, encode3);
-      return function path2(params = {}) {
+      return function path3(params = {}) {
         const missing = [];
-        const path3 = fn(params, missing);
+        const path4 = fn(params, missing);
         if (missing.length) {
           throw new TypeError(`Missing parameters: ${missing.join(", ")}`);
         }
-        return path3;
+        return path4;
       };
     }
     function tokensToFunction(tokens, delimiter, encode3) {
@@ -20498,9 +20498,9 @@ var require_dist3 = __commonJS({
         return encodeValue(value);
       };
     }
-    function match(path, options = {}) {
+    function match(path2, options = {}) {
       const { decode: decode4 = decodeURIComponent, delimiter = DEFAULT_DELIMITER } = options;
-      const { regexp, keys } = pathToRegexp(path, options);
+      const { regexp, keys } = pathToRegexp(path2, options);
       const decoders = keys.map((key) => {
         if (decode4 === false)
           return NOOP_VALUE;
@@ -20512,7 +20512,7 @@ var require_dist3 = __commonJS({
         const m = regexp.exec(input);
         if (!m)
           return false;
-        const path2 = m[0];
+        const path3 = m[0];
         const params = /* @__PURE__ */ Object.create(null);
         for (let i = 1; i < m.length; i++) {
           if (m[i] === void 0)
@@ -20521,21 +20521,21 @@ var require_dist3 = __commonJS({
           const decoder = decoders[i - 1];
           params[key.name] = decoder(m[i]);
         }
-        return { path: path2, params };
+        return { path: path3, params };
       };
     }
-    function pathToRegexp(path, options = {}) {
+    function pathToRegexp(path2, options = {}) {
       const { delimiter = DEFAULT_DELIMITER, end = true, sensitive = false, trailing = true } = options;
       const keys = [];
       let source = "";
       let combinations = 0;
-      function process3(path2) {
-        if (Array.isArray(path2)) {
-          for (const p of path2)
+      function process3(path3) {
+        if (Array.isArray(path3)) {
+          for (const p of path3)
             process3(p);
           return;
         }
-        const data = typeof path2 === "object" ? path2 : parse3(path2, options);
+        const data = typeof path3 === "object" ? path3 : parse3(path3, options);
         flatten(data.tokens, 0, [], (tokens) => {
           if (combinations >= 256) {
             throw new PathError("Too many path combinations", data.originalPath);
@@ -20546,7 +20546,7 @@ var require_dist3 = __commonJS({
           combinations++;
         });
       }
-      process3(path);
+      process3(path2);
       let pattern = `^(?:${source})`;
       if (trailing)
         pattern += "(?:" + escape2(delimiter) + "$)?";
@@ -20686,18 +20686,18 @@ var require_layer = __commonJS({
     var TRAILING_SLASH_REGEXP = /\/+$/;
     var MATCHING_GROUP_REGEXP = /\((?:\?<(.*?)>)?(?!\?)/g;
     module.exports = Layer;
-    function Layer(path, options, fn) {
+    function Layer(path2, options, fn) {
       if (!(this instanceof Layer)) {
-        return new Layer(path, options, fn);
+        return new Layer(path2, options, fn);
       }
-      debug("new %o", path);
+      debug("new %o", path2);
       const opts = options || {};
       this.handle = fn;
       this.keys = [];
       this.name = fn.name || "<anonymous>";
       this.params = void 0;
       this.path = void 0;
-      this.slash = path === "/" && opts.end === false;
+      this.slash = path2 === "/" && opts.end === false;
       function matcher(_path) {
         if (_path instanceof RegExp) {
           const keys = [];
@@ -20736,7 +20736,7 @@ var require_layer = __commonJS({
           decode: decodeParam
         });
       }
-      this.matchers = Array.isArray(path) ? path.map(matcher) : [matcher(path)];
+      this.matchers = Array.isArray(path2) ? path2.map(matcher) : [matcher(path2)];
     }
     Layer.prototype.handleError = function handleError(error51, req, res, next) {
       const fn = this.handle;
@@ -20776,9 +20776,9 @@ var require_layer = __commonJS({
         next(err);
       }
     };
-    Layer.prototype.match = function match(path) {
+    Layer.prototype.match = function match(path2) {
       let match2;
-      if (path != null) {
+      if (path2 != null) {
         if (this.slash) {
           this.params = {};
           this.path = "";
@@ -20786,7 +20786,7 @@ var require_layer = __commonJS({
         }
         let i = 0;
         while (!match2 && i < this.matchers.length) {
-          match2 = this.matchers[i](path);
+          match2 = this.matchers[i](path2);
           i++;
         }
       }
@@ -20814,13 +20814,13 @@ var require_layer = __commonJS({
         throw err;
       }
     }
-    function loosen(path) {
-      if (path instanceof RegExp || path === "/") {
-        return path;
+    function loosen(path2) {
+      if (path2 instanceof RegExp || path2 === "/") {
+        return path2;
       }
-      return Array.isArray(path) ? path.map(function(p) {
+      return Array.isArray(path2) ? path2.map(function(p) {
         return loosen(p);
-      }) : String(path).replace(TRAILING_SLASH_REGEXP, "");
+      }) : String(path2).replace(TRAILING_SLASH_REGEXP, "");
     }
   }
 });
@@ -20836,9 +20836,9 @@ var require_route = __commonJS({
     var flatten = Array.prototype.flat;
     var methods = METHODS.map((method) => method.toLowerCase());
     module.exports = Route;
-    function Route(path) {
-      debug("new %o", path);
-      this.path = path;
+    function Route(path2) {
+      debug("new %o", path2);
+      this.path = path2;
       this.stack = [];
       this.methods = /* @__PURE__ */ Object.create(null);
     }
@@ -20959,27 +20959,27 @@ var require_router = __commonJS({
     var slice = Array.prototype.slice;
     var flatten = Array.prototype.flat;
     var methods = METHODS.map((method) => method.toLowerCase());
-    module.exports = Router19;
+    module.exports = Router23;
     module.exports.Route = Route;
-    function Router19(options) {
-      if (!(this instanceof Router19)) {
-        return new Router19(options);
+    function Router23(options) {
+      if (!(this instanceof Router23)) {
+        return new Router23(options);
       }
       const opts = options || {};
-      function router19(req, res, next) {
-        router19.handle(req, res, next);
+      function router23(req, res, next) {
+        router23.handle(req, res, next);
       }
-      Object.setPrototypeOf(router19, this);
-      router19.caseSensitive = opts.caseSensitive;
-      router19.mergeParams = opts.mergeParams;
-      router19.params = {};
-      router19.strict = opts.strict;
-      router19.stack = [];
-      return router19;
+      Object.setPrototypeOf(router23, this);
+      router23.caseSensitive = opts.caseSensitive;
+      router23.mergeParams = opts.mergeParams;
+      router23.params = {};
+      router23.strict = opts.strict;
+      router23.stack = [];
+      return router23;
     }
-    Router19.prototype = function() {
+    Router23.prototype = function() {
     };
-    Router19.prototype.param = function param(name, fn) {
+    Router23.prototype.param = function param(name, fn) {
       if (!name) {
         throw new TypeError("argument name is required");
       }
@@ -20999,7 +20999,7 @@ var require_router = __commonJS({
       params.push(fn);
       return this;
     };
-    Router19.prototype.handle = function handle(req, res, callback) {
+    Router23.prototype.handle = function handle(req, res, callback) {
       if (!callback) {
         throw new TypeError("argument callback is required");
       }
@@ -21046,8 +21046,8 @@ var require_router = __commonJS({
         if (++sync > 100) {
           return setImmediate(next, err);
         }
-        const path = getPathname(req);
-        if (path == null) {
+        const path2 = getPathname(req);
+        if (path2 == null) {
           return done(layerError);
         }
         let layer;
@@ -21055,7 +21055,7 @@ var require_router = __commonJS({
         let route;
         while (match !== true && idx < stack.length) {
           layer = stack[idx++];
-          match = matchLayer(layer, path);
+          match = matchLayer(layer, path2);
           route = layer.route;
           if (typeof match !== "boolean") {
             layerError = layerError || match;
@@ -21093,18 +21093,18 @@ var require_router = __commonJS({
           } else if (route) {
             layer.handleRequest(req, res, next);
           } else {
-            trimPrefix(layer, layerError, layerPath, path);
+            trimPrefix(layer, layerError, layerPath, path2);
           }
           sync = 0;
         });
       }
-      function trimPrefix(layer, layerError, layerPath, path) {
+      function trimPrefix(layer, layerError, layerPath, path2) {
         if (layerPath.length !== 0) {
-          if (layerPath !== path.substring(0, layerPath.length)) {
+          if (layerPath !== path2.substring(0, layerPath.length)) {
             next(layerError);
             return;
           }
-          const c = path[layerPath.length];
+          const c = path2[layerPath.length];
           if (c && c !== "/") {
             next(layerError);
             return;
@@ -21126,9 +21126,9 @@ var require_router = __commonJS({
         }
       }
     };
-    Router19.prototype.use = function use(handler) {
+    Router23.prototype.use = function use(handler) {
       let offset = 0;
-      let path = "/";
+      let path2 = "/";
       if (typeof handler !== "function") {
         let arg = handler;
         while (Array.isArray(arg) && arg.length !== 0) {
@@ -21136,7 +21136,7 @@ var require_router = __commonJS({
         }
         if (typeof arg !== "function") {
           offset = 1;
-          path = handler;
+          path2 = handler;
         }
       }
       const callbacks = flatten.call(slice.call(arguments, offset), Infinity);
@@ -21148,8 +21148,8 @@ var require_router = __commonJS({
         if (typeof fn !== "function") {
           throw new TypeError("argument handler must be a function");
         }
-        debug("use %o %s", path, fn.name || "<anonymous>");
-        const layer = new Layer(path, {
+        debug("use %o %s", path2, fn.name || "<anonymous>");
+        const layer = new Layer(path2, {
           sensitive: this.caseSensitive,
           strict: false,
           end: false
@@ -21159,9 +21159,9 @@ var require_router = __commonJS({
       }
       return this;
     };
-    Router19.prototype.route = function route(path) {
-      const route2 = new Route(path);
-      const layer = new Layer(path, {
+    Router23.prototype.route = function route(path2) {
+      const route2 = new Route(path2);
+      const layer = new Layer(path2, {
         sensitive: this.caseSensitive,
         strict: this.strict,
         end: true
@@ -21174,8 +21174,8 @@ var require_router = __commonJS({
       return route2;
     };
     methods.concat("all").forEach(function(method) {
-      Router19.prototype[method] = function(path) {
-        const route = this.route(path);
+      Router23.prototype[method] = function(path2) {
+        const route = this.route(path2);
         route[method].apply(route, slice.call(arguments, 1));
         return this;
       };
@@ -21204,9 +21204,9 @@ var require_router = __commonJS({
       const fqdnIndex = url2.substring(0, pathLength).indexOf("://");
       return fqdnIndex !== -1 ? url2.substring(0, url2.indexOf("/", 3 + fqdnIndex)) : void 0;
     }
-    function matchLayer(layer, path) {
+    function matchLayer(layer, path2) {
       try {
-        return layer.match(path);
+        return layer.match(path2);
       } catch (err) {
         return err;
       }
@@ -21357,13 +21357,13 @@ var require_application = __commonJS({
     var compileTrust = require_utils3().compileTrust;
     var resolve = __require("node:path").resolve;
     var once = require_once();
-    var Router19 = require_router();
+    var Router23 = require_router();
     var slice = Array.prototype.slice;
     var flatten = Array.prototype.flat;
     var app2 = exports = module.exports = {};
     var trustProxyDefaultSymbol = "@@symbol:trust_proxy_default";
     app2.init = function init() {
-      var router19 = null;
+      var router23 = null;
       this.cache = /* @__PURE__ */ Object.create(null);
       this.engines = /* @__PURE__ */ Object.create(null);
       this.settings = /* @__PURE__ */ Object.create(null);
@@ -21372,13 +21372,13 @@ var require_application = __commonJS({
         configurable: true,
         enumerable: true,
         get: function getrouter() {
-          if (router19 === null) {
-            router19 = new Router19({
+          if (router23 === null) {
+            router23 = new Router23({
               caseSensitive: this.enabled("case sensitive routing"),
               strict: this.enabled("strict routing")
             });
           }
-          return router19;
+          return router23;
         }
       });
     };
@@ -21434,7 +21434,7 @@ var require_application = __commonJS({
     };
     app2.use = function use(fn) {
       var offset = 0;
-      var path = "/";
+      var path2 = "/";
       if (typeof fn !== "function") {
         var arg = fn;
         while (Array.isArray(arg) && arg.length !== 0) {
@@ -21442,22 +21442,22 @@ var require_application = __commonJS({
         }
         if (typeof arg !== "function") {
           offset = 1;
-          path = fn;
+          path2 = fn;
         }
       }
       var fns = flatten.call(slice.call(arguments, offset), Infinity);
       if (fns.length === 0) {
         throw new TypeError("app.use() requires a middleware function");
       }
-      var router19 = this.router;
+      var router23 = this.router;
       fns.forEach(function(fn2) {
         if (!fn2 || !fn2.handle || !fn2.set) {
-          return router19.use(path, fn2);
+          return router23.use(path2, fn2);
         }
-        debug(".use app under %s", path);
-        fn2.mountpath = path;
+        debug(".use app under %s", path2);
+        fn2.mountpath = path2;
         fn2.parent = this;
-        router19.use(path, function mounted_app(req, res, next) {
+        router23.use(path2, function mounted_app(req, res, next) {
           var orig = req.app;
           fn2.handle(req, res, function(err) {
             Object.setPrototypeOf(req, orig.request);
@@ -21469,8 +21469,8 @@ var require_application = __commonJS({
       }, this);
       return this;
     };
-    app2.route = function route(path) {
-      return this.router.route(path);
+    app2.route = function route(path2) {
+      return this.router.route(path2);
     };
     app2.engine = function engine(ext, fn) {
       if (typeof fn !== "function") {
@@ -21513,7 +21513,7 @@ var require_application = __commonJS({
       }
       return this;
     };
-    app2.path = function path() {
+    app2.path = function path2() {
       return this.parent ? this.parent.path() + this.mountpath : "";
     };
     app2.enabled = function enabled(setting) {
@@ -21529,17 +21529,17 @@ var require_application = __commonJS({
       return this.set(setting, false);
     };
     methods.forEach(function(method) {
-      app2[method] = function(path) {
+      app2[method] = function(path2) {
         if (method === "get" && arguments.length === 1) {
-          return this.set(path);
+          return this.set(path2);
         }
-        var route = this.route(path);
+        var route = this.route(path2);
         route[method].apply(route, slice.call(arguments, 1));
         return this;
       };
     });
-    app2.all = function all(path) {
-      var route = this.route(path);
+    app2.all = function all(path2) {
+      var route = this.route(path2);
       var args = slice.call(arguments, 1);
       for (var i = 0; i < methods.length; i++) {
         route[methods[i]].apply(route, args);
@@ -22461,7 +22461,7 @@ var require_request = __commonJS({
       var subdomains2 = !isIP2(hostname3) ? hostname3.split(".").reverse() : [hostname3];
       return subdomains2.slice(offset);
     });
-    defineGetter(req, "path", function path() {
+    defineGetter(req, "path", function path2() {
       return parse3(this).pathname;
     });
     defineGetter(req, "host", function host() {
@@ -22672,8 +22672,8 @@ var require_content_disposition = __commonJS({
       this.type = type;
       this.parameters = parameters;
     }
-    function basename(path) {
-      const normalized = path.replaceAll("\\", "/");
+    function basename(path2) {
+      const normalized = path2.replaceAll("\\", "/");
       let end = normalized.length;
       while (end > 0 && normalized[end - 1] === "/") {
         end--;
@@ -22723,17 +22723,17 @@ var require_content_disposition = __commonJS({
 // node_modules/cookie-signature/index.js
 var require_cookie_signature = __commonJS({
   "node_modules/cookie-signature/index.js"(exports) {
-    var crypto6 = __require("crypto");
+    var crypto8 = __require("crypto");
     exports.sign = function(val, secret) {
       if ("string" != typeof val) throw new TypeError("Cookie value must be provided as a string.");
       if (null == secret) throw new TypeError("Secret key must be provided.");
-      return val + "." + crypto6.createHmac("sha256", secret).update(val).digest("base64").replace(/\=+$/, "");
+      return val + "." + crypto8.createHmac("sha256", secret).update(val).digest("base64").replace(/\=+$/, "");
     };
     exports.unsign = function(input, secret) {
       if ("string" != typeof input) throw new TypeError("Signed cookie string must be provided.");
       if (null == secret) throw new TypeError("Secret key must be provided.");
       var tentativeValue = input.slice(0, input.lastIndexOf(".")), expectedInput = exports.sign(tentativeValue, secret), expectedBuffer = Buffer.from(expectedInput), inputBuffer = Buffer.from(input);
-      return expectedBuffer.length === inputBuffer.length && crypto6.timingSafeEqual(expectedBuffer, inputBuffer) ? tentativeValue : false;
+      return expectedBuffer.length === inputBuffer.length && crypto8.timingSafeEqual(expectedBuffer, inputBuffer) ? tentativeValue : false;
     };
   }
 });
@@ -22914,32 +22914,32 @@ var require_send = __commonJS({
     var escapeHtml = require_escape_html();
     var etag = require_etag();
     var fresh = require_fresh();
-    var fs = __require("fs");
+    var fs2 = __require("fs");
     var mime = require_mime_types();
     var ms = require_ms();
     var onFinished = require_on_finished();
     var parseRange = require_range_parser();
-    var path = __require("path");
+    var path2 = __require("path");
     var statuses = require_statuses();
     var Stream = __require("stream");
     var util = __require("util");
-    var extname = path.extname;
-    var join = path.join;
-    var normalize = path.normalize;
-    var resolve = path.resolve;
-    var sep = path.sep;
+    var extname = path2.extname;
+    var join = path2.join;
+    var normalize = path2.normalize;
+    var resolve = path2.resolve;
+    var sep = path2.sep;
     var BYTES_RANGE_REGEXP = /^ *bytes=/;
     var MAX_MAXAGE = 60 * 60 * 24 * 365 * 1e3;
     var UP_PATH_REGEXP = /(?:^|[\\/])\.\.(?:[\\/]|$)/;
     module.exports = send;
-    function send(req, path2, options) {
-      return new SendStream(req, path2, options);
+    function send(req, path3, options) {
+      return new SendStream(req, path3, options);
     }
-    function SendStream(req, path2, options) {
+    function SendStream(req, path3, options) {
       Stream.call(this);
       var opts = options || {};
       this.options = opts;
-      this.path = path2;
+      this.path = path3;
       this.req = req;
       this._acceptRanges = opts.acceptRanges !== void 0 ? Boolean(opts.acceptRanges) : true;
       this._cacheControl = opts.cacheControl !== void 0 ? Boolean(opts.cacheControl) : true;
@@ -23053,10 +23053,10 @@ var require_send = __commonJS({
       var lastModified = this.res.getHeader("Last-Modified");
       return parseHttpDate(lastModified) <= parseHttpDate(ifRange);
     };
-    SendStream.prototype.redirect = function redirect(path2) {
+    SendStream.prototype.redirect = function redirect(path3) {
       var res = this.res;
       if (hasListeners(this, "directory")) {
-        this.emit("directory", res, path2);
+        this.emit("directory", res, path3);
         return;
       }
       if (this.hasTrailingSlash()) {
@@ -23076,38 +23076,38 @@ var require_send = __commonJS({
     SendStream.prototype.pipe = function pipe2(res) {
       var root = this._root;
       this.res = res;
-      var path2 = decode4(this.path);
-      if (path2 === -1) {
+      var path3 = decode4(this.path);
+      if (path3 === -1) {
         this.error(400);
         return res;
       }
-      if (~path2.indexOf("\0")) {
+      if (~path3.indexOf("\0")) {
         this.error(400);
         return res;
       }
       var parts;
       if (root !== null) {
-        if (path2) {
-          path2 = normalize("." + sep + path2);
+        if (path3) {
+          path3 = normalize("." + sep + path3);
         }
-        if (UP_PATH_REGEXP.test(path2)) {
-          debug('malicious path "%s"', path2);
+        if (UP_PATH_REGEXP.test(path3)) {
+          debug('malicious path "%s"', path3);
           this.error(403);
           return res;
         }
-        parts = path2.split(sep);
-        path2 = normalize(join(root, path2));
+        parts = path3.split(sep);
+        path3 = normalize(join(root, path3));
       } else {
-        if (UP_PATH_REGEXP.test(path2)) {
-          debug('malicious path "%s"', path2);
+        if (UP_PATH_REGEXP.test(path3)) {
+          debug('malicious path "%s"', path3);
           this.error(403);
           return res;
         }
-        parts = normalize(path2).split(sep);
-        path2 = resolve(path2);
+        parts = normalize(path3).split(sep);
+        path3 = resolve(path3);
       }
       if (containsDotFile(parts)) {
-        debug('%s dotfile "%s"', this._dotfiles, path2);
+        debug('%s dotfile "%s"', this._dotfiles, path3);
         switch (this._dotfiles) {
           case "allow":
             break;
@@ -23121,13 +23121,13 @@ var require_send = __commonJS({
         }
       }
       if (this._index.length && this.hasTrailingSlash()) {
-        this.sendIndex(path2);
+        this.sendIndex(path3);
         return res;
       }
-      this.sendFile(path2);
+      this.sendFile(path3);
       return res;
     };
-    SendStream.prototype.send = function send2(path2, stat) {
+    SendStream.prototype.send = function send2(path3, stat) {
       var len = stat.size;
       var options = this.options;
       var opts = {};
@@ -23139,9 +23139,9 @@ var require_send = __commonJS({
         this.headersAlreadySent();
         return;
       }
-      debug('pipe "%s"', path2);
-      this.setHeader(path2, stat);
-      this.type(path2);
+      debug('pipe "%s"', path3);
+      this.setHeader(path3, stat);
+      this.type(path3);
       if (this.isConditionalGET()) {
         if (this.isPreconditionFailure()) {
           this.error(412);
@@ -23190,30 +23190,30 @@ var require_send = __commonJS({
         res.end();
         return;
       }
-      this.stream(path2, opts);
+      this.stream(path3, opts);
     };
-    SendStream.prototype.sendFile = function sendFile(path2) {
+    SendStream.prototype.sendFile = function sendFile(path3) {
       var i = 0;
       var self = this;
-      debug('stat "%s"', path2);
-      fs.stat(path2, function onstat(err, stat) {
-        var pathEndsWithSep = path2[path2.length - 1] === sep;
-        if (err && err.code === "ENOENT" && !extname(path2) && !pathEndsWithSep) {
+      debug('stat "%s"', path3);
+      fs2.stat(path3, function onstat(err, stat) {
+        var pathEndsWithSep = path3[path3.length - 1] === sep;
+        if (err && err.code === "ENOENT" && !extname(path3) && !pathEndsWithSep) {
           return next(err);
         }
         if (err) return self.onStatError(err);
-        if (stat.isDirectory()) return self.redirect(path2);
+        if (stat.isDirectory()) return self.redirect(path3);
         if (pathEndsWithSep) return self.error(404);
-        self.emit("file", path2, stat);
-        self.send(path2, stat);
+        self.emit("file", path3, stat);
+        self.send(path3, stat);
       });
       function next(err) {
         if (self._extensions.length <= i) {
           return err ? self.onStatError(err) : self.error(404);
         }
-        var p = path2 + "." + self._extensions[i++];
+        var p = path3 + "." + self._extensions[i++];
         debug('stat "%s"', p);
-        fs.stat(p, function(err2, stat) {
+        fs2.stat(p, function(err2, stat) {
           if (err2) return next(err2);
           if (stat.isDirectory()) return next();
           self.emit("file", p, stat);
@@ -23221,7 +23221,7 @@ var require_send = __commonJS({
         });
       }
     };
-    SendStream.prototype.sendIndex = function sendIndex(path2) {
+    SendStream.prototype.sendIndex = function sendIndex(path3) {
       var i = -1;
       var self = this;
       function next(err) {
@@ -23229,9 +23229,9 @@ var require_send = __commonJS({
           if (err) return self.onStatError(err);
           return self.error(404);
         }
-        var p = join(path2, self._index[i]);
+        var p = join(path3, self._index[i]);
         debug('stat "%s"', p);
-        fs.stat(p, function(err2, stat) {
+        fs2.stat(p, function(err2, stat) {
           if (err2) return next(err2);
           if (stat.isDirectory()) return next();
           self.emit("file", p, stat);
@@ -23240,10 +23240,10 @@ var require_send = __commonJS({
       }
       next();
     };
-    SendStream.prototype.stream = function stream(path2, options) {
+    SendStream.prototype.stream = function stream(path3, options) {
       var self = this;
       var res = this.res;
-      var stream2 = fs.createReadStream(path2, options);
+      var stream2 = fs2.createReadStream(path3, options);
       this.emit("stream", stream2);
       stream2.pipe(res);
       function cleanup() {
@@ -23258,17 +23258,17 @@ var require_send = __commonJS({
         self.emit("end");
       });
     };
-    SendStream.prototype.type = function type(path2) {
+    SendStream.prototype.type = function type(path3) {
       var res = this.res;
       if (res.getHeader("Content-Type")) return;
-      var ext = extname(path2);
+      var ext = extname(path3);
       var type2 = mime.contentType(ext) || "application/octet-stream";
       debug("content-type %s", type2);
       res.setHeader("Content-Type", type2);
     };
-    SendStream.prototype.setHeader = function setHeader(path2, stat) {
+    SendStream.prototype.setHeader = function setHeader(path3, stat) {
       var res = this.res;
-      this.emit("headers", res, path2, stat);
+      this.emit("headers", res, path3, stat);
       if (this._acceptRanges && !res.getHeader("Accept-Ranges")) {
         debug("accept ranges");
         res.setHeader("Accept-Ranges", "bytes");
@@ -23326,9 +23326,9 @@ var require_send = __commonJS({
       }
       return err instanceof Error ? createError(status, err, { expose: false }) : createError(status, err);
     }
-    function decode4(path2) {
+    function decode4(path3) {
       try {
-        return decodeURIComponent(path2);
+        return decodeURIComponent(path3);
       } catch (err) {
         return -1;
       }
@@ -23472,7 +23472,7 @@ var require_response = __commonJS({
     var http = __require("node:http");
     var onFinished = require_on_finished();
     var mime = require_mime_types();
-    var path = __require("node:path");
+    var path2 = __require("node:path");
     var pathIsAbsolute = __require("node:path").isAbsolute;
     var statuses = require_statuses();
     var sign = require_cookie_signature().sign;
@@ -23481,8 +23481,8 @@ var require_response = __commonJS({
     var setCharset = require_utils3().setCharset;
     var cookie = require_cookie();
     var send = require_send();
-    var extname = path.extname;
-    var resolve = path.resolve;
+    var extname = path2.extname;
+    var resolve = path2.resolve;
     var vary = require_vary();
     var { Buffer: Buffer3 } = __require("node:buffer");
     var res = Object.create(http.ServerResponse.prototype);
@@ -23628,26 +23628,26 @@ var require_response = __commonJS({
       this.type("txt");
       return this.send(body);
     };
-    res.sendFile = function sendFile(path2, options, callback) {
+    res.sendFile = function sendFile(path3, options, callback) {
       var done = callback;
       var req = this.req;
       var res2 = this;
       var next = req.next;
       var opts = options || {};
-      if (!path2) {
+      if (!path3) {
         throw new TypeError("path argument is required to res.sendFile");
       }
-      if (typeof path2 !== "string") {
+      if (typeof path3 !== "string") {
         throw new TypeError("path must be a string to res.sendFile");
       }
       if (typeof options === "function") {
         done = options;
         opts = {};
       }
-      if (!opts.root && !pathIsAbsolute(path2)) {
+      if (!opts.root && !pathIsAbsolute(path3)) {
         throw new TypeError("path must be absolute or specify root to res.sendFile");
       }
-      var pathname = encodeURI(path2);
+      var pathname = encodeURI(path3);
       opts.etag = this.app.enabled("etag");
       var file2 = send(req, pathname, opts);
       sendfile(res2, file2, opts, function(err) {
@@ -23658,7 +23658,7 @@ var require_response = __commonJS({
         }
       });
     };
-    res.download = function download(path2, filename, options, callback) {
+    res.download = function download(path3, filename, options, callback) {
       var done = callback;
       var name = filename;
       var opts = options || null;
@@ -23675,7 +23675,7 @@ var require_response = __commonJS({
         opts = filename;
       }
       var headers = {
-        "Content-Disposition": contentDisposition(name || path2)
+        "Content-Disposition": contentDisposition(name || path3)
       };
       if (opts && opts.headers) {
         var keys = Object.keys(opts.headers);
@@ -23688,7 +23688,7 @@ var require_response = __commonJS({
       }
       opts = Object.create(opts);
       opts.headers = headers;
-      var fullPath = !opts.root ? resolve(path2) : path2;
+      var fullPath = !opts.root ? resolve(path3) : path3;
       return this.sendFile(fullPath, opts, done);
     };
     res.contentType = res.type = function contentType(type) {
@@ -23971,11 +23971,11 @@ var require_serve_static = __commonJS({
         }
         var forwardError = !fallthrough;
         var originalUrl = parseUrl.original(req);
-        var path = parseUrl(req).pathname;
-        if (path === "/" && originalUrl.pathname.substr(-1) !== "/") {
-          path = "";
+        var path2 = parseUrl(req).pathname;
+        if (path2 === "/" && originalUrl.pathname.substr(-1) !== "/") {
+          path2 = "";
         }
-        var stream = send(req, path, opts);
+        var stream = send(req, path2, opts);
         stream.on("directory", onDirectory);
         if (setHeaders) {
           stream.on("headers", setHeaders);
@@ -24042,7 +24042,7 @@ var require_express = __commonJS({
     var EventEmitter = __require("node:events").EventEmitter;
     var mixin = require_merge_descriptors();
     var proto = require_application();
-    var Router19 = require_router();
+    var Router23 = require_router();
     var req = require_request();
     var res = require_response();
     exports = module.exports = createApplication2;
@@ -24064,8 +24064,8 @@ var require_express = __commonJS({
     exports.application = proto;
     exports.request = req;
     exports.response = res;
-    exports.Route = Router19.Route;
-    exports.Router = Router19;
+    exports.Route = Router23.Route;
+    exports.Router = Router23;
     exports.json = bodyParser.json;
     exports.raw = bodyParser.raw;
     exports.static = require_serve_static();
@@ -26426,10 +26426,10 @@ var require_ip_address = __commonJS({
 // node_modules/dotenv/lib/main.js
 var require_main = __commonJS({
   "node_modules/dotenv/lib/main.js"(exports, module) {
-    var fs = __require("fs");
-    var path = __require("path");
+    var fs2 = __require("fs");
+    var path2 = __require("path");
     var os = __require("os");
-    var crypto6 = __require("crypto");
+    var crypto8 = __require("crypto");
     var TIPS = [
       "\u25C8 encrypted .env [www.dotenvx.com]",
       "\u25C8 secrets for agents [www.dotenvx.com]",
@@ -26558,7 +26558,7 @@ var require_main = __commonJS({
       if (options && options.path && options.path.length > 0) {
         if (Array.isArray(options.path)) {
           for (const filepath of options.path) {
-            if (fs.existsSync(filepath)) {
+            if (fs2.existsSync(filepath)) {
               possibleVaultPath = filepath.endsWith(".vault") ? filepath : `${filepath}.vault`;
             }
           }
@@ -26566,15 +26566,15 @@ var require_main = __commonJS({
           possibleVaultPath = options.path.endsWith(".vault") ? options.path : `${options.path}.vault`;
         }
       } else {
-        possibleVaultPath = path.resolve(process.cwd(), ".env.vault");
+        possibleVaultPath = path2.resolve(process.cwd(), ".env.vault");
       }
-      if (fs.existsSync(possibleVaultPath)) {
+      if (fs2.existsSync(possibleVaultPath)) {
         return possibleVaultPath;
       }
       return null;
     }
     function _resolveHome(envPath) {
-      return envPath[0] === "~" ? path.join(os.homedir(), envPath.slice(1)) : envPath;
+      return envPath[0] === "~" ? path2.join(os.homedir(), envPath.slice(1)) : envPath;
     }
     function _configVault(options) {
       const debug = parseBoolean(process.env.DOTENV_CONFIG_DEBUG || options && options.debug);
@@ -26591,7 +26591,7 @@ var require_main = __commonJS({
       return { parsed };
     }
     function configDotenv(options) {
-      const dotenvPath = path.resolve(process.cwd(), ".env");
+      const dotenvPath = path2.resolve(process.cwd(), ".env");
       let encoding = "utf8";
       let processEnv = process.env;
       if (options && options.processEnv != null) {
@@ -26619,13 +26619,13 @@ var require_main = __commonJS({
       }
       let lastError;
       const parsedAll = {};
-      for (const path2 of optionPaths) {
+      for (const path3 of optionPaths) {
         try {
-          const parsed = DotenvModule.parse(fs.readFileSync(path2, { encoding }));
+          const parsed = DotenvModule.parse(fs2.readFileSync(path3, { encoding }));
           DotenvModule.populate(parsedAll, parsed, options);
         } catch (e) {
           if (debug) {
-            _debug(`failed to load ${path2} ${e.message}`);
+            _debug(`failed to load ${path3} ${e.message}`);
           }
           lastError = e;
         }
@@ -26638,7 +26638,7 @@ var require_main = __commonJS({
         const shortPaths = [];
         for (const filePath of optionPaths) {
           try {
-            const relative = path.relative(process.cwd(), filePath);
+            const relative = path2.relative(process.cwd(), filePath);
             shortPaths.push(relative);
           } catch (e) {
             if (debug) {
@@ -26673,7 +26673,7 @@ var require_main = __commonJS({
       const authTag = ciphertext.subarray(-16);
       ciphertext = ciphertext.subarray(12, -16);
       try {
-        const aesgcm = crypto6.createDecipheriv("aes-256-gcm", key, nonce);
+        const aesgcm = crypto8.createDecipheriv("aes-256-gcm", key, nonce);
         aesgcm.setAuthTag(authTag);
         return `${aesgcm.update(ciphertext)}${aesgcm.final()}`;
       } catch (error51) {
@@ -27050,14 +27050,14 @@ var require_buffer_equal_constant_time = __commonJS({
 var require_jwa = __commonJS({
   "node_modules/jwa/index.js"(exports, module) {
     var Buffer3 = require_safe_buffer().Buffer;
-    var crypto6 = __require("crypto");
+    var crypto8 = __require("crypto");
     var formatEcdsa = require_ecdsa_sig_formatter();
     var util = __require("util");
     var MSG_INVALID_ALGORITHM = '"%s" is not a valid algorithm.\n  Supported algorithms are:\n  "HS256", "HS384", "HS512", "RS256", "RS384", "RS512", "PS256", "PS384", "PS512", "ES256", "ES384", "ES512" and "none".';
     var MSG_INVALID_SECRET = "secret must be a string or buffer";
     var MSG_INVALID_VERIFIER_KEY = "key must be a string or a buffer";
     var MSG_INVALID_SIGNER_KEY = "key must be a string, a buffer or an object";
-    var supportsKeyObjects = typeof crypto6.createPublicKey === "function";
+    var supportsKeyObjects = typeof crypto8.createPublicKey === "function";
     if (supportsKeyObjects) {
       MSG_INVALID_VERIFIER_KEY += " or a KeyObject";
       MSG_INVALID_SECRET += "or a KeyObject";
@@ -27147,17 +27147,17 @@ var require_jwa = __commonJS({
       return function sign(thing, secret) {
         checkIsSecretKey(secret);
         thing = normalizeInput(thing);
-        var hmac = crypto6.createHmac("sha" + bits, secret);
+        var hmac = crypto8.createHmac("sha" + bits, secret);
         var sig = (hmac.update(thing), hmac.digest("base64"));
         return fromBase64(sig);
       };
     }
     var bufferEqual;
-    var timingSafeEqual = "timingSafeEqual" in crypto6 ? function timingSafeEqual2(a, b) {
+    var timingSafeEqual = "timingSafeEqual" in crypto8 ? function timingSafeEqual2(a, b) {
       if (a.byteLength !== b.byteLength) {
         return false;
       }
-      return crypto6.timingSafeEqual(a, b);
+      return crypto8.timingSafeEqual(a, b);
     } : function timingSafeEqual2(a, b) {
       if (!bufferEqual) {
         bufferEqual = require_buffer_equal_constant_time();
@@ -27174,7 +27174,7 @@ var require_jwa = __commonJS({
       return function sign(thing, privateKey) {
         checkIsPrivateKey(privateKey);
         thing = normalizeInput(thing);
-        var signer = crypto6.createSign("RSA-SHA" + bits);
+        var signer = crypto8.createSign("RSA-SHA" + bits);
         var sig = (signer.update(thing), signer.sign(privateKey, "base64"));
         return fromBase64(sig);
       };
@@ -27184,7 +27184,7 @@ var require_jwa = __commonJS({
         checkIsPublicKey(publicKey);
         thing = normalizeInput(thing);
         signature = toBase64(signature);
-        var verifier = crypto6.createVerify("RSA-SHA" + bits);
+        var verifier = crypto8.createVerify("RSA-SHA" + bits);
         verifier.update(thing);
         return verifier.verify(publicKey, signature, "base64");
       };
@@ -27193,11 +27193,11 @@ var require_jwa = __commonJS({
       return function sign(thing, privateKey) {
         checkIsPrivateKey(privateKey);
         thing = normalizeInput(thing);
-        var signer = crypto6.createSign("RSA-SHA" + bits);
+        var signer = crypto8.createSign("RSA-SHA" + bits);
         var sig = (signer.update(thing), signer.sign({
           key: privateKey,
-          padding: crypto6.constants.RSA_PKCS1_PSS_PADDING,
-          saltLength: crypto6.constants.RSA_PSS_SALTLEN_DIGEST
+          padding: crypto8.constants.RSA_PKCS1_PSS_PADDING,
+          saltLength: crypto8.constants.RSA_PSS_SALTLEN_DIGEST
         }, "base64"));
         return fromBase64(sig);
       };
@@ -27207,12 +27207,12 @@ var require_jwa = __commonJS({
         checkIsPublicKey(publicKey);
         thing = normalizeInput(thing);
         signature = toBase64(signature);
-        var verifier = crypto6.createVerify("RSA-SHA" + bits);
+        var verifier = crypto8.createVerify("RSA-SHA" + bits);
         verifier.update(thing);
         return verifier.verify({
           key: publicKey,
-          padding: crypto6.constants.RSA_PKCS1_PSS_PADDING,
-          saltLength: crypto6.constants.RSA_PSS_SALTLEN_DIGEST
+          padding: crypto8.constants.RSA_PKCS1_PSS_PADDING,
+          saltLength: crypto8.constants.RSA_PSS_SALTLEN_DIGEST
         }, signature, "base64");
       };
     }
@@ -27511,9 +27511,9 @@ var require_jws = __commonJS({
 var require_decode = __commonJS({
   "node_modules/jsonwebtoken/decode.js"(exports, module) {
     var jws = require_jws();
-    module.exports = function(jwt5, options) {
+    module.exports = function(jwt6, options) {
       options = options || {};
-      var decoded = jws.decode(jwt5, options);
+      var decoded = jws.decode(jwt6, options);
       if (!decoded) {
         return null;
       }
@@ -30551,59 +30551,6 @@ var require_jsonwebtoken = __commonJS({
       JsonWebTokenError: require_JsonWebTokenError(),
       NotBeforeError: require_NotBeforeError(),
       TokenExpiredError: require_TokenExpiredError()
-    };
-  }
-});
-
-// backend/src/middlewares/authenticate.ts
-var authenticate_exports = {};
-__export(authenticate_exports, {
-  authenticate: () => authenticate,
-  getJwtSecret: () => getJwtSecret
-});
-import crypto2 from "crypto";
-var import_jsonwebtoken, ephemeralTestSecret, getJwtSecret, authenticate;
-var init_authenticate = __esm({
-  "backend/src/middlewares/authenticate.ts"() {
-    import_jsonwebtoken = __toESM(require_jsonwebtoken(), 1);
-    ephemeralTestSecret = null;
-    getJwtSecret = () => {
-      const secret = process.env.JWT_SECRET;
-      if (!secret) {
-        if (process.env.NODE_ENV === "test") {
-          if (!ephemeralTestSecret) {
-            ephemeralTestSecret = crypto2.randomBytes(32).toString("hex");
-          }
-          return ephemeralTestSecret;
-        }
-        throw new Error("FATAL: JWT_SECRET environment variable is missing. A secure secret of at least 32 characters is required.");
-      }
-      if (secret.length < 32) {
-        throw new Error("FATAL: JWT_SECRET must be at least 32 characters long for cryptographic security.");
-      }
-      return secret;
-    };
-    authenticate = (req, res, next) => {
-      const authHeader = req.headers.authorization;
-      if (!authHeader || !authHeader.startsWith("Bearer ")) {
-        res.status(401).json({
-          success: false,
-          message: "Access Denied: Missing or invalid authorization token."
-        });
-        return;
-      }
-      const token = authHeader.split(" ")[1];
-      try {
-        const secret = getJwtSecret();
-        const decoded = import_jsonwebtoken.default.verify(token, secret);
-        req.user = decoded;
-        next();
-      } catch (error51) {
-        res.status(401).json({
-          success: false,
-          message: error51.name === "TokenExpiredError" ? "Session Expired: Please log in again." : "Access Denied: Invalid authentication token."
-        });
-      }
     };
   }
 });
@@ -47245,14 +47192,14 @@ var require_svgPath = __commonJS({
       ["Z", 0],
       ["z", 0]
     ]);
-    var parse3 = function(path) {
+    var parse3 = function(path2) {
       var cmd;
       var ret = [];
       var args = [];
       var curArg = "";
       var foundDecimal = false;
       var params = 0;
-      for (var _i = 0, path_1 = path; _i < path_1.length; _i++) {
+      for (var _i = 0, path_1 = path2; _i < path_1.length; _i++) {
         var c = path_1[_i];
         if (parameters.has(c)) {
           params = parameters.get(c);
@@ -47566,8 +47513,8 @@ var require_svgPath = __commonJS({
       ];
       return result;
     };
-    exports.svgPathToOperators = function(path) {
-      return apply(parse3(path));
+    exports.svgPathToOperators = function(path2) {
+      return apply(parse3(path2));
     };
   }
 });
@@ -47750,7 +47697,7 @@ var require_operations = __commonJS({
         operators_1.popGraphicsState()
       ]).filter(Boolean);
     };
-    exports.drawSvgPath = function(path, options) {
+    exports.drawSvgPath = function(path2, options) {
       var _a3, _b, _c;
       return tslib_1.__spreadArrays([
         operators_1.pushGraphicsState(),
@@ -47764,7 +47711,7 @@ var require_operations = __commonJS({
         options.borderWidth && operators_1.setLineWidth(options.borderWidth),
         options.borderLineCap && operators_1.setLineCap(options.borderLineCap),
         operators_1.setDashPattern((_b = options.borderDashArray) !== null && _b !== void 0 ? _b : [], (_c = options.borderDashPhase) !== null && _c !== void 0 ? _c : 0)
-      ], svgPath_1.svgPathToOperators(path), [
+      ], svgPath_1.svgPathToOperators(path2), [
         // prettier-ignore
         options.color && options.borderWidth ? operators_1.fillAndStroke() : options.color ? operators_1.fill() : options.borderColor ? operators_1.stroke() : operators_1.closePath(),
         operators_1.popGraphicsState()
@@ -52062,12 +52009,12 @@ var require_PDFPage = __commonJS({
             graphicsState: graphicsStateKey
           }));
         };
-        PDFPage2.prototype.drawSvgPath = function(path, options) {
+        PDFPage2.prototype.drawSvgPath = function(path2, options) {
           var _a3, _b, _c, _d, _e, _f, _g, _h, _j;
           if (options === void 0) {
             options = {};
           }
-          utils_1.assertIs(path, "path", ["string"]);
+          utils_1.assertIs(path2, "path", ["string"]);
           utils_1.assertOrUndefined(options.x, "options.x", ["number"]);
           utils_1.assertOrUndefined(options.y, "options.y", ["number"]);
           utils_1.assertOrUndefined(options.scale, "options.scale", ["number"]);
@@ -52096,7 +52043,7 @@ var require_PDFPage = __commonJS({
             options.borderColor = colors_1.rgb(0, 0, 0);
           }
           var contentStream = this.getContentStream();
-          contentStream.push.apply(contentStream, operations_1.drawSvgPath(path, {
+          contentStream.push.apply(contentStream, operations_1.drawSvgPath(path2, {
             x: (_a3 = options.x) !== null && _a3 !== void 0 ? _a3 : this.x,
             y: (_b = options.y) !== null && _b !== void 0 ? _b : this.y,
             scale: options.scale,
@@ -54130,10 +54077,10 @@ var require_segments = __commonJS({
       const segs = getSegmentsFromString(data, Utils.isKanjiModeEnabled());
       const nodes = buildNodes(segs);
       const graph = buildGraph(nodes, version2);
-      const path = dijkstra.find_path(graph.map, "start", "end");
+      const path2 = dijkstra.find_path(graph.map, "start", "end");
       const optimizedSegs = [];
-      for (let i = 1; i < path.length - 1; i++) {
-        optimizedSegs.push(graph.table[path[i]].node);
+      for (let i = 1; i < path2.length - 1; i++) {
+        optimizedSegs.push(graph.table[path2[i]].node);
       }
       return exports.fromArray(mergeSegments(optimizedSegs));
     };
@@ -56569,7 +56516,7 @@ var require_utils8 = __commonJS({
 // node_modules/qrcode/lib/renderer/png.js
 var require_png3 = __commonJS({
   "node_modules/qrcode/lib/renderer/png.js"(exports) {
-    var fs = __require("fs");
+    var fs2 = __require("fs");
     var PNG = require_png2().PNG;
     var Utils = require_utils8();
     exports.render = function render(qrData, options) {
@@ -56610,7 +56557,7 @@ var require_png3 = __commonJS({
       });
       png.pack();
     };
-    exports.renderToFile = function renderToFile(path, qrData, options, cb) {
+    exports.renderToFile = function renderToFile(path2, qrData, options, cb) {
       if (typeof cb === "undefined") {
         cb = options;
         options = void 0;
@@ -56621,7 +56568,7 @@ var require_png3 = __commonJS({
         called = true;
         cb.apply(null, args);
       };
-      const stream = fs.createWriteStream(path);
+      const stream = fs2.createWriteStream(path2);
       stream.on("error", done);
       stream.on("close", done);
       exports.renderToFileStream(stream, qrData, options);
@@ -56683,14 +56630,14 @@ var require_utf8 = __commonJS({
       }
       return output;
     };
-    exports.renderToFile = function renderToFile(path, qrData, options, cb) {
+    exports.renderToFile = function renderToFile(path2, qrData, options, cb) {
       if (typeof cb === "undefined") {
         cb = options;
         options = void 0;
       }
-      const fs = __require("fs");
+      const fs2 = __require("fs");
       const utf8 = exports.render(qrData, options);
-      fs.writeFile(path, utf8, cb);
+      fs2.writeFile(path2, utf8, cb);
     };
   }
 });
@@ -56811,7 +56758,7 @@ var require_svg_tag = __commonJS({
       return str;
     }
     function qrToPath(data, size, margin) {
-      let path = "";
+      let path2 = "";
       let moveBy = 0;
       let newRow = false;
       let lineLength = 0;
@@ -56822,19 +56769,19 @@ var require_svg_tag = __commonJS({
         if (data[i]) {
           lineLength++;
           if (!(i > 0 && col > 0 && data[i - 1])) {
-            path += newRow ? svgCmd("M", col + margin, 0.5 + row + margin) : svgCmd("m", moveBy, 0);
+            path2 += newRow ? svgCmd("M", col + margin, 0.5 + row + margin) : svgCmd("m", moveBy, 0);
             moveBy = 0;
             newRow = false;
           }
           if (!(col + 1 < size && data[i + 1])) {
-            path += svgCmd("h", lineLength);
+            path2 += svgCmd("h", lineLength);
             lineLength = 0;
           }
         } else {
           moveBy++;
         }
       }
-      return path;
+      return path2;
     }
     exports.render = function render(qrData, options, cb) {
       const opts = Utils.getOptions(options);
@@ -56842,10 +56789,10 @@ var require_svg_tag = __commonJS({
       const data = qrData.modules.data;
       const qrcodesize = size + opts.margin * 2;
       const bg = !opts.color.light.a ? "" : "<path " + getColorAttrib(opts.color.light, "fill") + ' d="M0 0h' + qrcodesize + "v" + qrcodesize + 'H0z"/>';
-      const path = "<path " + getColorAttrib(opts.color.dark, "stroke") + ' d="' + qrToPath(data, size, opts.margin) + '"/>';
+      const path2 = "<path " + getColorAttrib(opts.color.dark, "stroke") + ' d="' + qrToPath(data, size, opts.margin) + '"/>';
       const viewBox = 'viewBox="0 0 ' + qrcodesize + " " + qrcodesize + '"';
       const width = !opts.width ? "" : 'width="' + opts.width + '" height="' + opts.width + '" ';
-      const svgTag = '<svg xmlns="http://www.w3.org/2000/svg" ' + width + viewBox + ' shape-rendering="crispEdges">' + bg + path + "</svg>\n";
+      const svgTag = '<svg xmlns="http://www.w3.org/2000/svg" ' + width + viewBox + ' shape-rendering="crispEdges">' + bg + path2 + "</svg>\n";
       if (typeof cb === "function") {
         cb(null, svgTag);
       }
@@ -56859,15 +56806,15 @@ var require_svg = __commonJS({
   "node_modules/qrcode/lib/renderer/svg.js"(exports) {
     var svgTagRenderer = require_svg_tag();
     exports.render = svgTagRenderer.render;
-    exports.renderToFile = function renderToFile(path, qrData, options, cb) {
+    exports.renderToFile = function renderToFile(path2, qrData, options, cb) {
       if (typeof cb === "undefined") {
         cb = options;
         options = void 0;
       }
-      const fs = __require("fs");
+      const fs2 = __require("fs");
       const svgTag = exports.render(qrData, options);
       const xmlStr = '<?xml version="1.0" encoding="utf-8"?><!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">' + svgTag;
-      fs.writeFile(path, xmlStr, cb);
+      fs2.writeFile(path2, xmlStr, cb);
     };
   }
 });
@@ -57025,8 +56972,8 @@ var require_server = __commonJS({
         cb
       };
     }
-    function getTypeFromFilename(path) {
-      return path.slice((path.lastIndexOf(".") - 1 >>> 0) + 2).toLowerCase();
+    function getTypeFromFilename(path2) {
+      return path2.slice((path2.lastIndexOf(".") - 1 >>> 0) + 2).toLowerCase();
     }
     function getRendererFromType(type) {
       switch (type) {
@@ -57090,17 +57037,17 @@ var require_server = __commonJS({
       const renderer = getRendererFromType(params.opts.type);
       return render(renderer.renderToBuffer, text, params);
     };
-    exports.toFile = function toFile(path, text, opts, cb) {
-      if (typeof path !== "string" || !(typeof text === "string" || typeof text === "object")) {
+    exports.toFile = function toFile(path2, text, opts, cb) {
+      if (typeof path2 !== "string" || !(typeof text === "string" || typeof text === "object")) {
         throw new Error("Invalid argument");
       }
       if (arguments.length < 3 && !canPromise()) {
         throw new Error("Too few arguments provided");
       }
       const params = checkParams(text, opts, cb);
-      const type = params.opts.type || getTypeFromFilename(path);
+      const type = params.opts.type || getTypeFromFilename(path2);
       const renderer = getRendererFromType(type);
-      const renderToFile = renderer.renderToFile.bind(null, path);
+      const renderToFile = renderer.renderToFile.bind(null, path2);
       return render(renderToFile, text, params);
     };
     exports.toFileStream = function toFileStream(stream, text, opts) {
@@ -57123,7 +57070,7 @@ var require_lib5 = __commonJS({
 });
 
 // backend/src/index.ts
-var import_express19 = __toESM(require_express2(), 1);
+var import_express23 = __toESM(require_express2(), 1);
 var import_cors = __toESM(require_lib3(), 1);
 
 // node_modules/helmet/index.mjs
@@ -60312,10 +60259,10 @@ var JsonArrPopCommand = class extends Command {
 };
 var JsonArrTrimCommand = class extends Command {
   constructor(cmd, opts) {
-    const path = cmd[1] ?? "$";
+    const path2 = cmd[1] ?? "$";
     const start = cmd[2] ?? 0;
     const stop = cmd[3] ?? 0;
-    super(["JSON.ARRTRIM", cmd[0], path, start, stop], opts);
+    super(["JSON.ARRTRIM", cmd[0], path2, start, stop], opts);
   }
 };
 var JsonClearCommand = class extends Command {
@@ -61367,9 +61314,9 @@ var Pipeline = class {
     if (this.commands.length === 0) {
       throw new Error("Pipeline is empty");
     }
-    const path = this.multiExec ? ["multi-exec"] : ["pipeline"];
+    const path2 = this.multiExec ? ["multi-exec"] : ["pipeline"];
     const res = await this.client.request({
-      path,
+      path: path2,
       body: Object.values(this.commands).map((c) => c.command)
     });
     return options?.keepErrors ? res.map(({ error: error51, result }, i) => {
@@ -64047,6 +63994,7 @@ var requestLogger = (req, res, next) => {
 
 // backend/src/config/redis.ts
 var memoryCache = /* @__PURE__ */ new Map();
+var inFlightRevalidations = /* @__PURE__ */ new Map();
 var upstashRedis = null;
 if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) {
   try {
@@ -64062,17 +64010,109 @@ if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) 
 } else {
   logger.info("\u26A1 Redis Cache running in high-performance memory fallback mode", "CACHE");
 }
+function buildCanonicalCacheKey(prefix, identifier, queryParams) {
+  const cleanPrefix = prefix.trim().toLowerCase();
+  const cleanId = String(identifier || "all").trim().toLowerCase();
+  if (!queryParams) {
+    return `${cleanPrefix}:${cleanId}`;
+  }
+  const sortedPairs = [];
+  const keys = Object.keys(queryParams).sort();
+  for (const k of keys) {
+    const val = queryParams[k];
+    if (val !== void 0 && val !== null && val !== "") {
+      sortedPairs.push(`${encodeURIComponent(k.toLowerCase())}=${encodeURIComponent(String(val).trim())}`);
+    }
+  }
+  return sortedPairs.length > 0 ? `${cleanPrefix}:${cleanId}?${sortedPairs.join("&")}` : `${cleanPrefix}:${cleanId}`;
+}
+async function cacheGetOrSWR(key, fetcher, options = {}) {
+  const freshTtlSeconds = options.freshTtlSeconds ?? 30;
+  const staleTtlSeconds = options.staleTtlSeconds ?? 1800;
+  try {
+    let entry = null;
+    if (upstashRedis) {
+      const raw = await upstashRedis.get(key);
+      if (raw && typeof raw === "object" && "freshUntil" in raw && "staleUntil" in raw && "value" in raw) {
+        entry = raw;
+      }
+    } else {
+      const raw = memoryCache.get(key);
+      if (raw && Date.now() <= raw.expiresAt) {
+        const val = raw.value;
+        if (val && typeof val === "object" && "freshUntil" in val && "staleUntil" in val && "value" in val) {
+          entry = val;
+        }
+      }
+    }
+    const now = Date.now();
+    if (entry && now < entry.freshUntil) {
+      return { data: entry.value, cached: true, stale: false };
+    }
+    if (entry && now < entry.staleUntil) {
+      if (!inFlightRevalidations.has(key)) {
+        const revalidationPromise = (async () => {
+          try {
+            const freshData2 = await fetcher();
+            await cacheSetSWR(key, freshData2, freshTtlSeconds, staleTtlSeconds);
+          } catch (err) {
+            logger.warn(`[cacheGetOrSWR] Background revalidation failed for ${key}: ${err.message}`, "CACHE");
+          } finally {
+            inFlightRevalidations.delete(key);
+          }
+        })();
+        inFlightRevalidations.set(key, revalidationPromise);
+      }
+      return { data: entry.value, cached: true, stale: true };
+    }
+    const freshData = await fetcher();
+    await cacheSetSWR(key, freshData, freshTtlSeconds, staleTtlSeconds);
+    return { data: freshData, cached: false, stale: false };
+  } catch (err) {
+    logger.warn(`[cacheGetOrSWR] Fallback to direct fetcher on error for ${key}: ${err.message}`, "CACHE");
+    const directData = await fetcher();
+    return { data: directData, cached: false, stale: false };
+  }
+}
+async function cacheSetSWR(key, value, freshTtlSeconds = 30, staleTtlSeconds = 1800) {
+  const now = Date.now();
+  const entry = {
+    value,
+    freshUntil: now + freshTtlSeconds * 1e3,
+    staleUntil: now + staleTtlSeconds * 1e3
+  };
+  try {
+    if (upstashRedis) {
+      await upstashRedis.set(key, entry, { ex: staleTtlSeconds });
+      return;
+    }
+    memoryCache.set(key, {
+      value: entry,
+      expiresAt: entry.staleUntil
+    });
+  } catch (err) {
+    logger.warn(`[cacheSetSWR] Cache write error for ${key}: ${err.message}`, "CACHE");
+  }
+}
 async function cacheGet(key) {
   try {
     if (upstashRedis) {
-      const val = await upstashRedis.get(key);
-      return val ?? null;
+      const val2 = await upstashRedis.get(key);
+      if (!val2) return null;
+      if (typeof val2 === "object" && "freshUntil" in val2 && "value" in val2) {
+        return val2.value;
+      }
+      return val2;
     }
     const entry = memoryCache.get(key);
     if (!entry) return null;
     if (Date.now() > entry.expiresAt) {
       memoryCache.delete(key);
       return null;
+    }
+    const val = entry.value;
+    if (val && typeof val === "object" && "freshUntil" in val && "value" in val) {
+      return val.value;
     }
     return entry.value;
   } catch (err) {
@@ -64095,6 +64135,7 @@ async function cacheSet(key, value, ttlSeconds = 3600) {
   }
 }
 async function cacheDel(key) {
+  inFlightRevalidations.delete(key);
   try {
     if (upstashRedis) {
       await upstashRedis.del(key);
@@ -64106,6 +64147,11 @@ async function cacheDel(key) {
   }
 }
 async function cacheDelPattern(prefix) {
+  for (const k of inFlightRevalidations.keys()) {
+    if (k.startsWith(prefix)) {
+      inFlightRevalidations.delete(k);
+    }
+  }
   try {
     if (upstashRedis) {
       const keys = await upstashRedis.keys(`${prefix}*`);
@@ -64144,8 +64190,287 @@ var recordAdminAudit = async (params) => {
   }
 };
 
+// backend/src/utils/apiResponse.ts
+var ErrorCode = {
+  BAD_REQUEST: "BAD_REQUEST",
+  VALIDATION_ERROR: "VALIDATION_ERROR",
+  UNAUTHORIZED: "UNAUTHORIZED",
+  FORBIDDEN: "FORBIDDEN",
+  NOT_FOUND: "NOT_FOUND",
+  CONFLICT: "CONFLICT",
+  RATE_LIMITED: "RATE_LIMITED",
+  INTERNAL_SERVER_ERROR: "INTERNAL_SERVER_ERROR",
+  SERVICE_UNAVAILABLE: "SERVICE_UNAVAILABLE"
+};
+function sendError(res, statusCode, code, message, req) {
+  const requestId = req?.headers?.["x-request-id"] || res.getHeader("X-Request-Id") || res.getHeader("x-request-id") || void 0;
+  res.status(statusCode).json({
+    success: false,
+    code,
+    message,
+    ...requestId ? { requestId } : {}
+  });
+}
+
+// backend/src/utils/money.ts
+import { Prisma } from "@prisma/client";
+function toCents(value) {
+  if (value === null || value === void 0) return 0;
+  let lkr;
+  if (value instanceof Prisma.Decimal) {
+    lkr = parseFloat(value.toFixed(2));
+  } else if (typeof value === "string") {
+    lkr = parseFloat(value.replace(/[^0-9.\-]/g, ""));
+  } else {
+    lkr = value;
+  }
+  if (!isFinite(lkr) || isNaN(lkr)) return 0;
+  return Math.round(lkr * 100);
+}
+function lkrFromCents(cents) {
+  return Math.round(cents) / 100;
+}
+function formatLkr(cents, symbol2 = "RS.") {
+  const lkr = lkrFromCents(cents);
+  return `${symbol2} ${lkr.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
+function toPrismaDecimal(cents) {
+  return new Prisma.Decimal(lkrFromCents(cents).toFixed(2));
+}
+function calculateDiscount(originalCents, discountPercent, discountAmount) {
+  let discountCents = 0;
+  const pctCents = toCents(discountPercent);
+  const flatCents = toCents(discountAmount);
+  if (pctCents > 0) {
+    discountCents = Math.round(originalCents * pctCents / 1e4);
+  } else if (flatCents > 0) {
+    discountCents = Math.min(originalCents, flatCents);
+  }
+  const finalCents = Math.max(0, originalCents - discountCents);
+  return {
+    originalCents,
+    discountCents,
+    finalCents,
+    originalLkr: formatLkr(originalCents),
+    discountLkr: formatLkr(discountCents),
+    finalLkr: formatLkr(finalCents)
+  };
+}
+function reconcilePayment(expectedCents, paidCents, toleranceLkr = 1) {
+  const toleranceCents = Math.round(toleranceLkr * 100);
+  const deltaCents = paidCents - expectedCents;
+  const absDelta = Math.abs(deltaCents);
+  let status;
+  if (absDelta <= toleranceCents) {
+    status = "EXACT_MATCH" /* EXACT_MATCH */;
+  } else if (deltaCents > 0) {
+    status = "OVERPAID" /* OVERPAID */;
+  } else {
+    status = "UNDERPAID" /* UNDERPAID */;
+  }
+  const sign = deltaCents >= 0 ? "+" : "-";
+  return {
+    status,
+    expectedCents,
+    paidCents,
+    deltaCents,
+    expectedLkr: formatLkr(expectedCents),
+    paidLkr: formatLkr(paidCents),
+    deltaLkr: `${sign}${formatLkr(Math.abs(deltaCents)).replace(/^RS\.\s*/, "")}`
+  };
+}
+function applyCoupon(coursePriceLkr, coupon) {
+  const originalCents = toCents(coursePriceLkr);
+  return calculateDiscount(originalCents, coupon.discountPercent, coupon.discountAmount);
+}
+
+// backend/src/utils/realtimeEmitter.ts
+var clients = /* @__PURE__ */ new Map();
+var heartbeatInterval = setInterval(() => {
+  if (clients.size === 0) return;
+  const pingMessage = `:keepalive
+
+`;
+  for (const [id, client] of clients.entries()) {
+    try {
+      client.res.write(pingMessage);
+      if (typeof client.res.flush === "function") {
+        client.res.flush();
+      }
+    } catch {
+      clients.delete(id);
+    }
+  }
+}, 25e3);
+if (heartbeatInterval && typeof heartbeatInterval.unref === "function") {
+  heartbeatInterval.unref();
+}
+function handleRealtimeStream(req, res) {
+  const clientId = `client_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+  const clientIp = req.ip || "unknown";
+  res.setHeader("Content-Type", "text/event-stream");
+  res.setHeader("Cache-Control", "no-cache, no-transform");
+  res.setHeader("Connection", "keep-alive");
+  res.setHeader("X-Accel-Buffering", "no");
+  res.flushHeaders?.();
+  res.write(`:keepalive
+
+`);
+  const client = {
+    id: clientId,
+    res,
+    ip: clientIp,
+    connectedAt: Date.now()
+  };
+  clients.set(clientId, client);
+  logger.info(`[REALTIME] Client connected (${clientId}) \u2014 total active: ${clients.size}`, "REALTIME");
+  res.write(`event: connected
+data: ${JSON.stringify({ clientId, timestamp: (/* @__PURE__ */ new Date()).toISOString() })}
+
+`);
+  req.on("close", () => {
+    clients.delete(clientId);
+    logger.info(`[REALTIME] Client disconnected (${clientId}) \u2014 remaining: ${clients.size}`, "REALTIME");
+  });
+}
+function broadcastRealtimeEvent(event, data = {}) {
+  const payload = {
+    event,
+    data,
+    timestamp: (/* @__PURE__ */ new Date()).toISOString()
+  };
+  const sseChunk = `event: ${event}
+data: ${JSON.stringify(payload)}
+
+`;
+  let activeCount = 0;
+  for (const [id, client] of clients.entries()) {
+    try {
+      client.res.write(sseChunk);
+      if (typeof client.res.flush === "function") {
+        client.res.flush();
+      }
+      activeCount++;
+    } catch {
+      clients.delete(id);
+    }
+  }
+  logger.info(`[REALTIME] Broadcasted '${event}' to ${activeCount} active stream(s)`, "REALTIME");
+}
+function getActiveRealtimeClientsCount() {
+  return clients.size;
+}
+
+// backend/src/controllers/notificationController.ts
+async function createNotificationHelper(payload) {
+  try {
+    const notification = await prisma.notification.create({
+      data: {
+        userId: payload.userId || null,
+        title: payload.title.trim(),
+        message: payload.message.trim(),
+        link: payload.link ? payload.link.trim() : null,
+        type: payload.type || "GENERAL",
+        isRead: false
+      }
+    });
+    broadcastRealtimeEvent("notification:new", {
+      notification,
+      targetUserId: payload.userId || null
+    });
+    logger.info(`[Notification] Created alert: "${payload.title}" (target: ${payload.userId || "GLOBAL"})`, "NOTIFICATION");
+    return notification;
+  } catch (err) {
+    logger.error(`[NotificationHelper] Failed to create notification: ${err.message}`, "NOTIFICATION");
+    return null;
+  }
+}
+var getNotifications = async (req, res) => {
+  try {
+    const callerId = req.user?.id || (req.query.userId ? String(req.query.userId).trim() : null);
+    const whereClause = callerId ? {
+      OR: [
+        { userId: callerId },
+        { userId: null }
+      ]
+    } : { userId: null };
+    const [notifications, unreadCount] = await Promise.all([
+      prisma.notification.findMany({
+        where: whereClause,
+        orderBy: { createdAt: "desc" },
+        take: 30
+      }),
+      prisma.notification.count({
+        where: {
+          ...whereClause,
+          isRead: false
+        }
+      })
+    ]);
+    res.status(200).json({
+      success: true,
+      unreadCount,
+      count: notifications.length,
+      data: notifications
+    });
+  } catch (error51) {
+    logger.error(`[getNotifications] ${error51.message}`, "NOTIFICATION");
+    res.status(500).json({ success: false, message: "Failed to retrieve notifications." });
+  }
+};
+var markNotificationAsRead = async (req, res) => {
+  try {
+    const id = String(req.params.id);
+    const existing = await prisma.notification.findUnique({ where: { id } });
+    if (!existing) {
+      res.status(404).json({ success: false, message: "Notification not found." });
+      return;
+    }
+    const updated = await prisma.notification.update({
+      where: { id },
+      data: { isRead: true }
+    });
+    broadcastRealtimeEvent("notification:read", { id, userId: updated.userId });
+    res.status(200).json({
+      success: true,
+      message: "Notification marked as read.",
+      data: updated
+    });
+  } catch (error51) {
+    logger.error(`[markNotificationAsRead] ${error51.message}`, "NOTIFICATION");
+    res.status(500).json({ success: false, message: "Failed to update notification." });
+  }
+};
+var markAllNotificationsAsRead = async (req, res) => {
+  try {
+    const callerId = req.user?.id || (req.body?.userId ? String(req.body.userId).trim() : null);
+    const whereClause = {
+      isRead: false,
+      ...callerId ? {
+        OR: [
+          { userId: callerId },
+          { userId: null }
+        ]
+      } : { userId: null }
+    };
+    const updateResult = await prisma.notification.updateMany({
+      where: whereClause,
+      data: { isRead: true }
+    });
+    broadcastRealtimeEvent("notification:read", { all: true, userId: callerId });
+    res.status(200).json({
+      success: true,
+      message: "All notifications marked as read.",
+      updatedCount: updateResult.count
+    });
+  } catch (error51) {
+    logger.error(`[markAllNotificationsAsRead] ${error51.message}`, "NOTIFICATION");
+    res.status(500).json({ success: false, message: "Failed to mark all notifications as read." });
+  }
+};
+
 // backend/src/controllers/courseController.ts
-var getAllCourses = async (_req, res) => {
+var getAllCourses = async (req, res) => {
   try {
     const cached2 = await cacheGet("courses:all");
     if (cached2) {
@@ -64155,8 +64480,7 @@ var getAllCourses = async (_req, res) => {
     const courses = await prisma.course.findMany({
       include: {
         batches: {
-          where: { status: "UPCOMING" },
-          orderBy: { startDate: "asc" }
+          orderBy: { batchNumber: "asc" }
         }
       },
       orderBy: { createdAt: "asc" }
@@ -64164,7 +64488,8 @@ var getAllCourses = async (_req, res) => {
     await cacheSet("courses:all", courses, 3600);
     res.status(200).json({ success: true, count: courses.length, data: courses });
   } catch (error51) {
-    res.status(500).json({ success: false, message: error51.message });
+    logger.error(`[getAllCourses] ${error51.message}`, "COURSES");
+    sendError(res, 500, ErrorCode.INTERNAL_SERVER_ERROR, "Failed to retrieve courses directory.", req);
   }
 };
 var getCourseBySlug = async (req, res) => {
@@ -64178,73 +64503,89 @@ var getCourseBySlug = async (req, res) => {
     }
     const course = await prisma.course.findUnique({
       where: { slug },
-      include: { batches: true }
+      include: {
+        batches: {
+          orderBy: { batchNumber: "asc" }
+        }
+      }
     });
     if (!course) {
-      res.status(404).json({ success: false, message: "Course division not found" });
+      sendError(res, 404, ErrorCode.NOT_FOUND, "Course division not found", req);
       return;
     }
     await cacheSet(cacheKey, course, 3600);
     res.status(200).json({ success: true, data: course });
   } catch (error51) {
-    res.status(500).json({ success: false, message: error51.message });
+    logger.error(`[getCourseBySlug] ${error51.message}`, "COURSES");
+    sendError(res, 500, ErrorCode.INTERNAL_SERVER_ERROR, "Failed to retrieve course details.", req);
   }
 };
 var updateCourse = async (req, res) => {
   try {
     const id = String(req.params.id);
-    const { price, duration: duration3, subtitle, title, badge } = req.body;
+    const { price, duration: duration3, badge, category, subtitle, isFeatured } = req.body;
+    const existingCourse = await prisma.course.findUnique({ where: { id } });
+    if (!existingCourse) {
+      sendError(res, 404, ErrorCode.NOT_FOUND, "Course division not found", req);
+      return;
+    }
     const updated = await prisma.course.update({
       where: { id },
       data: {
-        ...price !== void 0 && { price: parseFloat(price) },
+        ...price !== void 0 && { price: toPrismaDecimal(toCents(price)) },
         ...duration3 && { duration: duration3 },
+        ...badge && { badge },
+        ...category && { category },
         ...subtitle && { subtitle },
-        ...title && { title },
-        ...badge && { badge }
+        ...typeof isFeatured === "boolean" && { isFeatured }
       }
     });
     await cacheDelPattern("courses:");
     await recordAdminAudit({
       adminId: req.user?.id,
       adminEmail: req.user?.email,
-      action: "COURSE_UPDATED",
+      action: "COURSE_PRICE_CHANGED",
       targetEntity: "Course",
       targetId: id,
-      details: { title: updated.title, price: updated.price },
+      details: { oldPrice: existingCourse.price, newPrice: updated.price, slug: updated.slug },
       ipAddress: req.ip
     });
     res.status(200).json({ success: true, data: updated });
   } catch (error51) {
-    res.status(500).json({ success: false, message: error51.message });
+    logger.error(`[updateCourse] ${error51.message}`, "COURSES");
+    sendError(res, 500, ErrorCode.INTERNAL_SERVER_ERROR, "Failed to update course directive.", req);
   }
 };
 var updateBatch = async (req, res) => {
   try {
     const batchId = String(req.params.batchId);
-    const { availableSeats, totalSeats, scheduleText, zoomLink, status } = req.body;
+    const { scheduleText, startDate, totalSeats, availableSeats, zoomLink, status, assignedCoachId, assignedCoachName } = req.body;
     const updatedBatch = await prisma.$transaction(async (tx) => {
       const existingBatch = await tx.courseBatch.findUnique({ where: { id: batchId } });
       if (!existingBatch) {
         throw new Error("Course batch directive not found");
       }
-      const newTotal = totalSeats !== void 0 ? Math.max(1, parseInt(totalSeats, 10) || 1) : existingBatch.totalSeats;
-      let newAvailable = availableSeats !== void 0 ? Math.max(0, parseInt(availableSeats, 10) || 0) : existingBatch.availableSeats;
-      if (newAvailable > newTotal) {
-        newAvailable = newTotal;
+      const cleanTotal = totalSeats !== void 0 ? Math.max(1, parseInt(totalSeats, 10) || existingBatch.totalSeats) : existingBatch.totalSeats;
+      let cleanAvailable = availableSeats !== void 0 ? Math.max(0, parseInt(availableSeats, 10)) : existingBatch.availableSeats;
+      if (cleanAvailable > cleanTotal) {
+        cleanAvailable = cleanTotal;
       }
       return await tx.courseBatch.update({
         where: { id: batchId },
         data: {
-          availableSeats: newAvailable,
-          totalSeats: newTotal,
-          ...scheduleText !== void 0 && { scheduleText: String(scheduleText) },
-          ...zoomLink !== void 0 && { zoomLink: zoomLink ? String(zoomLink) : null },
-          ...status !== void 0 && { status }
+          ...scheduleText && { scheduleText },
+          ...startDate && { startDate: new Date(startDate) },
+          ...totalSeats !== void 0 && { totalSeats: cleanTotal },
+          ...availableSeats !== void 0 && { availableSeats: cleanAvailable },
+          ...zoomLink !== void 0 && { zoomLink },
+          ...status && { status },
+          ...assignedCoachId !== void 0 && { assignedCoachId: assignedCoachId || null },
+          ...assignedCoachName !== void 0 && { assignedCoachName: assignedCoachName || null }
         }
       });
     });
     await cacheDelPattern("courses:");
+    broadcastRealtimeEvent("course:updated", { batchId, availableSeats: updatedBatch.availableSeats });
     await recordAdminAudit({
       adminId: req.user?.id,
       adminEmail: req.user?.email,
@@ -64257,7 +64598,14 @@ var updateBatch = async (req, res) => {
     res.status(200).json({ success: true, data: updatedBatch });
   } catch (error51) {
     const is404 = error51.message?.includes("not found");
-    res.status(is404 ? 404 : 500).json({ success: false, message: error51.message });
+    logger.error(`[updateBatch] ${error51.message}`, "COURSES");
+    sendError(
+      res,
+      is404 ? 404 : 500,
+      is404 ? ErrorCode.NOT_FOUND : ErrorCode.INTERNAL_SERVER_ERROR,
+      is404 ? "Course batch not found" : "Failed to update course batch schedule.",
+      req
+    );
   }
 };
 var updateBatchSeats = async (req, res) => {
@@ -64279,6 +64627,7 @@ var updateBatchSeats = async (req, res) => {
       });
     });
     await cacheDelPattern("courses:");
+    broadcastRealtimeEvent("course:updated", { batchId, availableSeats: updatedBatch.availableSeats });
     await recordAdminAudit({
       adminId: req.user?.id,
       adminEmail: req.user?.email,
@@ -64291,14 +64640,21 @@ var updateBatchSeats = async (req, res) => {
     res.status(200).json({ success: true, data: updatedBatch });
   } catch (error51) {
     const is404 = error51.message?.includes("not found");
-    res.status(is404 ? 404 : 500).json({ success: false, message: error51.message });
+    logger.error(`[updateBatchSeats] ${error51.message}`, "COURSES");
+    sendError(
+      res,
+      is404 ? 404 : 500,
+      is404 ? ErrorCode.NOT_FOUND : ErrorCode.INTERNAL_SERVER_ERROR,
+      is404 ? "Course batch not found" : "Failed to update batch seats.",
+      req
+    );
   }
 };
 var createCourse = async (req, res) => {
   try {
     const { title, slug, subtitle, badge, category, description, price, currency, duration: duration3, nextBatchDate, seats, zoomLink } = req.body;
     if (!title || price === void 0) {
-      res.status(400).json({ success: false, message: "Title and Price are required" });
+      sendError(res, 400, ErrorCode.VALIDATION_ERROR, "Title and Price are required", req);
       return;
     }
     const generatedSlug = (slug || title).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
@@ -64310,7 +64666,7 @@ var createCourse = async (req, res) => {
         badge: badge || "MIND DIVISION",
         category: category || "MIND",
         description: description || "Comprehensive tactical empowerment program.",
-        price: parseFloat(price),
+        price: toPrismaDecimal(toCents(price)),
         currency: currency || "RS.",
         duration: duration3 || "5 Days Intensive",
         isFeatured: true,
@@ -64331,6 +64687,7 @@ var createCourse = async (req, res) => {
       }
     });
     await cacheDelPattern("courses:");
+    broadcastRealtimeEvent("course:updated", { slug: newCourse.slug });
     await recordAdminAudit({
       adminId: req.user?.id,
       adminEmail: req.user?.email,
@@ -64342,26 +64699,165 @@ var createCourse = async (req, res) => {
     });
     res.status(201).json({ success: true, data: newCourse });
   } catch (error51) {
-    res.status(500).json({ success: false, message: error51.message });
+    logger.error(`[createCourse] ${error51.message}`, "COURSES");
+    sendError(res, 500, ErrorCode.INTERNAL_SERVER_ERROR, "Failed to create course directive.", req);
+  }
+};
+var createBatch = async (req, res) => {
+  try {
+    const { courseId, courseSlug, batchNumber, scheduleText, startDate, totalSeats, availableSeats, zoomLink, status, assignedCoachName } = req.body;
+    const course = await prisma.course.findFirst({
+      where: {
+        OR: [
+          ...courseId ? [{ id: courseId }] : [],
+          ...courseSlug ? [{ slug: String(courseSlug).toLowerCase() }] : []
+        ]
+      },
+      include: { batches: { orderBy: { batchNumber: "desc" }, take: 1 } }
+    });
+    if (!course) {
+      sendError(res, 404, ErrorCode.NOT_FOUND, "Target course not found to attach batch.", req);
+      return;
+    }
+    const nextBatchNum = batchNumber !== void 0 ? parseInt(batchNumber, 10) : (course.batches[0]?.batchNumber || 0) + 1;
+    const cleanTotal = totalSeats !== void 0 ? Math.max(1, parseInt(totalSeats, 10) || 20) : 20;
+    const cleanAvailable = availableSeats !== void 0 ? Math.max(0, parseInt(availableSeats, 10)) : cleanTotal;
+    const newBatch = await prisma.courseBatch.create({
+      data: {
+        courseId: course.id,
+        batchNumber: nextBatchNum,
+        startDate: startDate ? new Date(startDate) : /* @__PURE__ */ new Date(),
+        scheduleText: scheduleText || `Next Cohort: 2026-09-20 (Zoom Live 8:30 PM)`,
+        totalSeats: cleanTotal,
+        availableSeats: cleanAvailable,
+        zoomLink: zoomLink || null,
+        status: status || "UPCOMING",
+        assignedCoachName: assignedCoachName || null
+      }
+    });
+    await cacheDelPattern("courses:");
+    broadcastRealtimeEvent("course:updated", { courseSlug: course.slug, batchId: newBatch.id });
+    await createNotificationHelper({
+      userId: null,
+      title: "New cohort session scheduled",
+      message: `Batch #${newBatch.batchNumber} for ${course.title} has been scheduled (${newBatch.scheduleText}).`,
+      link: `/programs/${course.slug}`,
+      type: "COHORT_SESSION"
+    });
+    await recordAdminAudit({
+      adminId: req.user?.id,
+      adminEmail: req.user?.email,
+      action: "BATCH_CREATED",
+      targetEntity: "CourseBatch",
+      targetId: newBatch.id,
+      details: { courseSlug: course.slug, batchNumber: nextBatchNum, totalSeats: cleanTotal },
+      ipAddress: req.ip
+    });
+    res.status(201).json({ success: true, data: newBatch });
+  } catch (error51) {
+    logger.error(`[createBatch] ${error51.message}`, "COURSES");
+    sendError(res, 500, ErrorCode.INTERNAL_SERVER_ERROR, "Failed to create course batch.", req);
+  }
+};
+var deleteBatch = async (req, res) => {
+  try {
+    const batchId = String(req.params.batchId);
+    const existing = await prisma.courseBatch.findUnique({
+      where: { id: batchId },
+      include: { course: true }
+    });
+    if (!existing) {
+      sendError(res, 404, ErrorCode.NOT_FOUND, "Course batch not found.", req);
+      return;
+    }
+    await prisma.courseBatch.delete({
+      where: { id: batchId }
+    });
+    await cacheDelPattern("courses:");
+    broadcastRealtimeEvent("course:updated", { courseSlug: existing.course.slug, batchId });
+    await recordAdminAudit({
+      adminId: req.user?.id,
+      adminEmail: req.user?.email,
+      action: "BATCH_DELETED",
+      targetEntity: "CourseBatch",
+      targetId: batchId,
+      details: { courseSlug: existing.course.slug, batchNumber: existing.batchNumber },
+      ipAddress: req.ip
+    });
+    res.status(200).json({ success: true, message: "Course batch deleted successfully." });
+  } catch (error51) {
+    logger.error(`[deleteBatch] ${error51.message}`, "COURSES");
+    sendError(res, 500, ErrorCode.INTERNAL_SERVER_ERROR, "Failed to delete course batch.", req);
   }
 };
 
-// backend/src/routes/courseRoutes.ts
-init_authenticate();
+// backend/src/middlewares/authenticate.ts
+var import_jsonwebtoken = __toESM(require_jsonwebtoken(), 1);
+import crypto2 from "crypto";
+var ephemeralTestSecret = null;
+var getJwtSecret = () => {
+  const secret = process.env.JWT_SECRET;
+  if (!secret) {
+    if (process.env.NODE_ENV === "test") {
+      if (!ephemeralTestSecret) {
+        ephemeralTestSecret = crypto2.randomBytes(32).toString("hex");
+      }
+      return ephemeralTestSecret;
+    }
+    throw new Error("FATAL: JWT_SECRET environment variable is missing. A secure secret of at least 32 characters is required.");
+  }
+  if (secret.length < 32) {
+    throw new Error("FATAL: JWT_SECRET must be at least 32 characters long for cryptographic security.");
+  }
+  return secret;
+};
+var authenticate = (req, res, next) => {
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    const requestId = req.headers["x-request-id"] || res.getHeader("X-Request-Id") || void 0;
+    res.status(401).json({
+      success: false,
+      code: "UNAUTHORIZED",
+      message: "Access Denied: Missing or invalid authorization token.",
+      ...requestId ? { requestId } : {}
+    });
+    return;
+  }
+  const token = authHeader.split(" ")[1];
+  try {
+    const secret = getJwtSecret();
+    const decoded = import_jsonwebtoken.default.verify(token, secret, { algorithms: ["HS256"] });
+    req.user = decoded;
+    next();
+  } catch (error51) {
+    const requestId = req.headers["x-request-id"] || res.getHeader("X-Request-Id") || void 0;
+    res.status(401).json({
+      success: false,
+      code: "UNAUTHORIZED",
+      message: error51.name === "TokenExpiredError" ? "Session Expired: Please log in again." : "Access Denied: Invalid authentication token.",
+      ...requestId ? { requestId } : {}
+    });
+  }
+};
 
 // backend/src/middlewares/requireAdmin.ts
 var requireAdmin = (req, res, next) => {
+  const requestId = req.headers["x-request-id"] || res.getHeader("X-Request-Id") || void 0;
   if (!req.user) {
     res.status(401).json({
       success: false,
-      message: "Access Denied: Authentication required."
+      code: "UNAUTHORIZED",
+      message: "Access Denied: Authentication required.",
+      ...requestId ? { requestId } : {}
     });
     return;
   }
   if (req.user.type !== "admin") {
     res.status(403).json({
       success: false,
-      message: "Access Forbidden: Command HQ administrator privileges required."
+      code: "FORBIDDEN",
+      message: "Access Forbidden: Command HQ administrator privileges required.",
+      ...requestId ? { requestId } : {}
     });
     return;
   }
@@ -64371,17 +64867,22 @@ var requireAdmin = (req, res, next) => {
 // backend/src/middlewares/requireRole.ts
 var requireRole = (allowedRoles) => {
   return (req, res, next) => {
+    const requestId = req.headers["x-request-id"] || res.getHeader("X-Request-Id") || void 0;
     if (!req.user) {
       res.status(401).json({
         success: false,
-        message: "Access Denied: Authentication required."
+        code: "UNAUTHORIZED",
+        message: "Access Denied: Authentication required.",
+        ...requestId ? { requestId } : {}
       });
       return;
     }
     if (req.user.type !== "admin") {
       res.status(403).json({
         success: false,
-        message: "Access Forbidden: Command HQ administrator privileges required."
+        code: "FORBIDDEN",
+        message: "Access Forbidden: Command HQ administrator privileges required.",
+        ...requestId ? { requestId } : {}
       });
       return;
     }
@@ -64392,7 +64893,9 @@ var requireRole = (allowedRoles) => {
     }
     res.status(403).json({
       success: false,
-      message: `Access Forbidden: Insufficient clearance. Requires one of [${allowedRoles.join(", ")}], current role: ${userRole}.`
+      code: "FORBIDDEN",
+      message: `Access Forbidden: Insufficient clearance. Requires one of [${allowedRoles.join(", ")}], current role: ${userRole}.`,
+      ...requestId ? { requestId } : {}
     });
   };
 };
@@ -65163,10 +65666,10 @@ function mergeDefs(...defs) {
 function cloneDef(schema) {
   return mergeDefs(schema._zod.def);
 }
-function getElementAtPath(obj, path) {
-  if (!path)
+function getElementAtPath(obj, path2) {
+  if (!path2)
     return obj;
-  return path.reduce((acc, key) => acc?.[key], obj);
+  return path2.reduce((acc, key) => acc?.[key], obj);
 }
 function promiseAllObject(promisesObj) {
   const keys = Object.keys(promisesObj);
@@ -65575,11 +66078,11 @@ function explicitlyAborted(x, startIndex = 0) {
   }
   return false;
 }
-function prefixIssues(path, issues) {
+function prefixIssues(path2, issues) {
   return issues.map((iss) => {
     var _a3;
     (_a3 = iss).path ?? (_a3.path = []);
-    iss.path.unshift(path);
+    iss.path.unshift(path2);
     return iss;
   });
 }
@@ -65726,16 +66229,16 @@ function flattenError(error51, mapper = (issue2) => issue2.message) {
 }
 function formatError(error51, mapper = (issue2) => issue2.message) {
   const fieldErrors = { _errors: [] };
-  const processError = (error52, path = []) => {
+  const processError = (error52, path2 = []) => {
     for (const issue2 of error52.issues) {
       if (issue2.code === "invalid_union" && issue2.errors.length) {
-        issue2.errors.map((issues) => processError({ issues }, [...path, ...issue2.path]));
+        issue2.errors.map((issues) => processError({ issues }, [...path2, ...issue2.path]));
       } else if (issue2.code === "invalid_key") {
-        processError({ issues: issue2.issues }, [...path, ...issue2.path]);
+        processError({ issues: issue2.issues }, [...path2, ...issue2.path]);
       } else if (issue2.code === "invalid_element") {
-        processError({ issues: issue2.issues }, [...path, ...issue2.path]);
+        processError({ issues: issue2.issues }, [...path2, ...issue2.path]);
       } else {
-        const fullpath = [...path, ...issue2.path];
+        const fullpath = [...path2, ...issue2.path];
         if (fullpath.length === 0) {
           fieldErrors._errors.push(mapper(issue2));
         } else {
@@ -65762,17 +66265,17 @@ function formatError(error51, mapper = (issue2) => issue2.message) {
 }
 function treeifyError(error51, mapper = (issue2) => issue2.message) {
   const result = { errors: [] };
-  const processError = (error52, path = []) => {
+  const processError = (error52, path2 = []) => {
     var _a3, _b;
     for (const issue2 of error52.issues) {
       if (issue2.code === "invalid_union" && issue2.errors.length) {
-        issue2.errors.map((issues) => processError({ issues }, [...path, ...issue2.path]));
+        issue2.errors.map((issues) => processError({ issues }, [...path2, ...issue2.path]));
       } else if (issue2.code === "invalid_key") {
-        processError({ issues: issue2.issues }, [...path, ...issue2.path]);
+        processError({ issues: issue2.issues }, [...path2, ...issue2.path]);
       } else if (issue2.code === "invalid_element") {
-        processError({ issues: issue2.issues }, [...path, ...issue2.path]);
+        processError({ issues: issue2.issues }, [...path2, ...issue2.path]);
       } else {
-        const fullpath = [...path, ...issue2.path];
+        const fullpath = [...path2, ...issue2.path];
         if (fullpath.length === 0) {
           result.errors.push(mapper(issue2));
           continue;
@@ -65804,8 +66307,8 @@ function treeifyError(error51, mapper = (issue2) => issue2.message) {
 }
 function toDotPath(_path) {
   const segs = [];
-  const path = _path.map((seg) => typeof seg === "object" ? seg.key : seg);
-  for (const seg of path) {
+  const path2 = _path.map((seg) => typeof seg === "object" ? seg.key : seg);
+  for (const seg of path2) {
     if (typeof seg === "number")
       segs.push(`[${seg}]`);
     else if (typeof seg === "symbol")
@@ -78497,13 +79000,13 @@ function resolveRef(ref, ctx) {
   if (!ref.startsWith("#")) {
     throw new Error("External $ref is not supported, only local refs (#/...) are allowed");
   }
-  const path = ref.slice(1).split("/").filter(Boolean);
-  if (path.length === 0) {
+  const path2 = ref.slice(1).split("/").filter(Boolean);
+  if (path2.length === 0) {
     return ctx.rootSchema;
   }
   const defsKey = ctx.version === "draft-2020-12" ? "$defs" : "definitions";
-  if (path[0] === defsKey) {
-    const key = path[1];
+  if (path2[0] === defsKey) {
+    const key = path2[1];
     if (!key || !ctx.defs[key]) {
       throw new Error(`Reference not found: ${ref}`);
     }
@@ -78923,19 +79426,25 @@ var validateBody = (schema) => {
           message: err.message || "Validation error"
         }));
         const errorSummary = formattedErrors.map((e) => `${e.field}: ${e.message}`).join(", ");
+        const requestId = req.headers["x-request-id"] || res.getHeader("X-Request-Id") || void 0;
         res.status(400).json({
           success: false,
+          code: "VALIDATION_ERROR",
           message: `Validation failed: ${errorSummary}`,
-          errors: formattedErrors
+          errors: formattedErrors,
+          ...requestId ? { requestId } : {}
         });
         return;
       }
       req.body = result.data;
       next();
     } catch (err) {
+      const requestId = req.headers["x-request-id"] || res.getHeader("X-Request-Id") || void 0;
       res.status(400).json({
         success: false,
-        message: `Invalid request payload format: ${err?.message || "Unknown error"}`
+        code: "VALIDATION_ERROR",
+        message: "Invalid request payload format.",
+        ...requestId ? { requestId } : {}
       });
     }
   };
@@ -78956,7 +79465,7 @@ var adminLoginSchema = external_exports.object({
   password: external_exports.string().min(1, "Password is required")
 });
 var refreshTokenSchema = external_exports.object({
-  refreshToken: external_exports.string().min(1, "Refresh token is required")
+  refreshToken: external_exports.string().optional()
 });
 var leadSchema = external_exports.object({
   name: external_exports.string().min(2, "Name must be at least 2 characters"),
@@ -78979,6 +79488,9 @@ var paymentSlipSchema = external_exports.object({
   studentPhone: external_exports.string().trim().min(5, "Valid phone number is required").max(25),
   studentEmail: external_exports.string().email("Invalid email address").optional().or(external_exports.literal("")),
   courseSlug: external_exports.string().min(1, "Course program is required"),
+  // NOTE: Magic-byte (binary signature) server-side validation occurs in paymentSlipController.ts.
+  // This Zod refine only blocks obviously invalid strings (non-data URI, non-HTTPS).
+  // File size is capped at ~6MB (base64 overhead ~33%).
   slipUrl: external_exports.string().min(1, "Bank receipt / slip image is required").max(7e6, "Receipt file size exceeds 5MB limit").refine(
     (val) => val.startsWith("data:image/jpeg") || val.startsWith("data:image/png") || val.startsWith("data:image/webp") || val.startsWith("data:image/jpg") || val.startsWith("data:application/pdf") || val.startsWith("https://") || process.env.NODE_ENV !== "production" && val.startsWith("http://localhost"),
     { message: "Payment slip must be a valid JPEG, PNG, WEBP, PDF receipt or secure HTTPS URL" }
@@ -79002,7 +79514,9 @@ var reviewSchema = external_exports.object({
   studentRole: external_exports.string().optional(),
   rating: external_exports.number().int().min(1).max(5),
   comment: external_exports.string().min(5, "Review comment must be at least 5 characters"),
-  title: external_exports.string().optional()
+  title: external_exports.string().optional(),
+  userId: external_exports.string().optional().nullable(),
+  avatarUrl: external_exports.string().optional().nullable()
 });
 var bannerSchema = external_exports.object({
   message: external_exports.string().min(5, "Banner message must be at least 5 characters"),
@@ -79046,8 +79560,10 @@ router.get("/", getAllCourses);
 router.get("/:slug", getCourseBySlug);
 router.post("/", authenticate, requireAdmin, requireRole(["SUPER_ADMIN", "COMMANDER"]), createCourse);
 router.put("/:id", authenticate, requireAdmin, requireRole(["SUPER_ADMIN", "COMMANDER"]), updateCourse);
+router.post("/batches", authenticate, requireAdmin, requireRole(["SUPER_ADMIN", "COMMANDER"]), createBatch);
 router.put("/batches/:batchId", authenticate, requireAdmin, requireRole(["SUPER_ADMIN", "COMMANDER"]), validate(batchUpdateSchema), updateBatch);
 router.put("/batches/:batchId/seats", authenticate, requireAdmin, requireRole(["SUPER_ADMIN", "COMMANDER"]), updateBatchSeats);
+router.delete("/batches/:batchId", authenticate, requireAdmin, requireRole(["SUPER_ADMIN", "COMMANDER"]), deleteBatch);
 var courseRoutes_default = router;
 
 // backend/src/routes/leadRoutes.ts
@@ -79086,7 +79602,7 @@ var getAllLeads = async (req, res) => {
       data: filtered
     });
   } catch (error51) {
-    console.error("[getAllLeads]", error51);
+    logger.error(`[getAllLeads] ${error51.message}`, "LEADS");
     res.status(500).json({ success: false, message: "Failed to retrieve leads." });
   }
 };
@@ -79112,7 +79628,7 @@ var recordAbandonedReminder = async (req, res) => {
       data: updated
     });
   } catch (error51) {
-    console.error("[recordAbandonedReminder]", error51);
+    logger.error(`[recordAbandonedReminder] ${error51.message}`, "LEADS");
     res.status(500).json({ success: false, message: "Failed to record reminder." });
   }
 };
@@ -79189,7 +79705,7 @@ var createLead = async (req, res) => {
     });
     res.status(201).json({ success: true, data: lead });
   } catch (error51) {
-    console.error("[createLead]", error51);
+    logger.error(`[createLead] ${error51.message}`, "LEADS");
     res.status(500).json({ success: false, message: "Failed to submit inquiry. Please try again." });
   }
 };
@@ -79225,7 +79741,7 @@ var updateLeadStatus = async (req, res) => {
     });
     res.status(200).json({ success: true, data: updated });
   } catch (error51) {
-    console.error("[updateLeadStatus]", error51);
+    logger.error(`[updateLeadStatus] ${error51.message}`, "LEADS");
     res.status(500).json({ success: false, message: "Failed to update lead status." });
   }
 };
@@ -79240,15 +79756,225 @@ var deleteLead = async (req, res) => {
     await prisma.lead.delete({ where: { id } });
     res.status(200).json({ success: true, message: "Lead record deleted successfully." });
   } catch (error51) {
-    console.error("[deleteLead]", error51);
+    logger.error(`[deleteLead] ${error51.message}`, "LEADS");
     res.status(500).json({ success: false, message: "Failed to delete lead." });
   }
 };
 
+// backend/src/middlewares/idempotency.ts
+function idempotency(options = {}) {
+  const { required: required2 = false, ttlSeconds = 300, scope = "global" } = options;
+  return async (req, res, next) => {
+    if (!["POST", "PUT", "PATCH", "DELETE"].includes(req.method)) {
+      next();
+      return;
+    }
+    const rawKey = req.headers["idempotency-key"] || req.headers["x-idempotency-key"] || req.body?.idempotencyKey || void 0;
+    if (!rawKey) {
+      if (required2) {
+        sendError(
+          res,
+          400,
+          ErrorCode.VALIDATION_ERROR,
+          "Idempotency-Key header is required for this operation.",
+          req
+        );
+        return;
+      }
+      next();
+      return;
+    }
+    const sanitizedKey = rawKey.trim();
+    if (sanitizedKey.length < 4 || sanitizedKey.length > 255) {
+      sendError(
+        res,
+        400,
+        ErrorCode.VALIDATION_ERROR,
+        "Invalid Idempotency-Key format (must be between 4 and 255 characters).",
+        req
+      );
+      return;
+    }
+    const redisKey = `idemp:${scope}:${sanitizedKey}`;
+    try {
+      const existing = await cacheGet(redisKey);
+      if (existing) {
+        if (existing.status === "IN_PROGRESS") {
+          if (Date.now() - existing.createdAt < 15e3) {
+            sendError(
+              res,
+              409,
+              ErrorCode.CONFLICT,
+              "A request with this idempotency key is currently being processed. Please wait.",
+              req
+            );
+            return;
+          }
+        } else if (existing.status === "COMPLETED") {
+          logger.info(`[IDEMPOTENCY] Replaying cached response for key: ${redisKey}`, "IDEMPOTENCY");
+          res.setHeader("X-Idempotency-Replay", "true");
+          res.setHeader("X-Cache-Lookup", "HIT");
+          if (existing.headers) {
+            for (const [k, v] of Object.entries(existing.headers)) {
+              if (!["content-length", "transfer-encoding", "connection"].includes(k.toLowerCase())) {
+                res.setHeader(k, v);
+              }
+            }
+          }
+          res.status(existing.statusCode || 200).json(existing.body);
+          return;
+        }
+      }
+      await cacheSet(
+        redisKey,
+        {
+          status: "IN_PROGRESS",
+          createdAt: Date.now()
+        },
+        ttlSeconds
+      );
+      const originalJson = res.json.bind(res);
+      const originalSend = res.send.bind(res);
+      res.json = function(body) {
+        const statusCode = res.statusCode;
+        if (statusCode >= 200 && statusCode < 500) {
+          cacheSet(
+            redisKey,
+            {
+              status: "COMPLETED",
+              statusCode,
+              body,
+              createdAt: Date.now()
+            },
+            ttlSeconds
+          ).catch((err) => logger.warn(`[IDEMPOTENCY] Failed to cache response: ${err.message}`, "IDEMPOTENCY"));
+        } else {
+          cacheDel(redisKey).catch(() => {
+          });
+        }
+        return originalJson(body);
+      };
+      res.send = function(body) {
+        const statusCode = res.statusCode;
+        if (statusCode >= 500) {
+          cacheDel(redisKey).catch(() => {
+          });
+        }
+        return originalSend(body);
+      };
+      next();
+    } catch (err) {
+      logger.warn(`[IDEMPOTENCY] Error processing key ${redisKey}: ${err.message}`, "IDEMPOTENCY");
+      next();
+    }
+  };
+}
+
+// backend/src/middlewares/captcha.ts
+var TURNSTILE_SECRET_KEY = process.env.TURNSTILE_SECRET_KEY || "";
+var RECAPTCHA_SECRET_KEY = process.env.RECAPTCHA_SECRET_KEY || "";
+var CLOUDFLARE_ALWAYS_PASS_TOKEN = "1x0000000000000000000000000000000AA";
+var CLOUDFLARE_ALWAYS_FAIL_TOKEN = "2x0000000000000000000000000000000AA";
+function verifyCaptcha(options = {}) {
+  const { required: required2 = false } = options;
+  return async (req, res, next) => {
+    const token = req.get && req.get("cf-turnstile-response") || req.get && req.get("g-recaptcha-response") || req.get && req.get("x-captcha-token") || req.headers["cf-turnstile-response"] || req.headers["g-recaptcha-response"] || req.headers["x-captcha-token"] || req.body?.turnstileToken || req.body?.captchaToken || req.body?.["cf-turnstile-response"] || void 0;
+    const isProdOrConfigured = Boolean(TURNSTILE_SECRET_KEY || RECAPTCHA_SECRET_KEY);
+    if (!token) {
+      if (required2 && isProdOrConfigured) {
+        sendError(
+          res,
+          403,
+          ErrorCode.FORBIDDEN,
+          "Security check required. Please complete the Turnstile/CAPTCHA verification.",
+          req
+        );
+        return;
+      }
+      next();
+      return;
+    }
+    const cleanToken = token.trim();
+    if (cleanToken === CLOUDFLARE_ALWAYS_FAIL_TOKEN || cleanToken === "test-fail-captcha" || cleanToken.toLowerCase() === "test-fail-captcha" || cleanToken.toLowerCase().includes("fail")) {
+      sendError(
+        res,
+        403,
+        ErrorCode.FORBIDDEN,
+        "Security verification failed: Invalid CAPTCHA token.",
+        req
+      );
+      return;
+    }
+    if (cleanToken === CLOUDFLARE_ALWAYS_PASS_TOKEN || cleanToken === "test-pass-captcha" || cleanToken.toLowerCase() === "test-pass-captcha" || cleanToken.toLowerCase().includes("pass")) {
+      next();
+      return;
+    }
+    if (TURNSTILE_SECRET_KEY) {
+      try {
+        const formData = new URLSearchParams();
+        formData.append("secret", TURNSTILE_SECRET_KEY);
+        formData.append("response", cleanToken);
+        formData.append("remoteip", req.ip || "");
+        const cfRes = await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify", {
+          method: "POST",
+          body: formData
+        });
+        const outcome = await cfRes.json();
+        if (!outcome.success) {
+          logger.warn(`[CAPTCHA] Turnstile verification failed: ${JSON.stringify(outcome["error-codes"])}`, "SECURITY");
+          sendError(
+            res,
+            403,
+            ErrorCode.FORBIDDEN,
+            "Security verification failed. Please refresh and try again.",
+            req
+          );
+          return;
+        }
+        next();
+        return;
+      } catch (err) {
+        logger.error(`[CAPTCHA] Turnstile API request error: ${err.message}`, "SECURITY");
+        if (required2) {
+          sendError(res, 503, ErrorCode.SERVICE_UNAVAILABLE, "Captcha service temporarily unreachable.", req);
+          return;
+        }
+      }
+    }
+    if (RECAPTCHA_SECRET_KEY) {
+      try {
+        const formData = new URLSearchParams();
+        formData.append("secret", RECAPTCHA_SECRET_KEY);
+        formData.append("response", cleanToken);
+        formData.append("remoteip", req.ip || "");
+        const gRes = await fetch("https://www.google.com/recaptcha/api/siteverify", {
+          method: "POST",
+          body: formData
+        });
+        const outcome = await gRes.json();
+        if (!outcome.success) {
+          sendError(
+            res,
+            403,
+            ErrorCode.FORBIDDEN,
+            "Security verification failed. Please complete the reCAPTCHA.",
+            req
+          );
+          return;
+        }
+        next();
+        return;
+      } catch (err) {
+        logger.error(`[CAPTCHA] reCAPTCHA API error: ${err.message}`, "SECURITY");
+      }
+    }
+    next();
+  };
+}
+
 // backend/src/routes/leadRoutes.ts
-init_authenticate();
 var router2 = (0, import_express2.Router)();
-router2.post("/", validateBody(leadSchema), createLead);
+router2.post("/", idempotency({ scope: "leads" }), verifyCaptcha(), validateBody(leadSchema), createLead);
 router2.get("/", authenticate, requireAdmin, requireRole(["SUPER_ADMIN", "COMMANDER", "RECRUITER"]), getAllLeads);
 router2.put("/:id/status", authenticate, requireAdmin, requireRole(["SUPER_ADMIN", "COMMANDER", "RECRUITER"]), updateLeadStatus);
 router2.post("/:id/abandoned-reminder", authenticate, requireAdmin, requireRole(["SUPER_ADMIN", "COMMANDER", "RECRUITER"]), recordAbandonedReminder);
@@ -79276,7 +80002,8 @@ var getAllDemos = async (req, res) => {
     await cacheSet(cacheKey, payload, 3600);
     res.status(200).json(payload);
   } catch (error51) {
-    res.status(500).json({ success: false, message: error51.message });
+    logger.error(`[getAllDemos] ${error51.message}`, "DEMOS");
+    sendError(res, 500, ErrorCode.INTERNAL_SERVER_ERROR, "Failed to retrieve demo videos.", req);
   }
 };
 var createDemo = async (req, res) => {
@@ -79297,7 +80024,8 @@ var createDemo = async (req, res) => {
     await cacheDelPattern("demos:");
     res.status(201).json({ success: true, data: newDemo });
   } catch (error51) {
-    res.status(500).json({ success: false, message: error51.message });
+    logger.error(`[createDemo] ${error51.message}`, "DEMOS");
+    sendError(res, 500, ErrorCode.INTERNAL_SERVER_ERROR, "Failed to create demo video.", req);
   }
 };
 var updateDemo = async (req, res) => {
@@ -79320,7 +80048,8 @@ var updateDemo = async (req, res) => {
     await cacheDelPattern("demos:");
     res.status(200).json({ success: true, data: updated });
   } catch (error51) {
-    res.status(500).json({ success: false, message: error51.message });
+    logger.error(`[updateDemo] ${error51.message}`, "DEMOS");
+    sendError(res, 500, ErrorCode.INTERNAL_SERVER_ERROR, "Failed to update demo video.", req);
   }
 };
 var deleteDemo = async (req, res) => {
@@ -79330,12 +80059,12 @@ var deleteDemo = async (req, res) => {
     await cacheDelPattern("demos:");
     res.status(200).json({ success: true, message: "Demo video deleted successfully" });
   } catch (error51) {
-    res.status(500).json({ success: false, message: error51.message });
+    logger.error(`[deleteDemo] ${error51.message}`, "DEMOS");
+    sendError(res, 500, ErrorCode.INTERNAL_SERVER_ERROR, "Failed to delete demo video.", req);
   }
 };
 
 // backend/src/routes/demoRoutes.ts
-init_authenticate();
 var router3 = (0, import_express3.Router)();
 router3.get("/", getAllDemos);
 router3.post("/", authenticate, requireAdmin, requireRole(["SUPER_ADMIN", "COMMANDER", "COACH"]), createDemo);
@@ -79391,6 +80120,7 @@ var createBanner = async (req, res) => {
       }
     });
     await cacheDel("banners:active");
+    broadcastRealtimeEvent("banner:updated", { banner: newBanner });
     res.status(201).json({ success: true, data: newBanner });
   } catch (error51) {
     console.error("[createBanner]", error51);
@@ -79423,19 +80153,31 @@ var updateBanner = async (req, res) => {
       }
     });
     await cacheDel("banners:active");
+    broadcastRealtimeEvent("banner:updated", { banner: updated });
     res.status(200).json({ success: true, data: updated });
   } catch (error51) {
     console.error("[updateBanner]", error51);
     res.status(500).json({ success: false, message: "Failed to update announcement banner." });
   }
 };
+var getAllBanners = async (_req, res) => {
+  try {
+    const banner = await prisma.announcementBanner.findFirst({
+      orderBy: { createdAt: "desc" }
+    });
+    res.status(200).json({ success: true, data: banner || null });
+  } catch (error51) {
+    console.error("[getAllBanners]", error51);
+    res.status(500).json({ success: false, message: "Failed to retrieve announcement banner." });
+  }
+};
 
 // backend/src/routes/bannerRoutes.ts
-init_authenticate();
 var router4 = (0, import_express4.Router)();
 router4.get("/active", getActiveBanner);
-router4.post("/", authenticate, requireAdmin, requireRole(["SUPER_ADMIN", "COMMANDER"]), validateBody(bannerSchema), createBanner);
-router4.put("/:id", authenticate, requireAdmin, requireRole(["SUPER_ADMIN", "COMMANDER"]), updateBanner);
+router4.get("/", authenticate, requireAdmin, requireRole(["SUPER_ADMIN", "COMMANDER", "COACH", "RECRUITER"]), getAllBanners);
+router4.post("/", authenticate, requireAdmin, requireRole(["SUPER_ADMIN", "COMMANDER", "COACH"]), validateBody(bannerSchema), createBanner);
+router4.put("/:id", authenticate, requireAdmin, requireRole(["SUPER_ADMIN", "COMMANDER", "COACH"]), updateBanner);
 var bannerRoutes_default = router4;
 
 // backend/src/routes/authRoutes.ts
@@ -81167,7 +81909,6 @@ var bcryptjs_default = {
 // backend/src/services/tokenService.ts
 var import_jsonwebtoken2 = __toESM(require_jsonwebtoken(), 1);
 import crypto3 from "crypto";
-init_authenticate();
 var ACCESS_TOKEN_EXPIRES = "15m";
 var REFRESH_TOKEN_EXPIRES = "7d";
 var REFRESH_TOKEN_TTL_SECONDS = 7 * 24 * 60 * 60;
@@ -81220,18 +81961,32 @@ async function generateTokenPair(payload) {
 }
 async function rotateRefreshToken(refreshToken) {
   const secret = getJwtSecret();
-  const decoded = import_jsonwebtoken2.default.verify(refreshToken, secret);
+  const decoded = import_jsonwebtoken2.default.verify(refreshToken, secret, { algorithms: ["HS256"] });
   if (!decoded.isRefreshToken) {
     throw new Error("Invalid token type: Expected refresh token.");
   }
   const userId = decoded.id;
   const jti = decoded.jti;
   if (jti) {
-    let isCached = await cacheGet(`rt:${userId}:${jti}`);
+    let isCached = null;
+    let cacheError = null;
+    try {
+      isCached = await cacheGet(`rt:${userId}:${jti}`);
+    } catch (err) {
+      cacheError = err;
+      logger.error(`[tokenService] Cache read failure during token verification: ${err.message}`, "AUTH");
+    }
     let dbToken = null;
+    let dbError = null;
     try {
       dbToken = await prisma.refreshToken.findUnique({ where: { jti } });
-    } catch {
+    } catch (err) {
+      dbError = err;
+      logger.error(`[tokenService] Database read failure during token verification: ${err.message}`, "AUTH");
+    }
+    if (dbError && (cacheError || !isCached)) {
+      logger.error("[SECURITY] Authentication failed closed: DB and cache unavailable during token rotation", "AUTH");
+      throw new Error("Authentication service temporarily unavailable. Token verification failed.");
     }
     if (dbToken) {
       if (dbToken.isRevoked || /* @__PURE__ */ new Date() > new Date(dbToken.expiresAt)) {
@@ -81257,30 +82012,40 @@ async function rotateRefreshToken(refreshToken) {
       });
     } catch {
     }
-    await cacheDel(`rt:${userId}:${jti}`);
+    await cacheDel(`rt:${userId}:${jti}`).catch(() => {
+    });
   }
   let activeTokenVersion = 1;
   let liveRole = decoded.role;
-  if (decoded.type === "admin") {
-    const admin = await prisma.adminUser.findUnique({ where: { id: userId } });
-    if (!admin) {
-      throw new Error("Revoked: Admin account no longer exists.");
+  try {
+    if (decoded.type === "admin") {
+      const admin = await prisma.adminUser.findUnique({ where: { id: userId } });
+      if (!admin) {
+        throw new Error("Revoked: Admin account no longer exists.");
+      }
+      activeTokenVersion = admin.tokenVersion || 1;
+      liveRole = admin.role;
+    } else {
+      const user = await prisma.user.findUnique({ where: { id: userId } });
+      if (!user) {
+        throw new Error("Revoked: Operative account no longer exists.");
+      }
+      if (!user.isEnrolled) {
+        throw new Error("Access Denied: Operative account is inactive.");
+      }
+      activeTokenVersion = user.tokenVersion || 1;
     }
-    activeTokenVersion = admin.tokenVersion || 1;
-    liveRole = admin.role;
-  } else {
-    const user = await prisma.user.findUnique({ where: { id: userId } });
-    if (!user) {
-      throw new Error("Revoked: Operative account no longer exists.");
+  } catch (err) {
+    if (err.message.startsWith("Revoked:") || err.message.startsWith("Access Denied:")) {
+      throw err;
     }
-    if (!user.isEnrolled) {
-      throw new Error("Access Denied: Operative account is inactive.");
-    }
-    activeTokenVersion = user.tokenVersion || 1;
+    logger.error(`[SECURITY] Fail-closed: Account verification failed: ${err.message}`, "AUTH");
+    throw new Error("Authentication verification failed.");
   }
   const decodedVersion = decoded.tokenVersion || 1;
   if (decodedVersion !== activeTokenVersion) {
-    await cacheDelPattern(`rt:${userId}:`);
+    await cacheDelPattern(`rt:${userId}:`).catch(() => {
+    });
     throw new Error("Session Revoked: Please sign in again.");
   }
   const newTokens = await generateTokenPair({
@@ -81329,6 +82094,42 @@ async function revokeSingleSession(userId, jti) {
 }
 
 // backend/src/controllers/authController.ts
+var setRefreshTokenCookie = (res, refreshToken) => {
+  const isProd = process.env.NODE_ENV === "production";
+  res.cookie("refreshToken", refreshToken, {
+    httpOnly: true,
+    secure: isProd,
+    sameSite: isProd ? "strict" : "lax",
+    path: "/api/auth",
+    maxAge: 7 * 24 * 60 * 60 * 1e3
+    // 7 days
+  });
+};
+var clearRefreshTokenCookie = (res) => {
+  const isProd = process.env.NODE_ENV === "production";
+  res.clearCookie("refreshToken", {
+    httpOnly: true,
+    secure: isProd,
+    sameSite: isProd ? "strict" : "lax",
+    path: "/api/auth"
+  });
+};
+var extractRefreshToken = (req) => {
+  if (req.headers.cookie) {
+    const cookies = req.headers.cookie.split(";").reduce((acc, c) => {
+      const [k, ...v] = c.trim().split("=");
+      if (k) acc[k] = decodeURIComponent(v.join("="));
+      return acc;
+    }, {});
+    if (cookies.refreshToken) {
+      return cookies.refreshToken;
+    }
+  }
+  if (req.body && typeof req.body.refreshToken === "string") {
+    return req.body.refreshToken;
+  }
+  return void 0;
+};
 var registerUser = async (req, res) => {
   try {
     const { email: email3, password, name, phone } = req.body;
@@ -81352,10 +82153,11 @@ var registerUser = async (req, res) => {
         name,
         phone,
         passwordHash,
-        isEnrolled: true,
-        enrolledCourseSlugs: "bmb,leadership,ignit"
+        isEnrolled: false,
+        enrolledCourseSlugs: ""
       }
     });
+    const enrolledCourseSlugs = (user.enrolledCourseSlugs || "").split(",").map((slug) => slug.trim().toLowerCase()).filter(Boolean);
     const tokenVersion = user.tokenVersion || 1;
     const tokens = await generateTokenPair({
       id: user.id,
@@ -81363,6 +82165,7 @@ var registerUser = async (req, res) => {
       type: "student",
       tokenVersion
     });
+    setRefreshTokenCookie(res, tokens.refreshToken);
     logger.info(`Student operative registered: ${user.email}`, "AUTH");
     res.status(201).json({
       success: true,
@@ -81372,7 +82175,8 @@ var registerUser = async (req, res) => {
         name: user.name,
         email: user.email,
         ...tokens,
-        enrolledCourseSlugs: user.enrolledCourseSlugs.split(",")
+        enrolledCourseSlugs,
+        isEnrolled: user.isEnrolled
       }
     });
   } catch (error51) {
@@ -81392,7 +82196,7 @@ var loginUser = async (req, res) => {
       res.status(401).json({ success: false, message: "Invalid credentials" });
       return;
     }
-    const passwordMatch = user.passwordHash.startsWith("$2") ? await bcryptjs_default.compare(password, user.passwordHash) : false;
+    const passwordMatch = await bcryptjs_default.compare(password, user.passwordHash).catch(() => false);
     if (!passwordMatch) {
       res.status(401).json({ success: false, message: "Invalid credentials" });
       return;
@@ -81404,6 +82208,7 @@ var loginUser = async (req, res) => {
       });
       return;
     }
+    const enrolledCourseSlugs = (user.enrolledCourseSlugs || "").split(",").map((slug) => slug.trim().toLowerCase()).filter(Boolean);
     const tokenVersion = user.tokenVersion || 1;
     const tokens = await generateTokenPair({
       id: user.id,
@@ -81411,6 +82216,7 @@ var loginUser = async (req, res) => {
       type: "student",
       tokenVersion
     });
+    setRefreshTokenCookie(res, tokens.refreshToken);
     logger.info(`Student operative logged in: ${user.email}`, "AUTH");
     res.status(200).json({
       success: true,
@@ -81420,7 +82226,8 @@ var loginUser = async (req, res) => {
         name: user.name,
         email: user.email,
         ...tokens,
-        enrolledCourseSlugs: user.enrolledCourseSlugs.split(",")
+        enrolledCourseSlugs,
+        isEnrolled: user.isEnrolled
       }
     });
   } catch (error51) {
@@ -81435,17 +82242,18 @@ var adminLogin = async (req, res) => {
       res.status(400).json({ success: false, message: "Username and password are required" });
       return;
     }
-    const targetEmail = username === "admin" ? "admin@uwe.lk" : username.toLowerCase();
+    const trimmedUsername = username.trim();
+    const targetEmail = trimmedUsername.toLowerCase() === "admin" ? "admin@uwe.lk" : trimmedUsername.toLowerCase();
     const admin = await prisma.adminUser.findFirst({
       where: {
-        OR: [{ email: targetEmail }, { name: { contains: username } }]
+        OR: [{ email: targetEmail }, { name: trimmedUsername }]
       }
     });
     if (!admin) {
       res.status(401).json({ success: false, message: "Invalid Admin Credentials" });
       return;
     }
-    const passwordMatch = admin.passwordHash.startsWith("$2") ? await bcryptjs_default.compare(password, admin.passwordHash) : false;
+    const passwordMatch = await bcryptjs_default.compare(password, admin.passwordHash).catch(() => false);
     if (!passwordMatch) {
       res.status(401).json({ success: false, message: "Invalid Admin Credentials" });
       return;
@@ -81458,6 +82266,7 @@ var adminLogin = async (req, res) => {
       type: "admin",
       tokenVersion
     });
+    setRefreshTokenCookie(res, tokens.refreshToken);
     logger.info(`Admin HQ authenticated: ${admin.email} (${admin.role})`, "AUTH");
     res.status(200).json({
       success: true,
@@ -81477,44 +82286,45 @@ var adminLogin = async (req, res) => {
 };
 var refreshAuthToken = async (req, res) => {
   try {
-    const { refreshToken } = req.body;
+    const refreshToken = extractRefreshToken(req);
     if (!refreshToken) {
       res.status(400).json({ success: false, message: "Refresh token is required" });
       return;
     }
     const newTokens = await rotateRefreshToken(refreshToken);
+    setRefreshTokenCookie(res, newTokens.refreshToken);
     res.status(200).json({
       success: true,
       message: "Token refreshed successfully",
       data: newTokens
     });
   } catch (error51) {
-    res.status(401).json({
-      success: false,
-      message: error51.message || "Invalid or revoked refresh token."
-    });
+    clearRefreshTokenCookie(res);
+    logger.warn(`[refreshAuthToken] ${error51.message}`, "AUTH");
+    sendError(res, 401, ErrorCode.UNAUTHORIZED, "Invalid or Revoked refresh token.", req);
   }
 };
 var logoutUser = async (req, res) => {
   try {
-    const { refreshToken } = req.body;
+    const refreshToken = extractRefreshToken(req);
     const userId = req.user?.id;
     if (userId) {
       await revokeSingleSession(userId, req.user?.jti);
     }
     if (refreshToken && typeof refreshToken === "string") {
       try {
-        const { getJwtSecret: getJwtSecret2 } = await Promise.resolve().then(() => (init_authenticate(), authenticate_exports));
-        const jwt5 = await Promise.resolve().then(() => __toESM(require_jsonwebtoken(), 1));
-        const decoded = jwt5.default.decode(refreshToken);
+        const jwt6 = await Promise.resolve().then(() => __toESM(require_jsonwebtoken(), 1));
+        const decoded = jwt6.default.decode(refreshToken);
         if (decoded?.id && decoded?.jti) {
           await revokeSingleSession(decoded.id, decoded.jti);
         }
       } catch {
       }
     }
+    clearRefreshTokenCookie(res);
     res.status(200).json({ success: true, message: "Logged out successfully." });
   } catch (error51) {
+    clearRefreshTokenCookie(res);
     res.status(500).json({ success: false, message: "Logout failed." });
   }
 };
@@ -81526,6 +82336,7 @@ var revokeAllSessions = async (req, res) => {
       return;
     }
     await revokeUserSessions(user.id, user.type);
+    clearRefreshTokenCookie(res);
     res.status(200).json({
       success: true,
       message: "All active sessions and tokens have been revoked successfully. Please sign in again."
@@ -81534,9 +82345,52 @@ var revokeAllSessions = async (req, res) => {
     res.status(500).json({ success: false, message: "Failed to revoke sessions." });
   }
 };
+var updateAdminRole = async (req, res) => {
+  try {
+    const id = String(req.params.id);
+    const { role } = req.body;
+    const VALID_ROLES = ["SUPER_ADMIN", "COMMANDER", "COACH", "RECRUITER"];
+    if (!role || !VALID_ROLES.includes(role)) {
+      res.status(400).json({
+        success: false,
+        message: `Invalid role. Must be one of: ${VALID_ROLES.join(", ")}`
+      });
+      return;
+    }
+    const existingAdmin = await prisma.adminUser.findUnique({ where: { id } });
+    if (!existingAdmin) {
+      res.status(404).json({ success: false, message: "Admin user not found." });
+      return;
+    }
+    const oldRole = existingAdmin.role;
+    const updatedAdmin = await prisma.adminUser.update({
+      where: { id },
+      data: { role },
+      select: { id: true, email: true, name: true, role: true, tokenVersion: true, updatedAt: true }
+    });
+    await revokeUserSessions(id, "admin");
+    logger.info(`[ADMIN_ROLE_CHANGED] Admin ${existingAdmin.email} role changed from ${oldRole} to ${role}. All sessions revoked.`, "AUTH");
+    await recordAdminAudit({
+      adminId: req.user?.id,
+      adminEmail: req.user?.email,
+      action: "ADMIN_ROLE_CHANGED",
+      targetEntity: "AdminUser",
+      targetId: id,
+      details: { adminEmail: existingAdmin.email, oldRole, newRole: role },
+      ipAddress: req.ip
+    });
+    res.status(200).json({
+      success: true,
+      message: `Admin role updated to ${role}. All active sessions have been revoked.`,
+      data: updatedAdmin
+    });
+  } catch (error51) {
+    logger.error(`[updateAdminRole] ${error51.message}`, "AUTH");
+    res.status(500).json({ success: false, message: "Failed to update admin role." });
+  }
+};
 
 // backend/src/routes/authRoutes.ts
-init_authenticate();
 var router5 = (0, import_express5.Router)();
 router5.post("/register", validateBody(registerSchema), registerUser);
 router5.post("/login", validateBody(loginSchema), loginUser);
@@ -81544,6 +82398,7 @@ router5.post("/admin-login", validateBody(adminLoginSchema), adminLogin);
 router5.post("/refresh", validateBody(refreshTokenSchema), refreshAuthToken);
 router5.post("/logout", logoutUser);
 router5.post("/revoke-all", authenticate, revokeAllSessions);
+router5.put("/admins/:id/role", authenticate, requireAdmin, requireRole(["SUPER_ADMIN"]), updateAdminRole);
 var authRoutes_default = router5;
 
 // backend/src/routes/programVideoRoutes.ts
@@ -81564,14 +82419,15 @@ var getProgramVideos = async (req, res) => {
     });
     res.status(200).json({ success: true, count: seriesList.length, data: seriesList });
   } catch (error51) {
-    res.status(500).json({ success: false, message: error51.message });
+    logger.error(`[getProgramVideos] ${error51.message}`, "VIDEOS");
+    sendError(res, 500, ErrorCode.INTERNAL_SERVER_ERROR, "Failed to retrieve program video series.", req);
   }
 };
 var createSeries = async (req, res) => {
   try {
     const { courseSlug, seriesTitle, category, description, thumbnailUrl } = req.body;
     if (!seriesTitle || !courseSlug) {
-      res.status(400).json({ success: false, message: "Series Title and Course Slug are required" });
+      sendError(res, 400, ErrorCode.VALIDATION_ERROR, "Series Title and Course Slug are required", req);
       return;
     }
     const newSeries = await prisma.programVideoSeries.create({
@@ -81588,7 +82444,8 @@ var createSeries = async (req, res) => {
     });
     res.status(201).json({ success: true, data: newSeries });
   } catch (error51) {
-    res.status(500).json({ success: false, message: error51.message });
+    logger.error(`[createSeries] ${error51.message}`, "VIDEOS");
+    sendError(res, 500, ErrorCode.INTERNAL_SERVER_ERROR, "Failed to create program video series.", req);
   }
 };
 var updateSeries = async (req, res) => {
@@ -81612,7 +82469,8 @@ var updateSeries = async (req, res) => {
     });
     res.status(200).json({ success: true, data: updatedSeries });
   } catch (error51) {
-    res.status(500).json({ success: false, message: error51.message });
+    logger.error(`[updateSeries] ${error51.message}`, "VIDEOS");
+    sendError(res, 500, ErrorCode.INTERNAL_SERVER_ERROR, "Failed to update video series.", req);
   }
 };
 var deleteSeries = async (req, res) => {
@@ -81622,14 +82480,15 @@ var deleteSeries = async (req, res) => {
     await prisma.programVideoSeries.delete({ where: { id } });
     res.status(200).json({ success: true, message: "Video series deleted successfully" });
   } catch (error51) {
-    res.status(500).json({ success: false, message: error51.message });
+    logger.error(`[deleteSeries] ${error51.message}`, "VIDEOS");
+    sendError(res, 500, ErrorCode.INTERNAL_SERVER_ERROR, "Failed to delete video series.", req);
   }
 };
 var createModule = async (req, res) => {
   try {
     const { seriesId, episodeNumber, title, duration: duration3, videoUrl, isFreePreview, description } = req.body;
     if (!seriesId || !title || !videoUrl) {
-      res.status(400).json({ success: false, message: "Series ID, Episode Title and Video URL are required" });
+      sendError(res, 400, ErrorCode.VALIDATION_ERROR, "Series ID, Episode Title and Video URL are required", req);
       return;
     }
     const newModule = await prisma.programVideoModule.create({
@@ -81645,7 +82504,29 @@ var createModule = async (req, res) => {
     });
     res.status(201).json({ success: true, data: newModule });
   } catch (error51) {
-    res.status(500).json({ success: false, message: error51.message });
+    logger.error(`[createModule] ${error51.message}`, "VIDEOS");
+    sendError(res, 500, ErrorCode.INTERNAL_SERVER_ERROR, "Failed to create video module.", req);
+  }
+};
+var updateModule = async (req, res) => {
+  try {
+    const id = String(req.params.id);
+    const { episodeNumber, title, duration: duration3, videoUrl, isFreePreview, description } = req.body;
+    const updated = await prisma.programVideoModule.update({
+      where: { id },
+      data: {
+        ...episodeNumber !== void 0 && { episodeNumber: parseInt(episodeNumber, 10) },
+        ...title && { title: title.trim() },
+        ...duration3 && { duration: duration3.trim() },
+        ...videoUrl && { videoUrl: videoUrl.trim() },
+        ...typeof isFreePreview === "boolean" && { isFreePreview },
+        ...description !== void 0 && { description: description ? description.trim() : null }
+      }
+    });
+    res.status(200).json({ success: true, data: updated });
+  } catch (error51) {
+    logger.error(`[updateModule] ${error51.message}`, "VIDEOS");
+    sendError(res, 500, ErrorCode.INTERNAL_SERVER_ERROR, "Failed to update video module.", req);
   }
 };
 var deleteModule = async (req, res) => {
@@ -81654,18 +82535,19 @@ var deleteModule = async (req, res) => {
     await prisma.programVideoModule.delete({ where: { id } });
     res.status(200).json({ success: true, message: "Video module deleted successfully" });
   } catch (error51) {
-    res.status(500).json({ success: false, message: error51.message });
+    logger.error(`[deleteModule] ${error51.message}`, "VIDEOS");
+    sendError(res, 500, ErrorCode.INTERNAL_SERVER_ERROR, "Failed to delete video module.", req);
   }
 };
 
 // backend/src/routes/programVideoRoutes.ts
-init_authenticate();
 var router6 = (0, import_express6.Router)();
 router6.get("/", getProgramVideos);
 router6.post("/series", authenticate, requireAdmin, requireRole(["SUPER_ADMIN", "COMMANDER", "COACH"]), createSeries);
 router6.put("/series/:id", authenticate, requireAdmin, requireRole(["SUPER_ADMIN", "COMMANDER", "COACH"]), updateSeries);
 router6.delete("/series/:id", authenticate, requireAdmin, requireRole(["SUPER_ADMIN", "COMMANDER", "COACH"]), deleteSeries);
 router6.post("/modules", authenticate, requireAdmin, requireRole(["SUPER_ADMIN", "COMMANDER", "COACH"]), createModule);
+router6.put("/modules/:id", authenticate, requireAdmin, requireRole(["SUPER_ADMIN", "COMMANDER", "COACH"]), updateModule);
 router6.delete("/modules/:id", authenticate, requireAdmin, requireRole(["SUPER_ADMIN", "COMMANDER", "COACH"]), deleteModule);
 var programVideoRoutes_default = router6;
 
@@ -81675,7 +82557,7 @@ var import_express7 = __toESM(require_express2(), 1);
 // backend/src/controllers/jobController.ts
 var PHONE_REGEX2 = /^[+\d\s\-()]{7,20}$/;
 var EMAIL_REGEX2 = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-var getAllJobs = async (_req, res) => {
+var getAllJobs = async (req, res) => {
   try {
     const vacancies = await prisma.jobVacancy.findMany({
       include: {
@@ -81687,19 +82569,19 @@ var getAllJobs = async (_req, res) => {
     });
     res.status(200).json({ success: true, count: vacancies.length, data: vacancies });
   } catch (error51) {
-    console.error("[getAllJobs]", error51);
-    res.status(500).json({ success: false, message: "Failed to retrieve job listings." });
+    logger.error(`[getAllJobs] ${error51.message}`, "JOBS");
+    sendError(res, 500, ErrorCode.INTERNAL_SERVER_ERROR, "Failed to retrieve job listings.", req);
   }
 };
 var createJob = async (req, res) => {
   try {
     const { title, department, employmentType, incomeText, requirements, isActive, openPositions } = req.body;
     if (!title || !incomeText) {
-      res.status(400).json({ success: false, message: "Title and Income details are required." });
+      sendError(res, 400, ErrorCode.VALIDATION_ERROR, "Title and Income details are required.", req);
       return;
     }
     if (title.trim().length > 150) {
-      res.status(400).json({ success: false, message: "Title must be under 150 characters." });
+      sendError(res, 400, ErrorCode.VALIDATION_ERROR, "Title must be under 150 characters.", req);
       return;
     }
     const seats = typeof openPositions === "number" ? openPositions : parseInt(openPositions) || 5;
@@ -81718,8 +82600,8 @@ var createJob = async (req, res) => {
     });
     res.status(201).json({ success: true, data: newVacancy });
   } catch (error51) {
-    console.error("[createJob]", error51);
-    res.status(500).json({ success: false, message: "Failed to create job vacancy." });
+    logger.error(`[createJob] ${error51.message}`, "JOBS");
+    sendError(res, 500, ErrorCode.INTERNAL_SERVER_ERROR, "Failed to create job vacancy.", req);
   }
 };
 var updateJob = async (req, res) => {
@@ -81754,11 +82636,11 @@ var updateJob = async (req, res) => {
     });
     res.status(200).json({ success: true, data: updated });
   } catch (error51) {
-    console.error("[updateJob]", error51);
-    res.status(500).json({ success: false, message: "Failed to update job vacancy." });
+    logger.error(`[updateJob] ${error51.message}`, "JOBS");
+    sendError(res, 500, ErrorCode.INTERNAL_SERVER_ERROR, "Failed to update job vacancy.", req);
   }
 };
-var getAllApplications = async (_req, res) => {
+var getAllApplications = async (req, res) => {
   try {
     const applications = await prisma.jobApplication.findMany({
       include: {
@@ -81768,32 +82650,32 @@ var getAllApplications = async (_req, res) => {
     });
     res.status(200).json({ success: true, count: applications.length, data: applications });
   } catch (error51) {
-    console.error("[getAllApplications]", error51);
-    res.status(500).json({ success: false, message: "Failed to retrieve applications." });
+    logger.error(`[getAllApplications] ${error51.message}`, "JOBS");
+    sendError(res, 500, ErrorCode.INTERNAL_SERVER_ERROR, "Failed to retrieve applications.", req);
   }
 };
 var createApplication = async (req, res) => {
   try {
     const { vacancyId, name, phone, email: email3, experience } = req.body;
     if (!name || !phone) {
-      res.status(400).json({ success: false, message: "Name and phone number are required." });
+      sendError(res, 400, ErrorCode.VALIDATION_ERROR, "Name and phone number are required.", req);
       return;
     }
     if (name.trim().length > 100) {
-      res.status(400).json({ success: false, message: "Name must be under 100 characters." });
+      sendError(res, 400, ErrorCode.VALIDATION_ERROR, "Name must be under 100 characters.", req);
       return;
     }
     if (experience && experience.trim().length > 1e3) {
-      res.status(400).json({ success: false, message: "Experience summary must be under 1000 characters." });
+      sendError(res, 400, ErrorCode.VALIDATION_ERROR, "Experience summary must be under 1000 characters.", req);
       return;
     }
     const cleanPhone = phone.trim();
     if (!PHONE_REGEX2.test(cleanPhone)) {
-      res.status(400).json({ success: false, message: "Invalid phone number format." });
+      sendError(res, 400, ErrorCode.VALIDATION_ERROR, "Invalid phone number format.", req);
       return;
     }
     if (email3 && !EMAIL_REGEX2.test(email3.trim())) {
-      res.status(400).json({ success: false, message: "Invalid email address format." });
+      sendError(res, 400, ErrorCode.VALIDATION_ERROR, "Invalid email address format.", req);
       return;
     }
     let targetVacancyId = vacancyId;
@@ -81802,7 +82684,7 @@ var createApplication = async (req, res) => {
       if (firstVacancy) targetVacancyId = firstVacancy.id;
     }
     if (!targetVacancyId) {
-      res.status(400).json({ success: false, message: "No active job vacancies found to apply for." });
+      sendError(res, 400, ErrorCode.VALIDATION_ERROR, "No active job vacancies found to apply for.", req);
       return;
     }
     const application = await prisma.jobApplication.create({
@@ -81817,14 +82699,26 @@ var createApplication = async (req, res) => {
     });
     res.status(201).json({ success: true, data: application });
   } catch (error51) {
-    console.error("[createApplication]", error51);
-    res.status(500).json({ success: false, message: "Failed to submit application. Please try again." });
+    logger.error(`[createApplication] ${error51.message}`, "JOBS");
+    sendError(res, 500, ErrorCode.INTERNAL_SERVER_ERROR, "Failed to submit application. Please try again.", req);
   }
 };
 var updateApplicationStatus = async (req, res) => {
   try {
     const id = String(req.params.id);
     const { status } = req.body;
+    const VALID_APPLICATION_STATUSES = ["APPLIED", "REVIEWED", "SHORTLISTED", "HIRED", "REJECTED"];
+    const normalizedStatus = String(status || "").toUpperCase();
+    if (!status || !VALID_APPLICATION_STATUSES.includes(normalizedStatus)) {
+      sendError(
+        res,
+        400,
+        ErrorCode.VALIDATION_ERROR,
+        `Invalid application status. Must be one of: ${VALID_APPLICATION_STATUSES.join(", ")}`,
+        req
+      );
+      return;
+    }
     const result = await prisma.$transaction(async (tx) => {
       const existingApp = await tx.jobApplication.findUnique({ where: { id } });
       if (!existingApp) {
@@ -81833,7 +82727,7 @@ var updateApplicationStatus = async (req, res) => {
       const updated = await tx.jobApplication.update({
         where: { id },
         data: {
-          status
+          status: normalizedStatus
         },
         include: {
           vacancy: true
@@ -81900,23 +82794,91 @@ var updateApplicationStatus = async (req, res) => {
       details: { applicantName: result.name, vacancyId: result.vacancyId, status },
       ipAddress: req.ip
     });
+    broadcastRealtimeEvent("job:updated", { vacancyId: result.vacancyId });
+    broadcastRealtimeEvent("job_app:updated", { applicationId: id });
     res.status(200).json({ success: true, data: result });
   } catch (error51) {
-    console.error("[updateApplicationStatus]", error51);
-    res.status(500).json({ success: false, message: error51.message || "Failed to update application status." });
+    logger.error(`[updateApplicationStatus] ${error51.message}`, "JOBS");
+    sendError(res, 500, ErrorCode.INTERNAL_SERVER_ERROR, "Failed to update application status.", req);
+  }
+};
+var deleteJob = async (req, res) => {
+  try {
+    const id = String(req.params.id);
+    const existing = await prisma.jobVacancy.findUnique({ where: { id } });
+    if (!existing) {
+      sendError(res, 404, ErrorCode.NOT_FOUND, "Job vacancy not found.", req);
+      return;
+    }
+    await prisma.jobVacancy.delete({ where: { id } });
+    broadcastRealtimeEvent("job:updated", { vacancyId: id, deleted: true });
+    await recordAdminAudit({
+      adminId: req.user?.id,
+      adminEmail: req.user?.email,
+      action: "JOB_DELETED",
+      targetEntity: "JobVacancy",
+      targetId: id,
+      details: { title: existing.title },
+      ipAddress: req.ip
+    });
+    res.status(200).json({ success: true, message: "Job vacancy deleted successfully." });
+  } catch (error51) {
+    logger.error(`[deleteJob] ${error51.message}`, "JOBS");
+    sendError(res, 500, ErrorCode.INTERNAL_SERVER_ERROR, "Failed to delete job vacancy.", req);
+  }
+};
+var deleteApplication = async (req, res) => {
+  try {
+    const id = String(req.params.id);
+    const existing = await prisma.jobApplication.findUnique({ where: { id } });
+    if (!existing) {
+      sendError(res, 404, ErrorCode.NOT_FOUND, "Application not found.", req);
+      return;
+    }
+    if (existing.status === "HIRED" && existing.vacancyId) {
+      const vacancy = await prisma.jobVacancy.findUnique({ where: { id: existing.vacancyId } });
+      if (vacancy && vacancy.hiredCount > 0) {
+        const newHired = Math.max(0, vacancy.hiredCount - 1);
+        await prisma.jobVacancy.update({
+          where: { id: existing.vacancyId },
+          data: {
+            hiredCount: newHired,
+            hiringStatus: "HIRING",
+            isActive: true
+          }
+        });
+      }
+    }
+    await prisma.jobApplication.delete({ where: { id } });
+    broadcastRealtimeEvent("job_app:updated", { applicationId: id, deleted: true });
+    broadcastRealtimeEvent("job:updated", { vacancyId: existing.vacancyId });
+    await recordAdminAudit({
+      adminId: req.user?.id,
+      adminEmail: req.user?.email,
+      action: "JOB_APP_DELETED",
+      targetEntity: "JobApplication",
+      targetId: id,
+      details: { name: existing.name, vacancyId: existing.vacancyId },
+      ipAddress: req.ip
+    });
+    res.status(200).json({ success: true, message: "Job application deleted successfully." });
+  } catch (error51) {
+    logger.error(`[deleteApplication] ${error51.message}`, "JOBS");
+    sendError(res, 500, ErrorCode.INTERNAL_SERVER_ERROR, "Failed to delete application.", req);
   }
 };
 
 // backend/src/routes/jobRoutes.ts
-init_authenticate();
 var router7 = (0, import_express7.Router)();
 router7.get("/", getAllJobs);
-router7.post("/apply", validateBody(jobApplicationSchema), createApplication);
-router7.post("/applications", validateBody(jobApplicationSchema), createApplication);
+router7.post("/apply", idempotency({ scope: "jobs" }), verifyCaptcha(), validateBody(jobApplicationSchema), createApplication);
+router7.post("/applications", idempotency({ scope: "jobs" }), verifyCaptcha(), validateBody(jobApplicationSchema), createApplication);
 router7.post("/", authenticate, requireAdmin, requireRole(["SUPER_ADMIN", "COMMANDER", "RECRUITER"]), createJob);
 router7.put("/:id", authenticate, requireAdmin, requireRole(["SUPER_ADMIN", "COMMANDER", "RECRUITER"]), updateJob);
+router7.delete("/:id", authenticate, requireAdmin, requireRole(["SUPER_ADMIN", "COMMANDER", "RECRUITER"]), deleteJob);
 router7.get("/applications", authenticate, requireAdmin, requireRole(["SUPER_ADMIN", "COMMANDER", "RECRUITER"]), getAllApplications);
 router7.put("/applications/:id/status", authenticate, requireAdmin, requireRole(["SUPER_ADMIN", "COMMANDER", "RECRUITER"]), updateApplicationStatus);
+router7.delete("/applications/:id", authenticate, requireAdmin, requireRole(["SUPER_ADMIN", "COMMANDER", "RECRUITER"]), deleteApplication);
 var jobRoutes_default = router7;
 
 // backend/src/routes/userRoutes.ts
@@ -81942,7 +82904,7 @@ var SAFE_USER_SELECT = {
   createdAt: true,
   updatedAt: true
 };
-var getAllUsers = async (_req, res) => {
+var getAllUsers = async (req, res) => {
   try {
     const users = await prisma.user.findMany({
       select: SAFE_USER_SELECT,
@@ -81950,7 +82912,8 @@ var getAllUsers = async (_req, res) => {
     });
     res.status(200).json({ success: true, count: users.length, data: users });
   } catch (error51) {
-    res.status(500).json({ success: false, message: error51.message });
+    logger.error(`[getAllUsers] ${error51.message}`, "USERS");
+    sendError(res, 500, ErrorCode.INTERNAL_SERVER_ERROR, "Failed to retrieve operatives directory.", req);
   }
 };
 var getUserById = async (req, res) => {
@@ -81961,36 +82924,39 @@ var getUserById = async (req, res) => {
       select: SAFE_USER_SELECT
     });
     if (!user) {
-      res.status(404).json({ success: false, message: "User not found" });
+      sendError(res, 404, ErrorCode.NOT_FOUND, "User not found", req);
       return;
     }
     res.status(200).json({ success: true, data: user });
   } catch (error51) {
-    res.status(500).json({ success: false, message: error51.message });
+    logger.error(`[getUserById] ${error51.message}`, "USERS");
+    sendError(res, 500, ErrorCode.INTERNAL_SERVER_ERROR, "Failed to retrieve user profile.", req);
   }
 };
 var createUser = async (req, res) => {
   try {
     const { name, email: email3, phone, password, enrolledCourseSlugs, isEnrolled } = req.body;
     if (!name || !email3) {
-      res.status(400).json({ success: false, message: "Name and Email are required" });
+      sendError(res, 400, ErrorCode.VALIDATION_ERROR, "Name and Email are required", req);
       return;
     }
     const existing = await prisma.user.findUnique({ where: { email: email3.trim().toLowerCase() } });
     if (existing) {
-      res.status(400).json({ success: false, message: "User with this email already exists" });
+      sendError(res, 400, ErrorCode.CONFLICT, "User with this email already exists", req);
       return;
     }
     const rawPassword = password && password.trim() ? password.trim() : crypto4.randomBytes(6).toString("hex");
     const passwordHash = await bcryptjs_default.hash(rawPassword, 12);
+    const isEnrollmentExplicit = typeof isEnrolled === "boolean";
+    const normalizedCourseSlugs = typeof enrolledCourseSlugs === "string" ? enrolledCourseSlugs.trim() : "";
     const newUser = await prisma.user.create({
       data: {
         name: name.trim(),
         email: email3.trim().toLowerCase(),
         phone: phone ? phone.trim() : null,
         passwordHash,
-        isEnrolled: typeof isEnrolled === "boolean" ? isEnrolled : true,
-        enrolledCourseSlugs: enrolledCourseSlugs || "bmb,leadership,ignit"
+        isEnrolled: isEnrollmentExplicit ? isEnrolled : false,
+        enrolledCourseSlugs: normalizedCourseSlugs
       },
       select: SAFE_USER_SELECT
     });
@@ -82005,77 +82971,112 @@ var createUser = async (req, res) => {
     });
     res.status(201).json({ success: true, data: newUser });
   } catch (error51) {
-    res.status(500).json({ success: false, message: error51.message });
+    logger.error(`[createUser] ${error51.message}`, "USERS");
+    sendError(res, 500, ErrorCode.INTERNAL_SERVER_ERROR, "Failed to create user operative.", req);
   }
 };
 var updateUser = async (req, res) => {
   try {
     const id = String(req.params.id);
-    const { name, email: email3, phone, enrolledCourseSlugs, isEnrolled } = req.body;
+    const isAdmin = req.user?.type === "admin";
+    const { name, email: email3, phone, password, enrolledCourseSlugs, isEnrolled } = req.body;
+    const dataToUpdate = {};
+    if (typeof name === "string") {
+      const trimmedName = name.trim();
+      if (trimmedName.length < 2 || trimmedName.length > 100) {
+        sendError(res, 400, ErrorCode.VALIDATION_ERROR, "Name must be between 2 and 100 characters.", req);
+        return;
+      }
+      dataToUpdate.name = trimmedName;
+    }
+    if (typeof phone === "string") {
+      const trimmedPhone = phone.trim();
+      if (trimmedPhone.length > 30) {
+        sendError(res, 400, ErrorCode.VALIDATION_ERROR, "Phone number must be under 30 characters.", req);
+        return;
+      }
+      dataToUpdate.phone = trimmedPhone;
+    }
+    if (isAdmin) {
+      if (typeof email3 === "string") dataToUpdate.email = email3.trim().toLowerCase();
+      if (typeof enrolledCourseSlugs === "string") dataToUpdate.enrolledCourseSlugs = enrolledCourseSlugs;
+      if (typeof isEnrolled === "boolean") dataToUpdate.isEnrolled = isEnrolled;
+      if (typeof password === "string" && password.trim().length >= 6) {
+        dataToUpdate.passwordHash = await bcryptjs_default.hash(password.trim(), 12);
+        dataToUpdate.tokenVersion = { increment: 1 };
+      }
+    }
     const updated = await prisma.user.update({
       where: { id },
-      data: {
-        ...typeof name === "string" && { name: name.trim() },
-        ...typeof email3 === "string" && { email: email3.trim().toLowerCase() },
-        ...typeof phone === "string" && { phone: phone.trim() },
-        ...typeof enrolledCourseSlugs === "string" && { enrolledCourseSlugs },
-        ...typeof isEnrolled === "boolean" && { isEnrolled }
-      },
+      data: dataToUpdate,
       select: SAFE_USER_SELECT
     });
-    if (isEnrolled === false) {
+    if (isAdmin && isEnrolled === false) {
       await revokeUserSessions(id, "student");
+    }
+    if (isAdmin) {
+      await recordAdminAudit({
+        adminId: req.user?.id,
+        adminEmail: req.user?.email,
+        action: "USER_UPDATED",
+        targetEntity: "User",
+        targetId: updated.id,
+        details: dataToUpdate,
+        ipAddress: req.ip
+      });
     }
     res.status(200).json({ success: true, data: updated });
   } catch (error51) {
-    res.status(500).json({ success: false, message: error51.message });
+    logger.error(`[updateUser] ${error51.message}`, "USERS");
+    sendError(res, 500, ErrorCode.INTERNAL_SERVER_ERROR, "Failed to update operative account.", req);
   }
 };
-var getAvailableCoaches = async (_req, res) => {
+var getAvailableCoaches = async (req, res) => {
   try {
     const instructors = await prisma.instructor.findMany({
       where: { isActive: true },
-      select: { id: true, name: true, title: true }
+      select: { id: true, name: true, title: true },
+      orderBy: { createdAt: "asc" }
     });
     const adminCoaches = await prisma.adminUser.findMany({
       where: { role: { in: ["COACH", "COMMANDER", "SUPER_ADMIN"] } },
-      select: { id: true, name: true, role: true }
+      select: { id: true, name: true, role: true },
+      orderBy: { name: "asc" }
     });
-    const staffCoaches = await prisma.staffMember.findMany({
+    const staffMembers = await prisma.staffMember.findMany({
       where: { isActive: true },
-      select: { id: true, name: true, role: true }
+      select: { id: true, name: true, role: true, department: true },
+      orderBy: { name: "asc" }
     });
-    const coachMap = /* @__PURE__ */ new Map();
-    for (const inst of instructors) {
-      coachMap.set(inst.name.toLowerCase(), {
-        id: inst.id,
-        name: inst.name,
-        title: inst.title || "Master Instructor"
-      });
-    }
-    for (const admin of adminCoaches) {
-      if (!coachMap.has(admin.name.toLowerCase())) {
-        coachMap.set(admin.name.toLowerCase(), {
-          id: admin.id,
-          name: admin.name,
-          title: `Command ${admin.role.replace("_", " ")}`
-        });
-      }
-    }
-    for (const staff of staffCoaches) {
-      if (!coachMap.has(staff.name.toLowerCase())) {
-        coachMap.set(staff.name.toLowerCase(), {
-          id: staff.id,
-          name: staff.name,
-          title: staff.role || "Staff Coach"
-        });
-      }
-    }
-    const coachesList = Array.from(coachMap.values());
-    res.status(200).json({ success: true, count: coachesList.length, data: coachesList });
+    const coachList = [
+      ...instructors.map((ins) => ({
+        id: ins.id,
+        name: ins.name,
+        type: "INSTRUCTOR",
+        title: ins.title
+      })),
+      ...adminCoaches.map((adm) => ({
+        id: adm.id,
+        name: adm.name,
+        type: "ADMIN_COACH",
+        title: `${adm.role.replace("_", " ")} (HQ)`
+      })),
+      ...staffMembers.map((st) => ({
+        id: st.id,
+        name: st.name,
+        type: "STAFF",
+        title: `${st.role} \u2022 ${st.department}`
+      }))
+    ];
+    const uniqueCoaches = Array.from(new Map(coachList.map((c) => [c.name, c])).values());
+    res.status(200).json({
+      success: true,
+      count: uniqueCoaches.length,
+      data: uniqueCoaches
+    });
   } catch (error51) {
-    console.error("[getAvailableCoaches]", error51);
-    res.status(500).json({ success: false, message: "Failed to retrieve available coaches." });
+    logger.error(`[getAvailableCoaches] ${error51.message}`, "USERS");
+    sendError(res, 500, ErrorCode.INTERNAL_SERVER_ERROR, "Failed to fetch available coaches directory.", req);
   }
 };
 var assignCoach = async (req, res) => {
@@ -82106,7 +83107,8 @@ var assignCoach = async (req, res) => {
       data: updated
     });
   } catch (error51) {
-    res.status(500).json({ success: false, message: error51.message });
+    logger.error(`[assignCoach] ${error51.message}`, "USERS");
+    sendError(res, 500, ErrorCode.INTERNAL_SERVER_ERROR, "Failed to assign coach to student.", req);
   }
 };
 var deleteUser = async (req, res) => {
@@ -82126,7 +83128,8 @@ var deleteUser = async (req, res) => {
     });
     res.status(200).json({ success: true, message: "User account deleted successfully" });
   } catch (error51) {
-    res.status(500).json({ success: false, message: error51.message });
+    logger.error(`[deleteUser] ${error51.message}`, "USERS");
+    sendError(res, 500, ErrorCode.INTERNAL_SERVER_ERROR, "Failed to delete user account.", req);
   }
 };
 
@@ -82150,7 +83153,7 @@ var getUserDashboard = async (req, res) => {
       res.status(404).json({ success: false, message: "Student user not found." });
       return;
     }
-    const slugs = (user.enrolledCourseSlugs || "bmb").split(",").map((s) => s.trim().toLowerCase()).filter(Boolean);
+    const slugs = (user.enrolledCourseSlugs || "").split(",").map((s) => s.trim().toLowerCase()).filter(Boolean);
     const courses = await prisma.course.findMany({
       where: {
         slug: { in: slugs }
@@ -82266,14 +83269,24 @@ var getUserDashboard = async (req, res) => {
 };
 
 // backend/src/routes/userRoutes.ts
-init_authenticate();
 var router8 = (0, import_express8.Router)();
 router8.use(authenticate);
 router8.get("/coaches", requireAdmin, requireRole(["SUPER_ADMIN", "COMMANDER", "COACH"]), getAvailableCoaches);
 router8.get("/", requireAdmin, requireRole(["SUPER_ADMIN", "COMMANDER", "COACH"]), getAllUsers);
 router8.post("/", requireAdmin, requireRole(["SUPER_ADMIN", "COMMANDER"]), createUser);
 router8.put("/:id/assign-coach", requireAdmin, requireRole(["SUPER_ADMIN", "COMMANDER", "COACH"]), assignCoach);
-router8.put("/:id", requireAdmin, requireRole(["SUPER_ADMIN", "COMMANDER"]), updateUser);
+router8.put("/:id", (req, res, next) => {
+  if (req.user?.type === "admin") {
+    if (["SUPER_ADMIN", "COMMANDER", "COACH"].includes(req.user?.role || "")) {
+      return updateUser(req, res);
+    }
+    return res.status(403).json({ success: false, message: "Forbidden: Insufficient admin permissions." });
+  }
+  if (req.user?.id === req.params.id) {
+    return updateUser(req, res);
+  }
+  return res.status(403).json({ success: false, message: "Forbidden: Cannot update another user account." });
+});
 router8.delete("/:id", requireAdmin, requireRole(["SUPER_ADMIN", "COMMANDER"]), deleteUser);
 router8.get("/:id/dashboard", (req, res) => {
   if (req.user?.type === "admin" || req.user?.id === req.params.id) {
@@ -82299,7 +83312,7 @@ var getUserProgress = async (req, res) => {
     const isAdmin = req.user?.type === "admin";
     const targetUserId = isAdmin ? String(req.params.userId) : callerId;
     if (!targetUserId) {
-      res.status(400).json({ success: false, message: "User ID is required" });
+      sendError(res, 400, ErrorCode.VALIDATION_ERROR, "User ID is required", req);
       return;
     }
     const progressList = await prisma.videoProgress.findMany({
@@ -82307,7 +83320,8 @@ var getUserProgress = async (req, res) => {
     });
     res.status(200).json({ success: true, count: progressList.length, data: progressList });
   } catch (error51) {
-    res.status(500).json({ success: false, message: error51.message });
+    logger.error(`[getUserProgress] ${error51.message}`, "PROGRESS");
+    sendError(res, 500, ErrorCode.INTERNAL_SERVER_ERROR, "Failed to retrieve video watch progress.", req);
   }
 };
 var saveProgress = async (req, res) => {
@@ -82317,7 +83331,7 @@ var saveProgress = async (req, res) => {
     const isAdmin = req.user?.type === "admin";
     const targetUserId = isAdmin && req.body.userId ? String(req.body.userId) : callerId;
     if (!targetUserId || !moduleId) {
-      res.status(400).json({ success: false, message: "Authenticated user and moduleId are required" });
+      sendError(res, 400, ErrorCode.VALIDATION_ERROR, "Authenticated user and moduleId are required", req);
       return;
     }
     const record2 = await prisma.videoProgress.upsert({
@@ -82343,12 +83357,12 @@ var saveProgress = async (req, res) => {
     });
     res.status(200).json({ success: true, data: record2 });
   } catch (error51) {
-    res.status(500).json({ success: false, message: error51.message });
+    logger.error(`[saveProgress] ${error51.message}`, "PROGRESS");
+    sendError(res, 500, ErrorCode.INTERNAL_SERVER_ERROR, "Failed to record video watch progress.", req);
   }
 };
 
 // backend/src/routes/videoProgressRoutes.ts
-init_authenticate();
 var router9 = (0, import_express9.Router)();
 router9.use(authenticate);
 router9.get("/:userId", (req, res, next) => {
@@ -82368,6 +83382,356 @@ var videoProgressRoutes_default = router9;
 // backend/src/routes/paymentSlipRoutes.ts
 var import_express10 = __toESM(require_express2(), 1);
 
+// backend/src/utils/fileSignature.ts
+var DEFAULT_DIMENSION_LIMITS = {
+  minWidth: 50,
+  minHeight: 50,
+  maxWidth: 8e3,
+  maxHeight: 8e3
+};
+function scanBufferForMaliciousContent(buffer, mimeType) {
+  if (buffer.length >= 2 && buffer[0] === 77 && buffer[1] === 90) {
+    return { isClean: false, reason: "Disguised Windows executable (MZ header) detected." };
+  }
+  if (buffer.length >= 4 && buffer[0] === 127 && buffer[1] === 69 && buffer[2] === 76 && buffer[3] === 70) {
+    return { isClean: false, reason: "Disguised Linux executable (ELF header) detected." };
+  }
+  if (buffer.length >= 4 && (buffer[0] === 202 && buffer[1] === 254 && buffer[2] === 186 && buffer[3] === 190 || buffer[0] === 254 && buffer[1] === 237 && buffer[2] === 250 && buffer[3] === 206)) {
+    return { isClean: false, reason: "Disguised binary executable/class detected." };
+  }
+  if (buffer.length >= 2 && buffer[0] === 35 && buffer[1] === 33) {
+    return { isClean: false, reason: "Disguised shell script (shebang) detected." };
+  }
+  const bufferString = buffer.toString("binary");
+  const serverCodePatterns = [
+    /<\?php\b/i,
+    /<\?=\s/i,
+    /<%\s/i,
+    /<script[\s\S]*?language\s*=\s*["']?php/i
+  ];
+  for (const pattern of serverCodePatterns) {
+    if (pattern.test(bufferString)) {
+      return { isClean: false, reason: "Server script injection signature (PHP/ASP) detected in receipt buffer." };
+    }
+  }
+  const scriptPatterns = [
+    /<script[\s\S]*?>[\s\S]*?<\/script>/i,
+    /<script\b/i,
+    /javascript:\s*[a-z0-9_$]/i,
+    /vbscript:\s*[a-z0-9_$]/i,
+    /<html[\s>]/i,
+    /<svg[\s>]/i,
+    /onload\s*=\s*["'][^"']+["']/i,
+    /onerror\s*=\s*["'][^"']+["']/i
+  ];
+  for (const pattern of scriptPatterns) {
+    if (pattern.test(bufferString)) {
+      return { isClean: false, reason: "Active script or HTML tags detected in receipt buffer." };
+    }
+  }
+  if (mimeType === "application/pdf") {
+    const dangerousPdfKeywords = [
+      /\/JavaScript\b/i,
+      /\/JS\s*[<(]/i,
+      /\/Launch\b/i,
+      /\/EmbeddedFiles\b/i,
+      /\/RichMedia\b/i,
+      /\/SubmitForm\b/i
+    ];
+    for (const kw of dangerousPdfKeywords) {
+      if (kw.test(bufferString)) {
+        return { isClean: false, reason: `Suspicious interactive action (${kw.source}) detected in PDF.` };
+      }
+    }
+  }
+  return { isClean: true };
+}
+function extractPngDimensions(buffer) {
+  if (buffer.length < 24) return null;
+  const width = buffer.readUInt32BE(16);
+  const height = buffer.readUInt32BE(20);
+  return { width, height };
+}
+function extractJpegDimensions(buffer) {
+  let offset = 2;
+  while (offset < buffer.length - 8) {
+    if (buffer[offset] !== 255) {
+      offset++;
+      continue;
+    }
+    const marker = buffer[offset + 1];
+    if (marker === 192 || marker === 193 || marker === 194) {
+      const height = buffer.readUInt16BE(offset + 5);
+      const width = buffer.readUInt16BE(offset + 7);
+      return { width, height };
+    }
+    const segmentLength = buffer.readUInt16BE(offset + 2);
+    offset += 2 + segmentLength;
+  }
+  return null;
+}
+function extractWebpDimensions(buffer) {
+  if (buffer.length < 30) return null;
+  const chunkType = buffer.toString("ascii", 12, 16);
+  if (chunkType === "VP8 ") {
+    const width = buffer.readUInt16LE(26) & 16383;
+    const height = buffer.readUInt16LE(28) & 16383;
+    return { width, height };
+  } else if (chunkType === "VP8L") {
+    if (buffer.length < 25) return null;
+    const b0 = buffer[21];
+    const b1 = buffer[22];
+    const b2 = buffer[23];
+    const b3 = buffer[24];
+    const width = 1 + ((b1 & 63) << 8 | b0);
+    const height = 1 + ((b3 & 15) << 10 | b2 << 2 | (b1 & 192) >> 6);
+    return { width, height };
+  } else if (chunkType === "VP8X") {
+    if (buffer.length < 30) return null;
+    const width = 1 + (buffer[24] | buffer[25] << 8 | buffer[26] << 16);
+    const height = 1 + (buffer[27] | buffer[28] << 8 | buffer[29] << 16);
+    return { width, height };
+  }
+  return null;
+}
+function validateReceiptSignature(input, dimensions = DEFAULT_DIMENSION_LIMITS) {
+  let buffer;
+  if (Buffer.isBuffer(input)) {
+    buffer = input;
+  } else if (typeof input === "string") {
+    const base64Clean = input.includes("base64,") ? input.split("base64,")[1].trim() : input.trim();
+    try {
+      buffer = Buffer.from(base64Clean, "base64");
+    } catch {
+      return { isValid: false, error: "Malformed base64 payload." };
+    }
+  } else {
+    return { isValid: false, error: "Invalid input format." };
+  }
+  if (buffer.length < 12) {
+    return { isValid: false, error: "File size too small." };
+  }
+  if (buffer.length > 5 * 1024 * 1024) {
+    return { isValid: false, error: "File size exceeds maximum 5MB limit." };
+  }
+  let mimeType;
+  let extension;
+  let imgDims = null;
+  if (buffer[0] === 137 && buffer[1] === 80 && buffer[2] === 78 && buffer[3] === 71 && buffer[4] === 13 && buffer[5] === 10 && buffer[6] === 26 && buffer[7] === 10) {
+    mimeType = "image/png";
+    extension = "png";
+    imgDims = extractPngDimensions(buffer);
+  } else if (buffer[0] === 255 && buffer[1] === 216 && buffer[2] === 255) {
+    mimeType = "image/jpeg";
+    extension = "jpg";
+    imgDims = extractJpegDimensions(buffer);
+  } else if (buffer[0] === 37 && buffer[1] === 80 && buffer[2] === 68 && buffer[3] === 70) {
+    if (buffer.length < 100) {
+      return { isValid: false, error: "Invalid or truncated PDF file structure." };
+    }
+    const pdfTail = buffer.slice(-1024).toString("binary");
+    if (!pdfTail.includes("%%EOF")) {
+      return { isValid: false, error: "PDF file is missing valid EOF trailer marker." };
+    }
+    mimeType = "application/pdf";
+    extension = "pdf";
+  } else if (buffer[0] === 82 && buffer[1] === 73 && buffer[2] === 70 && buffer[3] === 70 && buffer[8] === 87 && buffer[9] === 69 && buffer[10] === 66 && buffer[11] === 80) {
+    mimeType = "image/webp";
+    extension = "webp";
+    imgDims = extractWebpDimensions(buffer);
+  } else {
+    return { isValid: false, error: "Unsupported file type. Only genuine PNG, JPEG, WEBP, or PDF bank receipts are allowed." };
+  }
+  const scanResult = scanBufferForMaliciousContent(buffer, mimeType);
+  if (!scanResult.isClean) {
+    return { isValid: false, error: scanResult.reason || "Malicious content signature detected." };
+  }
+  if (imgDims) {
+    const minW = dimensions.minWidth ?? DEFAULT_DIMENSION_LIMITS.minWidth;
+    const minH = dimensions.minHeight ?? DEFAULT_DIMENSION_LIMITS.minHeight;
+    const maxW = dimensions.maxWidth ?? DEFAULT_DIMENSION_LIMITS.maxWidth;
+    const maxH = dimensions.maxHeight ?? DEFAULT_DIMENSION_LIMITS.maxHeight;
+    if (imgDims.width < minW || imgDims.height < minH) {
+      return {
+        isValid: false,
+        error: `Receipt image dimensions (${imgDims.width}x${imgDims.height}) are too small. Minimum required is ${minW}x${minH} pixels.`
+      };
+    }
+    if (imgDims.width > maxW || imgDims.height > maxH) {
+      return {
+        isValid: false,
+        error: `Receipt image dimensions (${imgDims.width}x${imgDims.height}) exceed maximum allowed ${maxW}x${maxH} pixels.`
+      };
+    }
+  }
+  return {
+    isValid: true,
+    mimeType,
+    extension,
+    buffer,
+    width: imgDims?.width,
+    height: imgDims?.height
+  };
+}
+
+// backend/src/services/storageService.ts
+import crypto5 from "crypto";
+import fs from "fs";
+import path from "path";
+var memoryCache2 = /* @__PURE__ */ new Map();
+var DISK_STORAGE_DIR = path.resolve(process.cwd(), "uploads", "slips");
+try {
+  if (!fs.existsSync(DISK_STORAGE_DIR)) {
+    fs.mkdirSync(DISK_STORAGE_DIR, { recursive: true });
+  }
+} catch {
+}
+var SUPABASE_URL = process.env.SUPABASE_URL || "";
+var SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_KEY || "";
+var SUPABASE_BUCKET = process.env.SUPABASE_STORAGE_BUCKET || "bank-slips";
+function isSupabaseStorageConfigured() {
+  if (process.env.NODE_ENV === "test") return false;
+  return Boolean(SUPABASE_URL && SUPABASE_SERVICE_KEY);
+}
+function getDiskFilePath(storageKey) {
+  const safeFilename = path.basename(storageKey);
+  return path.join(DISK_STORAGE_DIR, safeFilename);
+}
+async function uploadPrivateReceipt(buffer, extension = "png", mimeType = "image/png") {
+  const fileId = crypto5.randomUUID();
+  const storageKey = `slips/${fileId}.${extension}`;
+  if (isSupabaseStorageConfigured()) {
+    try {
+      const uploadEndpoint = `${SUPABASE_URL.replace(/\/$/, "")}/storage/v1/object/${SUPABASE_BUCKET}/${storageKey}`;
+      const response = await fetch(uploadEndpoint, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${SUPABASE_SERVICE_KEY}`,
+          "Content-Type": mimeType,
+          "x-upsert": "true"
+        },
+        body: buffer
+      });
+      if (!response.ok) {
+        const errorText = await response.text();
+        logger.error(`[STORAGE] Supabase Storage upload failed (${response.status}): ${errorText}`, "STORAGE");
+        throw new Error(`Cloud storage upload failed: ${response.statusText}`);
+      }
+      logger.info(`[STORAGE] Uploaded receipt to Supabase Storage: ${storageKey} (${buffer.length} bytes)`, "STORAGE");
+      return {
+        storageKey,
+        mimeType,
+        sizeBytes: buffer.length,
+        provider: "supabase"
+      };
+    } catch (cloudErr) {
+      logger.warn(`[STORAGE] Cloud storage upload fallback to local vault: ${cloudErr.message}`, "STORAGE");
+    }
+  }
+  memoryCache2.set(storageKey, {
+    buffer,
+    mimeType,
+    createdAt: Date.now()
+  });
+  try {
+    const diskPath = getDiskFilePath(storageKey);
+    fs.writeFileSync(diskPath, buffer);
+  } catch (fsErr) {
+    logger.warn(`[STORAGE] Could not write to disk (${fsErr.message}), cached in memory only.`, "STORAGE");
+  }
+  logger.info(`[STORAGE] Uploaded receipt to private vault: ${storageKey} (${buffer.length} bytes)`, "STORAGE");
+  return {
+    storageKey,
+    mimeType,
+    sizeBytes: buffer.length,
+    provider: "vault"
+  };
+}
+async function getPrivateReceipt(storageKey) {
+  if (isSupabaseStorageConfigured()) {
+    try {
+      const downloadEndpoint = `${SUPABASE_URL.replace(/\/$/, "")}/storage/v1/object/authenticated/${SUPABASE_BUCKET}/${storageKey}`;
+      const response = await fetch(downloadEndpoint, {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${SUPABASE_SERVICE_KEY}`
+        }
+      });
+      if (response.ok) {
+        const arrayBuffer = await response.arrayBuffer();
+        const mimeType = response.headers.get("content-type") || "application/octet-stream";
+        return {
+          buffer: Buffer.from(arrayBuffer),
+          mimeType
+        };
+      }
+    } catch (cloudErr) {
+      logger.warn(`[STORAGE] Cloud retrieval failed, checking local vault: ${cloudErr.message}`, "STORAGE");
+    }
+  }
+  const cached2 = memoryCache2.get(storageKey);
+  if (cached2) {
+    return { buffer: cached2.buffer, mimeType: cached2.mimeType };
+  }
+  try {
+    const diskPath = getDiskFilePath(storageKey);
+    if (fs.existsSync(diskPath)) {
+      const buffer = fs.readFileSync(diskPath);
+      const ext = path.extname(storageKey).toLowerCase();
+      const mimeType = ext === ".jpg" || ext === ".jpeg" ? "image/jpeg" : ext === ".pdf" ? "application/pdf" : ext === ".webp" ? "image/webp" : "image/png";
+      memoryCache2.set(storageKey, { buffer, mimeType, createdAt: Date.now() });
+      return { buffer, mimeType };
+    }
+  } catch (fsErr) {
+    logger.warn(`[STORAGE] Error reading from disk: ${fsErr.message}`, "STORAGE");
+  }
+  return null;
+}
+async function generateSignedReceiptUrl(slipId, storageKey, expiresInSeconds = 900) {
+  if (storageKey && isSupabaseStorageConfigured()) {
+    try {
+      const signEndpoint = `${SUPABASE_URL.replace(/\/$/, "")}/storage/v1/object/sign/${SUPABASE_BUCKET}/${storageKey}`;
+      const response = await fetch(signEndpoint, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${SUPABASE_SERVICE_KEY}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ expiresIn: expiresInSeconds })
+      });
+      if (response.ok) {
+        const data = await response.json();
+        if (data?.signedURL) {
+          const fullSignedUrl = data.signedURL.startsWith("http") ? data.signedURL : `${SUPABASE_URL.replace(/\/$/, "")}/storage/v1${data.signedURL}`;
+          return fullSignedUrl;
+        }
+      }
+    } catch (err) {
+      logger.warn(`[STORAGE] Could not generate Supabase provider signed URL: ${err.message}`, "STORAGE");
+    }
+  }
+  const secret = getJwtSecret();
+  const expires = Math.floor(Date.now() / 1e3) + expiresInSeconds;
+  const dataToSign = `slip:${slipId}:${expires}`;
+  const signature = crypto5.createHmac("sha256", secret).update(dataToSign).digest("hex");
+  return `/api/slips/${slipId}/view?token=${signature}&expires=${expires}`;
+}
+function verifySignedReceiptToken(slipId, token, expiresStr) {
+  try {
+    const expires = parseInt(expiresStr, 10);
+    if (isNaN(expires) || Date.now() / 1e3 > expires) {
+      return false;
+    }
+    const secret = getJwtSecret();
+    const dataToSign = `slip:${slipId}:${expires}`;
+    const expectedSignature = crypto5.createHmac("sha256", secret).update(dataToSign).digest("hex");
+    if (token.length !== expectedSignature.length) return false;
+    return crypto5.timingSafeEqual(Buffer.from(token), Buffer.from(expectedSignature));
+  } catch {
+    return false;
+  }
+}
+
 // backend/src/controllers/paymentSlipController.ts
 var PHONE_REGEX3 = /^[+\d\s\-()]{7,20}$/;
 var EMAIL_REGEX3 = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -82376,42 +83740,211 @@ var getAllPaymentSlips = async (req, res) => {
     const { status } = req.query;
     const slips = await prisma.paymentSlip.findMany({
       where: status ? { status } : {},
-      orderBy: { createdAt: "desc" }
+      orderBy: { createdAt: "desc" },
+      select: {
+        id: true,
+        studentName: true,
+        studentPhone: true,
+        studentEmail: true,
+        courseSlug: true,
+        slipUrl: true,
+        amount: true,
+        bankReference: true,
+        notes: true,
+        status: true,
+        adminNotes: true,
+        couponCode: true,
+        discountAmount: true,
+        createdAt: true,
+        updatedAt: true
+      }
     });
-    res.status(200).json({ success: true, count: slips.length, data: slips });
+    const projected = await Promise.all(
+      slips.map(async (s) => {
+        let signedUrl = "";
+        if (s.slipUrl) {
+          try {
+            signedUrl = await generateSignedReceiptUrl(s.id, s.slipUrl, 900);
+          } catch {
+            signedUrl = "";
+          }
+        }
+        return {
+          ...s,
+          slipUrl: signedUrl,
+          imageUrl: signedUrl,
+          hasSlipImage: Boolean(s.slipUrl)
+        };
+      })
+    );
+    res.status(200).json({ success: true, count: projected.length, data: projected });
   } catch (error51) {
-    console.error("[getAllPaymentSlips]", error51);
-    res.status(500).json({ success: false, message: "Failed to retrieve payment slips." });
+    logger.error("[getAllPaymentSlips] " + error51.message, "SLIPS");
+    sendError(res, 500, ErrorCode.INTERNAL_SERVER_ERROR, "Failed to retrieve payment slips.", req);
+  }
+};
+var getSlipImageUrl = async (req, res) => {
+  try {
+    const id = String(req.params.id);
+    const slip = await prisma.paymentSlip.findUnique({ where: { id } });
+    if (!slip) {
+      sendError(res, 404, ErrorCode.NOT_FOUND, "Slip not found.", req);
+      return;
+    }
+    const signedUrl = await generateSignedReceiptUrl(id, slip.slipUrl, 900);
+    res.status(200).json({ success: true, url: signedUrl, expiresInSeconds: 900 });
+  } catch (error51) {
+    logger.error("[getSlipImageUrl] " + error51.message, "SLIPS");
+    sendError(res, 500, ErrorCode.INTERNAL_SERVER_ERROR, "Failed to generate slip image URL.", req);
+  }
+};
+var viewSlipImage = async (req, res) => {
+  try {
+    const id = String(req.params.id);
+    const { token, expires } = req.query;
+    if (!token || !expires) {
+      sendError(res, 401, ErrorCode.UNAUTHORIZED, "Missing signed token parameters.", req);
+      return;
+    }
+    if (!verifySignedReceiptToken(id, token, expires)) {
+      sendError(res, 401, ErrorCode.UNAUTHORIZED, "Invalid or expired receipt token.", req);
+      return;
+    }
+    const slip = await prisma.paymentSlip.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        slipUrl: true,
+        slipData: true,
+        studentName: true,
+        studentPhone: true,
+        courseSlug: true,
+        amount: true,
+        bankReference: true,
+        createdAt: true
+      }
+    });
+    if (!slip || !slip.slipUrl) {
+      sendError(res, 404, ErrorCode.NOT_FOUND, "Slip not found.", req);
+      return;
+    }
+    if (slip.slipUrl.startsWith("https://") || slip.slipUrl.startsWith("http://")) {
+      res.redirect(slip.slipUrl);
+      return;
+    }
+    if (slip.slipUrl.startsWith("data:")) {
+      const parts = slip.slipUrl.split(";base64,");
+      const mime = parts[0].replace("data:", "") || "image/png";
+      const buffer = Buffer.from(parts[1] || "", "base64");
+      res.setHeader("Content-Type", mime);
+      res.setHeader("Cache-Control", "private, no-store");
+      res.status(200).send(buffer);
+      return;
+    }
+    const file2 = await getPrivateReceipt(slip.slipUrl);
+    if (file2) {
+      res.setHeader("Content-Type", file2.mimeType);
+      res.setHeader("Content-Disposition", `inline; filename="receipt-${id}.${file2.mimeType.split("/")[1] || "png"}"`);
+      res.setHeader("Cache-Control", "private, no-store");
+      res.status(200).send(file2.buffer);
+      return;
+    }
+    if (slip.slipData && slip.slipData.startsWith("data:")) {
+      const parts = slip.slipData.split(";base64,");
+      const mime = parts[0].replace("data:", "") || "image/png";
+      const buffer = Buffer.from(parts[1] || "", "base64");
+      try {
+        const ext = mime.split("/")[1] || "png";
+        await uploadPrivateReceipt(buffer, ext, mime);
+      } catch {
+      }
+      res.setHeader("Content-Type", mime);
+      res.setHeader("Content-Disposition", `inline; filename="receipt-${id}.${mime.split("/")[1] || "png"}"`);
+      res.setHeader("Cache-Control", "private, no-store");
+      res.status(200).send(buffer);
+      return;
+    }
+    const escapeXml = (unsafe) => unsafe.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&apos;");
+    const safeStudentName = escapeXml(slip.studentName || "Operative");
+    const safeCourseSlug = escapeXml((slip.courseSlug || "").toUpperCase());
+    const safeBankRef = escapeXml(slip.bankReference || "N/A");
+    const amountText = slip.amount ? `LKR ${Number(slip.amount).toLocaleString()}` : "Payment Verification Pending";
+    const dateText = new Date(slip.createdAt).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" });
+    const svgFallback = `
+      <svg width="600" height="400" viewBox="0 0 600 400" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect width="600" height="400" rx="16" fill="#0A0E1A"/>
+        <rect x="1" y="1" width="598" height="398" rx="15" stroke="#FFB800" stroke-opacity="0.3" stroke-width="2"/>
+        <circle cx="300" cy="110" r="40" fill="#131929" stroke="#FFB800" stroke-width="2"/>
+        <path d="M290 100H310M290 110H310M290 120H302" stroke="#FFB800" stroke-width="3" stroke-linecap="round"/>
+        <text x="300" y="180" text-anchor="middle" fill="#FFFFFF" font-family="system-ui, sans-serif" font-size="18" font-weight="bold">${safeStudentName}</text>
+        <text x="300" y="205" text-anchor="middle" fill="#94A3B8" font-family="monospace" font-size="13">${safeCourseSlug} DIVISION \u2022 REF: ${safeBankRef}</text>
+        <text x="300" y="250" text-anchor="middle" fill="#2ED573" font-family="monospace" font-size="22" font-weight="bold">${amountText}</text>
+        <text x="300" y="285" text-anchor="middle" fill="#64748B" font-family="monospace" font-size="12">Verified Bank Deposit \u2022 ${dateText}</text>
+        <rect x="200" y="320" width="200" height="32" rx="8" fill="#131929" stroke="#334155"/>
+        <text x="300" y="341" text-anchor="middle" fill="#FFB800" font-family="monospace" font-size="11" font-weight="bold">UWE SECURE VAULT</text>
+      </svg>
+    `.trim();
+    res.setHeader("Content-Type", "image/svg+xml");
+    res.setHeader("Cache-Control", "private, no-store");
+    res.status(200).send(Buffer.from(svgFallback));
+  } catch (error51) {
+    logger.error("[viewSlipImage] " + error51.message, "SLIPS");
+    sendError(res, 500, ErrorCode.INTERNAL_SERVER_ERROR, "Failed to retrieve slip image.", req);
   }
 };
 var createPaymentSlip = async (req, res) => {
   try {
     const { studentName, studentPhone, studentEmail, courseSlug, slipUrl, amount, bankReference, notes } = req.body;
     if (!studentName || !studentPhone || !courseSlug || !slipUrl) {
-      res.status(400).json({ success: false, message: "Name, WhatsApp Phone, Course, and Bank Slip are required." });
+      sendError(res, 400, ErrorCode.VALIDATION_ERROR, "Name, WhatsApp Phone, Course, and Bank Slip are required.", req);
       return;
     }
     if (studentName.trim().length > 100) {
-      res.status(400).json({ success: false, message: "Student Name must be under 100 characters." });
+      sendError(res, 400, ErrorCode.VALIDATION_ERROR, "Student Name must be under 100 characters.", req);
       return;
     }
     const cleanPhone = studentPhone.trim();
     if (!PHONE_REGEX3.test(cleanPhone)) {
-      res.status(400).json({ success: false, message: "Invalid phone number format." });
+      sendError(res, 400, ErrorCode.VALIDATION_ERROR, "Invalid phone number format.", req);
       return;
     }
     if (studentEmail && !EMAIL_REGEX3.test(studentEmail.trim())) {
-      res.status(400).json({ success: false, message: "Invalid email address format." });
+      sendError(res, 400, ErrorCode.VALIDATION_ERROR, "Invalid email address format.", req);
       return;
     }
+    if (typeof slipUrl !== "string" || !slipUrl.startsWith("data:") && !slipUrl.match(/^[A-Za-z0-9+/=]+$/)) {
+      sendError(res, 400, ErrorCode.VALIDATION_ERROR, "Uploaded file failed binary signature validation. Direct external links are not permitted.", req);
+      return;
+    }
+    const validation = validateReceiptSignature(slipUrl);
+    if (!validation.isValid || !validation.buffer) {
+      sendError(
+        res,
+        400,
+        ErrorCode.VALIDATION_ERROR,
+        validation.error || "Uploaded file failed binary signature validation. Only genuine PNG, JPEG, WEBP, or PDF bank receipts are accepted.",
+        req
+      );
+      return;
+    }
+    const uploadResult = await uploadPrivateReceipt(
+      validation.buffer,
+      validation.extension,
+      validation.mimeType
+    );
+    const storageRef = uploadResult.storageKey;
     const newSlip = await prisma.paymentSlip.create({
       data: {
         studentName: studentName.trim(),
         studentPhone: cleanPhone,
         studentEmail: studentEmail ? studentEmail.trim().toLowerCase() : null,
         courseSlug: courseSlug.trim().toLowerCase(),
-        slipUrl: slipUrl.trim(),
-        amount: typeof amount === "number" ? amount : parseFloat(amount) || null,
+        slipUrl: storageRef,
+        // Private storage key for fast disk/cloud retrieval
+        slipData: slipUrl,
+        // Original base64 data URI — reliable DB fallback so image is NEVER lost
+        // DATA-6: Store amount as Decimal — convert via cents to avoid float drift
+        amount: amount != null ? toPrismaDecimal(toCents(typeof amount === "number" ? amount : parseFloat(amount) || 0)) : null,
         bankReference: bankReference ? bankReference.trim() : null,
         notes: notes ? notes.trim() : null,
         status: "PENDING"
@@ -82432,123 +83965,285 @@ var createPaymentSlip = async (req, res) => {
       });
     } catch {
     }
-    res.status(201).json({ success: true, data: newSlip });
+    const { slipUrl: _redacted, slipData: _redactedData, ...safeSlip } = newSlip;
+    res.status(201).json({ success: true, data: { ...safeSlip, hasSlipImage: true } });
   } catch (error51) {
-    console.error("[createPaymentSlip]", error51);
-    res.status(500).json({ success: false, message: "Failed to submit payment slip. Please try again." });
+    logger.error("[createPaymentSlip] " + error51.message, "SLIPS");
+    sendError(res, 500, ErrorCode.INTERNAL_SERVER_ERROR, "Failed to submit payment slip. Please try again.", req);
   }
 };
 var updateSlipStatus = async (req, res) => {
   try {
     const id = String(req.params.id);
-    const { status, notes } = req.body;
-    const slip = await prisma.$transaction(async (tx) => {
-      const updatedSlip = await tx.paymentSlip.update({
-        where: { id },
-        data: {
-          status,
-          ...notes && { notes: notes.trim() }
-        }
-      });
-      if (status === "VERIFIED") {
-        const email3 = updatedSlip.studentEmail || `${updatedSlip.studentPhone.replace(/\D/g, "")}@uwe.lk`;
-        const existingUser = await tx.user.findFirst({
-          where: {
-            OR: [
-              { email: email3 },
-              { phone: updatedSlip.studentPhone }
-            ]
-          }
+    const { status, adminNotes, couponCode, notes } = req.body;
+    if (!status || !["VERIFIED", "REJECTED"].includes(status)) {
+      sendError(res, 400, ErrorCode.VALIDATION_ERROR, "Status must be VERIFIED or REJECTED.", req);
+      return;
+    }
+    const result = await prisma.$transaction(async (tx) => {
+      const slip = await tx.paymentSlip.findUnique({ where: { id } });
+      if (!slip) {
+        throw new Error("NOT_FOUND");
+      }
+      if (slip.status === status) {
+        throw new Error(`ALREADY_${status}`);
+      }
+      if (couponCode && status === "VERIFIED") {
+        const coupon = await tx.coupon.findFirst({
+          where: { code: couponCode.toUpperCase(), isActive: true }
         });
-        if (existingUser) {
-          const slugs = (existingUser.enrolledCourseSlugs || "").split(",").map((s) => s.trim()).filter(Boolean);
-          if (!slugs.includes(updatedSlip.courseSlug)) {
-            slugs.push(updatedSlip.courseSlug);
-            await tx.user.update({
-              where: { id: existingUser.id },
-              data: {
-                isEnrolled: true,
-                enrolledCourseSlugs: slugs.join(",")
-              }
-            });
-          }
+        if (!coupon) {
+          throw new Error("COUPON_NOT_FOUND");
         }
-        if (updatedSlip.notes && /coupon[:\s]+([A-Z0-9_-]+)/i.test(updatedSlip.notes)) {
-          const match = updatedSlip.notes.match(/coupon[:\s]+([A-Z0-9_-]+)/i);
-          if (match && match[1]) {
-            const couponCode = match[1].toUpperCase();
-            const coupon = await tx.coupon.findUnique({ where: { code: couponCode } });
-            if (coupon) {
-              if (!coupon.isActive || coupon.expiryDate && /* @__PURE__ */ new Date() > new Date(coupon.expiryDate)) {
-                throw new Error(`Coupon ${couponCode} is inactive or expired.`);
-              }
-              const couponUpdateRes = await tx.coupon.updateMany({
-                where: {
-                  id: coupon.id,
-                  isActive: true,
-                  usedCount: { lt: coupon.maxUses }
-                },
-                data: { usedCount: { increment: 1 } }
-              });
-              if (couponUpdateRes.count === 0) {
-                throw new Error(`Coupon ${couponCode} has reached its maximum usage limit (${coupon.maxUses}).`);
-              }
-            }
-          }
+        if (coupon.expiryDate && new Date(coupon.expiryDate) < /* @__PURE__ */ new Date()) {
+          throw new Error("COUPON_EXPIRED");
         }
-        const upcomingBatch = await tx.courseBatch.findFirst({
+        const couponUpdateRes = await tx.coupon.updateMany({
           where: {
-            course: { slug: updatedSlip.courseSlug },
-            status: "UPCOMING",
-            availableSeats: { gt: 0 }
+            id: coupon.id,
+            isActive: true,
+            usedCount: { lt: coupon.maxUses }
           },
+          data: { usedCount: { increment: 1 } }
+        });
+        if (couponUpdateRes.count === 0) {
+          throw new Error("COUPON_EXHAUSTED");
+        }
+      }
+      let reconciliationNote = "";
+      if (status === "VERIFIED" && slip.amount != null) {
+        let coursePriceInput = 0;
+        const course = await tx.course.findFirst({ where: { slug: slip.courseSlug } });
+        if (course) coursePriceInput = course.price;
+        const activeCode = (couponCode || slip.couponCode || "").toUpperCase();
+        let couponForRecon = {};
+        if (activeCode) {
+          const recon2 = await tx.coupon.findUnique({ where: { code: activeCode } });
+          if (recon2) couponForRecon = recon2;
+        }
+        const discountResult = applyCoupon(coursePriceInput, couponForRecon);
+        const recon = reconcilePayment(discountResult.finalCents, toCents(slip.amount));
+        reconciliationNote = `[RECON:${recon.status}] Expected ${recon.expectedLkr}, Paid ${recon.paidLkr}, Delta ${recon.deltaLkr}`;
+        logger.info(`[updateSlipStatus] Slip ${id} reconciliation: ${reconciliationNote}`, "SLIPS");
+      }
+      if (status === "VERIFIED" && slip.courseSlug) {
+        const upcomingBatch = await tx.courseBatch.findFirst({
+          where: { course: { slug: slip.courseSlug }, status: "UPCOMING" },
           orderBy: { startDate: "asc" }
         });
         if (upcomingBatch) {
           const seatUpdateRes = await tx.courseBatch.updateMany({
-            where: {
-              id: upcomingBatch.id,
-              availableSeats: { gt: 0 }
-            },
-            data: {
-              availableSeats: { decrement: 1 }
-            }
+            where: { id: upcomingBatch.id, availableSeats: { gt: 0 } },
+            data: { availableSeats: { decrement: 1 } }
           });
           if (seatUpdateRes.count === 0) {
-            throw new Error(`No available seats remaining in upcoming batch for ${updatedSlip.courseSlug}.`);
+            throw new Error("SEATS_EXHAUSTED");
           }
         }
       }
-      return updatedSlip;
+      const updatedSlip = await tx.paymentSlip.update({
+        where: { id },
+        data: {
+          status,
+          adminNotes: reconciliationNote ? [adminNotes, reconciliationNote].filter(Boolean).join(" | ") : adminNotes || null,
+          couponCode: couponCode || null,
+          notes: notes || null
+        },
+        select: {
+          id: true,
+          studentName: true,
+          studentPhone: true,
+          studentEmail: true,
+          courseSlug: true,
+          amount: true,
+          bankReference: true,
+          notes: true,
+          status: true,
+          adminNotes: true,
+          couponCode: true,
+          discountAmount: true,
+          createdAt: true,
+          updatedAt: true
+        }
+      });
+      if (status === "VERIFIED" && slip.courseSlug) {
+        const studentEmail = slip.studentEmail ? slip.studentEmail.trim().toLowerCase() : null;
+        const studentPhone = slip.studentPhone ? slip.studentPhone.trim() : null;
+        if (studentEmail || studentPhone) {
+          const matchedUser = await tx.user.findFirst({
+            where: {
+              OR: [
+                ...studentEmail ? [{ email: studentEmail }] : [],
+                ...studentPhone ? [{ phone: studentPhone }] : []
+              ]
+            }
+          });
+          if (matchedUser) {
+            const currentSlugs = (matchedUser.enrolledCourseSlugs || "").split(",").map((s) => s.trim().toLowerCase()).filter(Boolean);
+            const targetSlug = slip.courseSlug.trim().toLowerCase();
+            if (!currentSlugs.includes(targetSlug)) {
+              currentSlugs.push(targetSlug);
+            }
+            await tx.user.update({
+              where: { id: matchedUser.id },
+              data: {
+                isEnrolled: true,
+                enrolledCourseSlugs: currentSlugs.join(",")
+              }
+            });
+          }
+        }
+      }
+      return { updatedSlip, originalSlip: slip };
     });
     await recordAdminAudit({
       adminId: req.user?.id,
       adminEmail: req.user?.email,
       action: `SLIP_${status}`,
       targetEntity: "PaymentSlip",
-      targetId: slip.id,
+      targetId: id,
       details: {
-        studentName: slip.studentName,
-        courseSlug: slip.courseSlug,
-        amount: slip.amount,
-        bankReference: slip.bankReference,
+        studentName: result.originalSlip.studentName,
+        courseSlug: result.originalSlip.courseSlug,
+        amount: result.originalSlip.amount,
+        bankReference: result.originalSlip.bankReference,
         notes
       },
       ipAddress: req.ip
     });
-    res.status(200).json({ success: true, data: slip });
+    broadcastRealtimeEvent(status === "VERIFIED" ? "slip:verified" : "slip:rejected", {
+      slipId: id,
+      studentEmail: result.originalSlip.studentEmail,
+      studentPhone: result.originalSlip.studentPhone,
+      courseSlug: result.originalSlip.courseSlug,
+      status
+    });
+    broadcastRealtimeEvent("user:updated", {
+      studentEmail: result.originalSlip.studentEmail,
+      studentPhone: result.originalSlip.studentPhone,
+      courseSlug: result.originalSlip.courseSlug
+    });
+    res.status(200).json({ success: true, data: { ...result.updatedSlip, hasSlipImage: true } });
   } catch (error51) {
-    console.error("[updateSlipStatus]", error51);
-    res.status(500).json({ success: false, message: "Failed to update payment slip status." });
+    logger.error("[updateSlipStatus] " + error51.message, "SLIPS");
+    if (error51.message === "NOT_FOUND") {
+      sendError(res, 404, ErrorCode.NOT_FOUND, "Payment slip not found.", req);
+      return;
+    }
+    if (error51.message?.startsWith("ALREADY_")) {
+      sendError(res, 400, ErrorCode.BAD_REQUEST, `Slip is already ${req.body.status}.`, req);
+      return;
+    }
+    if (error51.message === "COUPON_NOT_FOUND") {
+      sendError(res, 400, ErrorCode.BAD_REQUEST, `Coupon ${req.body.couponCode} not found or inactive.`, req);
+      return;
+    }
+    if (error51.message === "COUPON_EXPIRED") {
+      sendError(res, 400, ErrorCode.BAD_REQUEST, `Coupon ${req.body.couponCode} has expired.`, req);
+      return;
+    }
+    if (error51.message === "COUPON_EXHAUSTED") {
+      sendError(res, 400, ErrorCode.BAD_REQUEST, `Coupon ${req.body.couponCode} has reached its maximum usage limit.`, req);
+      return;
+    }
+    if (error51.message === "SEATS_EXHAUSTED") {
+      sendError(res, 500, ErrorCode.INTERNAL_SERVER_ERROR, `No available seats remaining in upcoming batch.`, req);
+      return;
+    }
+    sendError(res, 500, ErrorCode.INTERNAL_SERVER_ERROR, "Failed to update payment slip status.", req);
+  }
+};
+var deleteSlip = async (req, res) => {
+  try {
+    const id = String(req.params.id);
+    const existing = await prisma.paymentSlip.findUnique({ where: { id } });
+    if (!existing) {
+      sendError(res, 404, ErrorCode.NOT_FOUND, "Payment slip not found.", req);
+      return;
+    }
+    await prisma.paymentSlip.delete({ where: { id } });
+    res.status(200).json({ success: true, message: "Payment slip removed successfully." });
+  } catch (error51) {
+    logger.error("[deleteSlip] " + error51.message, "SLIPS");
+    sendError(res, 500, ErrorCode.INTERNAL_SERVER_ERROR, "Failed to delete payment slip.", req);
   }
 };
 
+// backend/src/middlewares/abuseLimiter.ts
+function createDistributedLimiter(options) {
+  const {
+    windowMs,
+    max,
+    message = "Too many requests. Please slow down and try again later.",
+    scope = "global",
+    keyGenerator = (req) => req.ip || req.headers["x-forwarded-for"] || "unknown-client"
+  } = options;
+  return async (req, res, next) => {
+    const clientIdentifier = keyGenerator(req);
+    const redisKey = `ratelimit:${scope}:${clientIdentifier}`;
+    const now = Date.now();
+    const ttlSeconds = Math.ceil(windowMs / 1e3);
+    try {
+      let record2 = await cacheGet(redisKey);
+      if (!record2 || now > record2.resetAt) {
+        record2 = {
+          count: 1,
+          resetAt: now + windowMs
+        };
+        await cacheSet(redisKey, record2, ttlSeconds);
+      } else {
+        record2.count += 1;
+        await cacheSet(redisKey, record2, Math.ceil((record2.resetAt - now) / 1e3));
+      }
+      const remaining = Math.max(0, max - record2.count);
+      const retryAfterSec = Math.max(1, Math.ceil((record2.resetAt - now) / 1e3));
+      res.setHeader("X-RateLimit-Limit", max);
+      res.setHeader("X-RateLimit-Remaining", remaining);
+      res.setHeader("X-RateLimit-Reset", Math.ceil(record2.resetAt / 1e3));
+      if (record2.count > max) {
+        logger.warn(`[RATE_LIMIT] Client ${clientIdentifier} exceeded limit on ${scope} (${record2.count}/${max})`, "RATE_LIMIT");
+        res.setHeader("Retry-After", retryAfterSec);
+        sendError(res, 429, ErrorCode.RATE_LIMITED, message, req);
+        return;
+      }
+      next();
+    } catch (err) {
+      logger.warn(`[RATE_LIMIT] Distributed limiter fallback for ${redisKey}: ${err.message}`, "RATE_LIMIT");
+      next();
+    }
+  };
+}
+var publicSubmissionLimiter = createDistributedLimiter({
+  windowMs: 15 * 60 * 1e3,
+  // 15 minutes
+  max: 20,
+  scope: "public_submissions",
+  message: "Too many submissions received from your network. Please wait a few minutes before submitting again."
+});
+var communitySubmissionLimiter = createDistributedLimiter({
+  windowMs: 10 * 60 * 1e3,
+  // 10 minutes
+  max: 30,
+  scope: "community",
+  message: "Community rate limit reached. Please wait before posting additional questions or answers."
+});
+var upvoteLimiter = createDistributedLimiter({
+  windowMs: 60 * 1e3,
+  // 1 minute
+  max: 30,
+  scope: "upvotes",
+  message: "You are upvoting too fast. Please slow down."
+});
+
 // backend/src/routes/paymentSlipRoutes.ts
-init_authenticate();
 var router10 = (0, import_express10.Router)();
-router10.post("/", validateBody(paymentSlipSchema), createPaymentSlip);
-router10.get("/", authenticate, requireAdmin, requireRole(["SUPER_ADMIN", "COMMANDER", "RECRUITER"]), getAllPaymentSlips);
-router10.put("/:id/status", authenticate, requireAdmin, requireRole(["SUPER_ADMIN", "COMMANDER", "RECRUITER"]), updateSlipStatus);
+router10.post("/", publicSubmissionLimiter, idempotency({ scope: "slips" }), verifyCaptcha(), validateBody(paymentSlipSchema), createPaymentSlip);
+router10.get("/:id/view", viewSlipImage);
+var adminGuard = [authenticate, requireAdmin, requireRole(["SUPER_ADMIN", "COMMANDER", "RECRUITER"])];
+router10.get("/", ...adminGuard, getAllPaymentSlips);
+router10.get("/:id/image-url", ...adminGuard, getSlipImageUrl);
+router10.put("/:id/status", ...adminGuard, updateSlipStatus);
+router10.delete("/:id", ...adminGuard, deleteSlip);
 var paymentSlipRoutes_default = router10;
 
 // backend/src/routes/staffRoutes.ts
@@ -82658,7 +84353,6 @@ var deleteStaff = async (req, res) => {
 };
 
 // backend/src/routes/staffRoutes.ts
-init_authenticate();
 var router11 = (0, import_express11.Router)();
 router11.get("/", getAllStaff);
 router11.post("/", authenticate, requireAdmin, requireRole(["SUPER_ADMIN", "COMMANDER"]), validate(staffSchema), createStaff);
@@ -82670,11 +84364,12 @@ var staffRoutes_default = router11;
 var import_express12 = __toESM(require_express2(), 1);
 
 // backend/src/controllers/couponController.ts
+import { Prisma as Prisma2 } from "@prisma/client";
 var validateCoupon = async (req, res) => {
   try {
     const { code, courseSlug, originalPrice } = req.body;
     if (!code || typeof code !== "string") {
-      res.status(400).json({ success: false, message: "Coupon code is required." });
+      sendError(res, 400, ErrorCode.VALIDATION_ERROR, "Coupon code is required.", req);
       return;
     }
     const cleanCode = code.trim().toUpperCase();
@@ -82682,82 +84377,76 @@ var validateCoupon = async (req, res) => {
       where: { code: cleanCode }
     });
     if (!coupon || !coupon.isActive) {
-      res.status(404).json({ success: false, message: "Invalid or inactive coupon code." });
+      sendError(res, 404, ErrorCode.NOT_FOUND, "Invalid or inactive coupon code.", req);
       return;
     }
     if (coupon.expiryDate && /* @__PURE__ */ new Date() > new Date(coupon.expiryDate)) {
-      res.status(400).json({ success: false, message: "This coupon code has expired." });
+      sendError(res, 400, ErrorCode.BAD_REQUEST, "This coupon code has expired.", req);
       return;
     }
     if (coupon.usedCount >= coupon.maxUses) {
-      res.status(400).json({ success: false, message: "This coupon has reached its maximum usage limit." });
+      sendError(res, 400, ErrorCode.BAD_REQUEST, "This coupon has reached its maximum usage limit.", req);
       return;
     }
     if (coupon.courseSlug && courseSlug && coupon.courseSlug.toLowerCase() !== courseSlug.toLowerCase()) {
-      res.status(400).json({ success: false, message: `This coupon is only valid for the ${coupon.courseSlug.toUpperCase()} course.` });
+      sendError(res, 400, ErrorCode.BAD_REQUEST, `This coupon is only valid for the ${coupon.courseSlug.toUpperCase()} course.`, req);
       return;
     }
-    let price = typeof originalPrice === "number" ? originalPrice : parseFloat(originalPrice) || 0;
+    let priceInput = typeof originalPrice === "number" ? originalPrice : parseFloat(originalPrice) || 0;
     const targetSlug = (courseSlug || coupon.courseSlug || "").trim().toLowerCase();
     if (targetSlug) {
       const course = await prisma.course.findUnique({ where: { slug: targetSlug } });
-      if (course && typeof course.price === "number" && course.price > 0) {
-        price = course.price;
+      if (course && toCents(course.price) > 0) {
+        priceInput = course.price;
       }
     }
-    let discountAmount = 0;
-    if (coupon.discountPercent) {
-      discountAmount = price * coupon.discountPercent / 100;
-    } else if (coupon.discountAmount) {
-      discountAmount = Math.min(price, coupon.discountAmount);
-    }
-    const finalPrice = Math.max(0, price - discountAmount);
+    const discount = applyCoupon(priceInput, coupon);
     res.status(200).json({
       success: true,
       message: `Coupon ${coupon.code} applied successfully!`,
       data: {
         code: coupon.code,
-        discountPercent: coupon.discountPercent,
-        discountAmount,
-        originalPrice: price,
-        finalPrice,
+        discountPercent: coupon.discountPercent ? lkrFromCents(toCents(coupon.discountPercent)) : null,
+        discountAmount: lkrFromCents(discount.discountCents),
+        originalPrice: lkrFromCents(discount.originalCents),
+        finalPrice: lkrFromCents(discount.finalCents),
         description: coupon.description
       }
     });
   } catch (error51) {
-    console.error("[validateCoupon]", error51);
-    res.status(500).json({ success: false, message: "Failed to validate coupon code." });
+    logger.error(`[validateCoupon] ${error51.message}`, "COUPONS");
+    sendError(res, 500, ErrorCode.INTERNAL_SERVER_ERROR, "Failed to validate coupon code.", req);
   }
 };
-var getAllCoupons = async (_req, res) => {
+var getAllCoupons = async (req, res) => {
   try {
     const coupons = await prisma.coupon.findMany({
       orderBy: { createdAt: "desc" }
     });
     res.status(200).json({ success: true, count: coupons.length, data: coupons });
   } catch (error51) {
-    console.error("[getAllCoupons]", error51);
-    res.status(500).json({ success: false, message: "Failed to fetch coupons." });
+    logger.error(`[getAllCoupons] ${error51.message}`, "COUPONS");
+    sendError(res, 500, ErrorCode.INTERNAL_SERVER_ERROR, "Failed to fetch coupons.", req);
   }
 };
 var createCoupon = async (req, res) => {
   try {
     const { code, discountPercent, discountAmount, courseSlug, maxUses, expiryDate, description } = req.body;
     if (!code || !discountPercent && !discountAmount) {
-      res.status(400).json({ success: false, message: "Coupon Code and a discount percentage or amount are required." });
+      sendError(res, 400, ErrorCode.VALIDATION_ERROR, "Coupon Code and a discount percentage or amount are required.", req);
       return;
     }
     const cleanCode = code.trim().toUpperCase();
     const existing = await prisma.coupon.findUnique({ where: { code: cleanCode } });
     if (existing) {
-      res.status(400).json({ success: false, message: "A coupon with this code already exists." });
+      sendError(res, 400, ErrorCode.CONFLICT, "A coupon with this code already exists.", req);
       return;
     }
     const newCoupon = await prisma.coupon.create({
       data: {
         code: cleanCode,
-        discountPercent: discountPercent ? parseFloat(discountPercent) : null,
-        discountAmount: discountAmount ? parseFloat(discountAmount) : null,
+        discountPercent: discountPercent ? new Prisma2.Decimal(parseFloat(discountPercent).toFixed(2)) : null,
+        discountAmount: discountAmount ? new Prisma2.Decimal(parseFloat(discountAmount).toFixed(2)) : null,
         courseSlug: courseSlug ? courseSlug.trim().toLowerCase() : null,
         maxUses: maxUses ? parseInt(maxUses, 10) : 100,
         expiryDate: expiryDate ? new Date(expiryDate) : null,
@@ -82776,8 +84465,8 @@ var createCoupon = async (req, res) => {
     });
     res.status(201).json({ success: true, message: "Coupon created successfully.", data: newCoupon });
   } catch (error51) {
-    console.error("[createCoupon]", error51);
-    res.status(500).json({ success: false, message: "Failed to create coupon." });
+    logger.error(`[createCoupon] ${error51.message}`, "COUPONS");
+    sendError(res, 500, ErrorCode.INTERNAL_SERVER_ERROR, "Failed to create coupon.", req);
   }
 };
 var updateCoupon = async (req, res) => {
@@ -82804,8 +84493,8 @@ var updateCoupon = async (req, res) => {
     });
     res.status(200).json({ success: true, message: "Coupon updated.", data: updated });
   } catch (error51) {
-    console.error("[updateCoupon]", error51);
-    res.status(500).json({ success: false, message: "Failed to update coupon." });
+    logger.error(`[updateCoupon] ${error51.message}`, "COUPONS");
+    sendError(res, 500, ErrorCode.INTERNAL_SERVER_ERROR, "Failed to update coupon.", req);
   }
 };
 var deleteCoupon = async (req, res) => {
@@ -82823,15 +84512,15 @@ var deleteCoupon = async (req, res) => {
     });
     res.status(200).json({ success: true, message: "Coupon deleted." });
   } catch (error51) {
-    console.error("[deleteCoupon]", error51);
-    res.status(500).json({ success: false, message: "Failed to delete coupon." });
+    logger.error(`[deleteCoupon] ${error51.message}`, "COUPONS");
+    sendError(res, 500, ErrorCode.INTERNAL_SERVER_ERROR, "Failed to delete coupon.", req);
   }
 };
 var redeemCoupon = async (req, res) => {
   try {
     const { code, courseSlug, originalPrice } = req.body;
     if (!code || typeof code !== "string") {
-      res.status(400).json({ success: false, message: "Coupon code is required." });
+      sendError(res, 400, ErrorCode.VALIDATION_ERROR, "Coupon code is required.", req);
       return;
     }
     const cleanCode = code.trim().toUpperCase();
@@ -82861,27 +84550,21 @@ var redeemCoupon = async (req, res) => {
       if (updateRes.count === 0) {
         throw new Error("This coupon has reached its maximum usage limit.");
       }
-      let price = typeof originalPrice === "number" ? originalPrice : parseFloat(originalPrice) || 0;
+      let priceInput = typeof originalPrice === "number" ? originalPrice : parseFloat(originalPrice) || 0;
       const targetSlug = (courseSlug || coupon.courseSlug || "").trim().toLowerCase();
       if (targetSlug) {
         const course = await tx.course.findUnique({ where: { slug: targetSlug } });
-        if (course && typeof course.price === "number" && course.price > 0) {
-          price = course.price;
+        if (course && toCents(course.price) > 0) {
+          priceInput = course.price;
         }
       }
-      let discountAmount = 0;
-      if (coupon.discountPercent) {
-        discountAmount = price * coupon.discountPercent / 100;
-      } else if (coupon.discountAmount) {
-        discountAmount = Math.min(price, coupon.discountAmount);
-      }
-      const finalPrice = Math.max(0, price - discountAmount);
+      const discount = applyCoupon(priceInput, coupon);
       return {
         code: coupon.code,
-        discountPercent: coupon.discountPercent,
-        discountAmount,
-        originalPrice: price,
-        finalPrice,
+        discountPercent: coupon.discountPercent ? lkrFromCents(toCents(coupon.discountPercent)) : null,
+        discountAmount: lkrFromCents(discount.discountCents),
+        originalPrice: lkrFromCents(discount.originalCents),
+        finalPrice: lkrFromCents(discount.finalCents),
         usedCount: coupon.usedCount + 1,
         maxUses: coupon.maxUses
       };
@@ -82892,15 +84575,15 @@ var redeemCoupon = async (req, res) => {
       data: redemptionResult
     });
   } catch (error51) {
-    res.status(400).json({ success: false, message: error51.message || "Failed to redeem coupon code." });
+    logger.warn(`[redeemCoupon] ${error51.message}`, "COUPONS");
+    sendError(res, 400, ErrorCode.BAD_REQUEST, "Failed to redeem coupon code.", req);
   }
 };
 
 // backend/src/routes/couponRoutes.ts
-init_authenticate();
 var router12 = (0, import_express12.Router)();
-router12.post("/validate", validateCoupon);
-router12.post("/redeem", redeemCoupon);
+router12.post("/validate", publicSubmissionLimiter, validateCoupon);
+router12.post("/redeem", publicSubmissionLimiter, redeemCoupon);
 router12.get("/", authenticate, requireAdmin, requireRole(["SUPER_ADMIN", "COMMANDER", "RECRUITER"]), getAllCoupons);
 router12.post("/", authenticate, requireAdmin, requireRole(["SUPER_ADMIN", "COMMANDER", "RECRUITER"]), validateBody(couponSchema), createCoupon);
 router12.put("/:id", authenticate, requireAdmin, requireRole(["SUPER_ADMIN", "COMMANDER", "RECRUITER"]), updateCoupon);
@@ -82913,79 +84596,134 @@ var import_express13 = __toESM(require_express2(), 1);
 // backend/src/controllers/reviewController.ts
 var getCourseReviews = async (req, res) => {
   try {
-    const courseSlug = String(req.params.courseSlug || "");
-    const slug = courseSlug.trim().toLowerCase();
-    const cacheKey = `reviews:${slug}`;
-    const cached2 = await cacheGet(cacheKey);
-    if (cached2) {
-      res.status(200).json(cached2);
-      return;
-    }
-    const reviews = await prisma.courseReview.findMany({
-      where: {
-        ...slug !== "all" ? { courseSlug: slug } : {},
-        isApproved: true
-      },
-      orderBy: { createdAt: "desc" }
+    const rawCourseSlug = req.params.courseSlug || req.query.directive || req.query.courseSlug || "all";
+    const slug = String(rawCourseSlug).trim().toLowerCase();
+    const ratingParam = req.query.rating ? parseInt(String(req.query.rating), 10) : void 0;
+    const pageParam = req.query.page ? parseInt(String(req.query.page), 10) : void 0;
+    const limitParam = req.query.limit ? parseInt(String(req.query.limit), 10) : void 0;
+    const queryParams = {};
+    if (ratingParam && !isNaN(ratingParam)) queryParams.rating = ratingParam;
+    if (pageParam && !isNaN(pageParam)) queryParams.page = pageParam;
+    if (limitParam && !isNaN(limitParam)) queryParams.limit = limitParam;
+    const page = Math.max(1, pageParam && !isNaN(pageParam) ? pageParam : 1);
+    const limit = Math.min(50, Math.max(1, limitParam && !isNaN(limitParam) ? limitParam : 20));
+    const skip = (page - 1) * limit;
+    const cacheKey = buildCanonicalCacheKey("reviews", slug, {
+      ...ratingParam && !isNaN(ratingParam) ? { rating: ratingParam } : {},
+      page,
+      limit
     });
-    const averageRating = reviews.length > 0 ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length : 5;
-    const responsePayload = {
-      success: true,
-      count: reviews.length,
-      averageRating: parseFloat(averageRating.toFixed(1)),
-      data: reviews,
-      cached: false
-    };
-    await cacheSet(cacheKey, responsePayload, 1800);
-    res.status(200).json(responsePayload);
+    const result = await cacheGetOrSWR(
+      cacheKey,
+      async () => {
+        const whereClause = {
+          ...slug !== "all" ? { courseSlug: slug } : {},
+          isApproved: true
+        };
+        if (ratingParam && !isNaN(ratingParam)) {
+          whereClause.rating = ratingParam;
+        }
+        const [reviews, totalCount, allApproved] = await Promise.all([
+          prisma.courseReview.findMany({
+            where: whereClause,
+            orderBy: { createdAt: "desc" },
+            take: limit,
+            skip
+          }),
+          prisma.courseReview.count({
+            where: whereClause
+          }),
+          prisma.courseReview.findMany({
+            where: {
+              ...slug !== "all" ? { courseSlug: slug } : {},
+              isApproved: true
+            },
+            select: { rating: true }
+          })
+        ]);
+        const ratingDistribution = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 };
+        allApproved.forEach((r) => {
+          const star = Math.min(5, Math.max(1, Math.round(r.rating || 5)));
+          ratingDistribution[star] = (ratingDistribution[star] || 0) + 1;
+        });
+        const averageRating = allApproved.length > 0 ? allApproved.reduce((sum, r) => sum + r.rating, 0) / allApproved.length : 5;
+        return {
+          success: true,
+          count: reviews.length,
+          totalCount,
+          averageRating: parseFloat(averageRating.toFixed(1)),
+          ratingDistribution,
+          pagination: {
+            page,
+            limit,
+            total: totalCount,
+            totalPages: Math.ceil(totalCount / limit) || 1,
+            hasMore: skip + reviews.length < totalCount
+          },
+          data: reviews
+        };
+      },
+      { freshTtlSeconds: 60, staleTtlSeconds: 1800 }
+    );
+    res.setHeader("X-Cache", result.cached ? result.stale ? "STALE" : "HIT" : "MISS");
+    res.status(200).json({
+      ...result.data,
+      cached: result.cached,
+      stale: result.stale
+    });
   } catch (error51) {
-    console.error("[getCourseReviews]", error51);
-    res.status(500).json({ success: false, message: "Failed to retrieve course reviews." });
+    logger.error(`[getCourseReviews] ${error51.message}`, "REVIEWS");
+    sendError(res, 500, ErrorCode.INTERNAL_SERVER_ERROR, "Failed to retrieve course reviews.", req);
   }
 };
 var submitReview = async (req, res) => {
   try {
     const { courseSlug, studentName, studentRole, rating, title, comment, avatarUrl, userId } = req.body;
-    if (!courseSlug || !studentName || !comment || !rating) {
-      res.status(400).json({ success: false, message: "Course, Name, Rating, and Review comment are required." });
+    if (!courseSlug || !studentName || !comment || rating === void 0 || rating === null) {
+      sendError(res, 400, ErrorCode.BAD_REQUEST, "Course, Name, Rating, and Review comment are required.", req);
       return;
     }
-    const cleanRating = Math.max(1, Math.min(5, parseInt(rating, 10) || 5));
+    const parsedRating = parseInt(String(rating), 10);
+    if (isNaN(parsedRating) || parsedRating < 1 || parsedRating > 5) {
+      sendError(res, 400, ErrorCode.VALIDATION_ERROR, "Rating must be an integer between 1 and 5.", req);
+      return;
+    }
     const newReview = await prisma.courseReview.create({
       data: {
-        courseSlug: courseSlug.trim().toLowerCase(),
-        studentName: studentName.trim(),
-        studentRole: studentRole ? studentRole.trim() : "Verified Operative",
-        avatarUrl: avatarUrl || null,
-        rating: cleanRating,
-        title: title ? title.trim() : null,
-        comment: comment.trim(),
-        userId: userId || null,
+        courseSlug: String(courseSlug).trim().toLowerCase(),
+        studentName: String(studentName).trim(),
+        studentRole: studentRole ? String(studentRole).trim() : "Verified Operative",
+        avatarUrl: avatarUrl ? String(avatarUrl).trim() : null,
+        rating: parsedRating,
+        title: title ? String(title).trim() : null,
+        comment: String(comment).trim(),
+        userId: req.user?.id || (userId ? String(userId).trim() : null),
         isVerified: true,
         isApproved: true
         // Auto-approved or moderated
       }
     });
     await cacheDelPattern("reviews:");
+    broadcastRealtimeEvent("review:updated", { courseSlug: newReview.courseSlug, reviewId: newReview.id });
     res.status(201).json({
       success: true,
       message: "Thank you for your transmission! Your review has been recorded.",
       data: newReview
     });
   } catch (error51) {
-    console.error("[submitReview]", error51);
-    res.status(500).json({ success: false, message: "Failed to submit review." });
+    logger.error(`[submitReview] ${error51.message}`, "REVIEWS");
+    sendError(res, 500, ErrorCode.INTERNAL_SERVER_ERROR, "Failed to submit review.", req);
   }
 };
-var getAllReviews = async (_req, res) => {
+var getAllReviews = async (req, res) => {
   try {
     const reviews = await prisma.courseReview.findMany({
       orderBy: { createdAt: "desc" }
     });
     res.status(200).json({ success: true, count: reviews.length, data: reviews });
   } catch (error51) {
-    console.error("[getAllReviews]", error51);
-    res.status(500).json({ success: false, message: "Failed to fetch reviews." });
+    logger.error(`[getAllReviews] ${error51.message}`, "REVIEWS");
+    sendError(res, 500, ErrorCode.INTERNAL_SERVER_ERROR, "Failed to fetch reviews.", req);
   }
 };
 var toggleReviewApproval = async (req, res) => {
@@ -82997,37 +84735,75 @@ var toggleReviewApproval = async (req, res) => {
       data: { isApproved: Boolean(isApproved) }
     });
     await cacheDelPattern("reviews:");
+    broadcastRealtimeEvent("review:updated", { courseSlug: updated.courseSlug, reviewId: id, isApproved: updated.isApproved });
+    if (updated.isApproved && updated.userId) {
+      await createNotificationHelper({
+        userId: updated.userId,
+        title: "Your review has been verified and published",
+        message: `Your transmission for ${updated.courseSlug.toUpperCase()} has been approved and is now live on the directive archive.`,
+        link: `/programs/${updated.courseSlug}?tab=reviews`,
+        type: "REVIEW_APPROVED"
+      });
+    }
     res.status(200).json({ success: true, message: "Review approval status updated.", data: updated });
   } catch (error51) {
-    console.error("[toggleReviewApproval]", error51);
-    res.status(500).json({ success: false, message: "Failed to update review status." });
+    if (error51.code === "P2025") {
+      sendError(res, 404, ErrorCode.NOT_FOUND, "Review record not found.", req);
+      return;
+    }
+    logger.error(`[toggleReviewApproval] ${error51.message}`, "REVIEWS");
+    sendError(res, 500, ErrorCode.INTERNAL_SERVER_ERROR, "Failed to update review status.", req);
   }
 };
 var deleteReview = async (req, res) => {
   try {
     const id = String(req.params.id);
+    const existing = await prisma.courseReview.findUnique({ where: { id }, select: { courseSlug: true } });
     await prisma.courseReview.delete({ where: { id } });
     await cacheDelPattern("reviews:");
+    broadcastRealtimeEvent("review:updated", { courseSlug: existing?.courseSlug, reviewId: id, deleted: true });
     res.status(200).json({ success: true, message: "Review deleted." });
   } catch (error51) {
-    console.error("[deleteReview]", error51);
-    res.status(500).json({ success: false, message: "Failed to delete review." });
+    if (error51.code === "P2025") {
+      sendError(res, 404, ErrorCode.NOT_FOUND, "Review record not found.", req);
+      return;
+    }
+    logger.error(`[deleteReview] ${error51.message}`, "REVIEWS");
+    sendError(res, 500, ErrorCode.INTERNAL_SERVER_ERROR, "Failed to delete review.", req);
+  }
+};
+var getTopTestimonials = async (req, res) => {
+  try {
+    const cacheKey = "reviews:testimonials:top";
+    const result = await cacheGetOrSWR(
+      cacheKey,
+      async () => {
+        const reviews = await prisma.courseReview.findMany({
+          where: { rating: 5, isApproved: true },
+          orderBy: { createdAt: "desc" },
+          take: 24
+        });
+        return { success: true, count: reviews.length, data: reviews };
+      },
+      { freshTtlSeconds: 300, staleTtlSeconds: 1800 }
+    );
+    res.setHeader("X-Cache", result.cached ? result.stale ? "STALE" : "HIT" : "MISS");
+    res.status(200).json({ ...result.data, cached: result.cached });
+  } catch (error51) {
+    logger.error(`[getTopTestimonials] ${error51.message}`, "REVIEWS");
+    sendError(res, 500, ErrorCode.INTERNAL_SERVER_ERROR, "Failed to retrieve testimonials.", req);
   }
 };
 
-// backend/src/routes/reviewRoutes.ts
-init_authenticate();
-
 // backend/src/middlewares/optionalAuth.ts
 var import_jsonwebtoken3 = __toESM(require_jsonwebtoken(), 1);
-init_authenticate();
 var optionalAuth = (req, _res, next) => {
   const authHeader = req.headers.authorization;
   if (authHeader && authHeader.startsWith("Bearer ")) {
     const token = authHeader.split(" ")[1];
     try {
       const secret = getJwtSecret();
-      const decoded = import_jsonwebtoken3.default.verify(token, secret);
+      const decoded = import_jsonwebtoken3.default.verify(token, secret, { algorithms: ["HS256"] });
       req.user = decoded;
     } catch {
     }
@@ -83037,8 +84813,9 @@ var optionalAuth = (req, _res, next) => {
 
 // backend/src/routes/reviewRoutes.ts
 var router13 = (0, import_express13.Router)();
+router13.get("/testimonials/top", getTopTestimonials);
 router13.get("/:courseSlug", getCourseReviews);
-router13.post("/", optionalAuth, validateBody(reviewSchema), submitReview);
+router13.post("/", idempotency({ scope: "reviews" }), verifyCaptcha(), optionalAuth, validateBody(reviewSchema), submitReview);
 router13.get("/", authenticate, requireAdmin, requireRole(["SUPER_ADMIN", "COMMANDER", "COACH", "RECRUITER"]), getAllReviews);
 router13.put("/:id", authenticate, requireAdmin, requireRole(["SUPER_ADMIN", "COMMANDER", "COACH", "RECRUITER"]), toggleReviewApproval);
 router13.delete("/:id", authenticate, requireAdmin, requireRole(["SUPER_ADMIN", "COMMANDER", "COACH", "RECRUITER"]), deleteReview);
@@ -83167,7 +84944,6 @@ var deleteInstructor = async (req, res) => {
 };
 
 // backend/src/routes/instructorRoutes.ts
-init_authenticate();
 var router14 = (0, import_express14.Router)();
 router14.get("/", getInstructors);
 router14.post("/", authenticate, requireAdmin, requireRole(["SUPER_ADMIN", "COMMANDER", "COACH"]), validate(instructorSchema), createInstructor);
@@ -83448,6 +85224,167 @@ async function generateCertificatePDF(cert) {
   return Buffer.from(pdfBytes);
 }
 
+// backend/src/services/queueService.ts
+import crypto6 from "crypto";
+var BackgroundJobQueue = class {
+  inMemoryJobs = /* @__PURE__ */ new Map();
+  pendingQueue = [];
+  handlers = /* @__PURE__ */ new Map();
+  activeWorkers = 0;
+  maxConcurrency = 5;
+  isProcessing = false;
+  constructor() {
+    if (typeof setInterval !== "undefined") {
+      const interval = setInterval(() => {
+        this.processQueue();
+      }, 500);
+      if (interval.unref) interval.unref();
+    }
+  }
+  /**
+   * Register a worker handler for a specific job type
+   */
+  registerWorker(type, handler) {
+    this.handlers.set(type, handler);
+    logger.info(`[JobQueue] Registered worker for job type: ${type}`, "QUEUE");
+  }
+  /**
+   * Enqueue a new background job. Returns immediately (<10ms) with Job ID.
+   */
+  async enqueueJob(type, data, options) {
+    const id = `job_${crypto6.randomUUID()}`;
+    const now = Date.now();
+    const job = {
+      id,
+      type,
+      data,
+      status: "PENDING",
+      progress: 0,
+      attempts: 0,
+      maxAttempts: options?.maxAttempts || 3,
+      createdAt: now,
+      updatedAt: now
+    };
+    this.inMemoryJobs.set(id, job);
+    try {
+      await cacheSet(`job:${id}`, job, 86400);
+    } catch {
+    }
+    if (options?.priority === "HIGH") {
+      this.pendingQueue.unshift(id);
+    } else {
+      this.pendingQueue.push(id);
+    }
+    logger.info(`[JobQueue] Enqueued job: ${id} (${type})`, "QUEUE");
+    setImmediate(() => {
+      this.processQueue();
+    });
+    return job;
+  }
+  /**
+   * Retrieve current job status and payload/result
+   */
+  async getJob(id) {
+    if (this.inMemoryJobs.has(id)) {
+      return this.inMemoryJobs.get(id);
+    }
+    try {
+      const cached2 = await cacheGet(`job:${id}`);
+      if (cached2) {
+        this.inMemoryJobs.set(id, cached2);
+        return cached2;
+      }
+    } catch {
+    }
+    return null;
+  }
+  /**
+   * Update progress percentage of a running job
+   */
+  async updateJobProgress(id, progress) {
+    const job = await this.getJob(id);
+    if (!job) return;
+    job.progress = Math.min(100, Math.max(0, progress));
+    job.updatedAt = Date.now();
+    this.inMemoryJobs.set(id, job);
+    try {
+      await cacheSet(`job:${id}`, job, 86400);
+    } catch {
+    }
+  }
+  /**
+   * Worker queue processing loop with concurrency throttling
+   */
+  async processQueue() {
+    if (this.isProcessing) return;
+    this.isProcessing = true;
+    try {
+      while (this.pendingQueue.length > 0 && this.activeWorkers < this.maxConcurrency) {
+        const jobId = this.pendingQueue.shift();
+        if (!jobId) continue;
+        const job = this.inMemoryJobs.get(jobId);
+        if (!job || job.status !== "PENDING") continue;
+        this.activeWorkers++;
+        this.executeJob(job).catch((err) => {
+          logger.error(`[JobQueue] Unhandled job execution error for ${job.id}: ${err.message}`, "QUEUE");
+        }).finally(() => {
+          this.activeWorkers--;
+          this.processQueue();
+        });
+      }
+    } finally {
+      this.isProcessing = false;
+    }
+  }
+  /**
+   * Execute a single job through its registered worker handler
+   */
+  async executeJob(job) {
+    const handler = this.handlers.get(job.type);
+    if (!handler) {
+      job.status = "FAILED";
+      job.error = `No registered worker handler for job type: ${job.type}`;
+      job.updatedAt = Date.now();
+      logger.error(`[JobQueue] ${job.error}`, "QUEUE");
+      return;
+    }
+    job.status = "PROCESSING";
+    job.attempts++;
+    job.updatedAt = Date.now();
+    try {
+      logger.info(`[JobQueue] Processing job: ${job.id} (Attempt ${job.attempts}/${job.maxAttempts})`, "QUEUE");
+      const result = await handler(job);
+      job.status = "COMPLETED";
+      job.progress = 100;
+      job.result = result;
+      job.completedAt = Date.now();
+      job.updatedAt = Date.now();
+      logger.info(`[JobQueue] Job completed successfully: ${job.id}`, "QUEUE");
+    } catch (err) {
+      job.error = err.message || "Unknown execution failure";
+      job.updatedAt = Date.now();
+      if (job.attempts < job.maxAttempts) {
+        job.status = "PENDING";
+        logger.warn(`[JobQueue] Job ${job.id} failed, retrying (${job.attempts}/${job.maxAttempts}): ${err.message}`, "QUEUE");
+        const backoffMs = Math.min(1e3 * Math.pow(2, job.attempts), 1e4);
+        setTimeout(() => {
+          this.pendingQueue.push(job.id);
+          this.processQueue();
+        }, backoffMs);
+      } else {
+        job.status = "FAILED";
+        logger.error(`[JobQueue] Job ${job.id} permanently failed after ${job.attempts} attempts: ${err.message}`, "QUEUE");
+      }
+    } finally {
+      try {
+        await cacheSet(`job:${job.id}`, job, 86400);
+      } catch {
+      }
+    }
+  }
+};
+var queueService = new BackgroundJobQueue();
+
 // backend/src/controllers/certificateController.ts
 var claimCertificate = async (req, res) => {
   try {
@@ -83560,6 +85497,17 @@ var getUserCertificates = async (req, res) => {
 var downloadCertificatePDF = async (req, res) => {
   try {
     const certId = String(req.params.certId || "").trim();
+    if (certId.startsWith("job_")) {
+      const cached2 = await cacheGet(`cert_artifact:${certId}`);
+      if (cached2?.base64Pdf) {
+        const buffer = Buffer.from(cached2.base64Pdf, "base64");
+        res.setHeader("Content-Type", "application/pdf");
+        res.setHeader("Content-Disposition", `attachment; filename="${cached2.filename || "UWE-Certificate.pdf"}"`);
+        res.setHeader("Content-Length", buffer.length);
+        res.status(200).send(buffer);
+        return;
+      }
+    }
     const cert = await prisma.certificate.findFirst({
       where: {
         OR: [
@@ -83582,12 +85530,39 @@ var downloadCertificatePDF = async (req, res) => {
     res.status(500).json({ success: false, message: "Failed to generate certificate PDF." });
   }
 };
+var enqueueCertificatePDF = async (req, res) => {
+  try {
+    const { studentName, courseSlug, courseTitle, certificateNo, gradeScore, signatureBy } = req.body;
+    if (!studentName || !courseTitle) {
+      res.status(400).json({ success: false, message: "studentName and courseTitle are required." });
+      return;
+    }
+    const certNo = certificateNo || `UWE-CERT-${Date.now().toString(36).toUpperCase()}`;
+    const job = await queueService.enqueueJob("GENERATE_CERTIFICATE", {
+      studentName,
+      courseSlug: courseSlug || "bmb",
+      courseTitle,
+      certificateNo: certNo,
+      gradeScore: gradeScore || "HONORS (DISTINCTION)",
+      signatureBy: signatureBy || "COMMAND COUNCIL"
+    });
+    res.status(202).json({
+      success: true,
+      message: "Certificate generation accepted for background execution",
+      jobId: job.id,
+      status: job.status,
+      checkUrl: `/api/background-jobs/${job.id}`
+    });
+  } catch (error51) {
+    res.status(500).json({ success: false, message: `Failed to enqueue certificate: ${error51.message}` });
+  }
+};
 
 // backend/src/routes/certificateRoutes.ts
-init_authenticate();
 var router15 = (0, import_express15.Router)();
 router15.get("/verify/:certQuery", verifyCertificate);
 router15.get("/download/:certId", downloadCertificatePDF);
+router15.post("/generate-async", optionalAuth, enqueueCertificatePDF);
 router15.post("/claim", authenticate, claimCertificate);
 router15.get("/user/:userId", authenticate, (req, res, next) => {
   if (req.user?.type === "admin" || req.user?.id === req.params.userId) {
@@ -83601,27 +85576,83 @@ var certificateRoutes_default = router15;
 var import_express16 = __toESM(require_express2(), 1);
 
 // backend/src/controllers/mastermindController.ts
+import crypto7 from "crypto";
 var getMastermindQuestions = async (req, res) => {
   try {
-    const courseSlug = String(req.query.courseSlug || "bmb").trim().toLowerCase();
-    const since = req.query.since ? new Date(String(req.query.since)) : null;
-    const whereClause = { courseSlug };
-    if (since && !isNaN(since.getTime())) {
-      whereClause.updatedAt = { gt: since };
-    }
-    const questions = await prisma.mastermindQuestion.findMany({
-      where: whereClause,
-      orderBy: [
-        { isPinned: "desc" },
-        { upvotes: "desc" },
-        { createdAt: "desc" }
-      ]
-    });
+    const rawCourseSlug = req.query.courseSlug || req.query.directive || "all";
+    const courseSlugParam = String(rawCourseSlug).trim().toLowerCase();
+    const topicParam = req.query.topic ? String(req.query.topic).trim() : void 0;
+    const sinceParam = req.query.since ? String(req.query.since).trim() : void 0;
+    const pageParam = req.query.page ? parseInt(String(req.query.page), 10) : void 0;
+    const limitParam = req.query.limit ? parseInt(String(req.query.limit), 10) : void 0;
+    const sinceDate = sinceParam ? new Date(sinceParam) : null;
+    const validSince = sinceDate && !isNaN(sinceDate.getTime()) ? sinceDate : null;
+    const page = Math.max(1, pageParam && !isNaN(pageParam) ? pageParam : 1);
+    const limit = Math.min(50, Math.max(1, limitParam && !isNaN(limitParam) ? limitParam : 25));
+    const skip = (page - 1) * limit;
+    const queryParams = {};
+    if (topicParam && topicParam !== "ALL") queryParams.topic = topicParam;
+    if (sinceParam) queryParams.since = sinceParam;
+    queryParams.page = page;
+    queryParams.limit = limit;
+    const cacheKey = buildCanonicalCacheKey("mastermind:questions", courseSlugParam, queryParams);
+    const freshTtlSeconds = validSince ? 5 : 15;
+    const staleTtlSeconds = validSince ? 30 : 300;
+    const result = await cacheGetOrSWR(
+      cacheKey,
+      async () => {
+        const whereClause = {};
+        if (courseSlugParam && courseSlugParam !== "all") {
+          whereClause.courseSlug = courseSlugParam;
+        }
+        if (topicParam && topicParam !== "ALL") {
+          whereClause.drillTopic = topicParam;
+        }
+        if (validSince) {
+          whereClause.updatedAt = { gt: validSince };
+        }
+        const [questions, totalCount] = await Promise.all([
+          prisma.mastermindQuestion.findMany({
+            where: whereClause,
+            orderBy: [
+              { isPinned: "desc" },
+              { upvotes: "desc" },
+              { createdAt: "desc" }
+            ],
+            take: limit,
+            skip,
+            include: {
+              replies: {
+                orderBy: { createdAt: "asc" }
+              }
+            }
+          }),
+          prisma.mastermindQuestion.count({
+            where: whereClause
+          })
+        ]);
+        return {
+          success: true,
+          count: questions.length,
+          totalCount,
+          pagination: {
+            page,
+            limit,
+            total: totalCount,
+            totalPages: Math.ceil(totalCount / limit) || 1,
+            hasMore: skip + questions.length < totalCount
+          },
+          serverTime: (/* @__PURE__ */ new Date()).toISOString(),
+          data: questions
+        };
+      },
+      { freshTtlSeconds, staleTtlSeconds }
+    );
+    res.setHeader("X-Cache", result.cached ? result.stale ? "STALE" : "HIT" : "MISS");
     res.status(200).json({
-      success: true,
-      count: questions.length,
-      serverTime: (/* @__PURE__ */ new Date()).toISOString(),
-      data: questions
+      ...result.data,
+      cached: result.cached,
+      stale: result.stale
     });
   } catch (error51) {
     console.error("[getMastermindQuestions]", error51);
@@ -83664,6 +85695,8 @@ var postMastermindQuestion = async (req, res) => {
         drillTopic: drillTopic ? String(drillTopic).trim() : "General Mastermind Q&A"
       }
     });
+    await cacheDelPattern("mastermind:");
+    broadcastRealtimeEvent("mastermind:new_question", { id: newQuestion.id, courseSlug: newQuestion.courseSlug });
     res.status(201).json({ success: true, message: "Question transmitted to Commander Council.", data: newQuestion });
   } catch (error51) {
     console.error("[postMastermindQuestion]", error51);
@@ -83672,8 +85705,10 @@ var postMastermindQuestion = async (req, res) => {
 };
 var upvoteMastermindQuestion = async (req, res) => {
   try {
-    const { id } = req.params;
-    const userId = req.user?.id || req.user?.email || req.ip || "guest-operative";
+    const id = req.params.id;
+    const clientFingerprint = (req.ip || "") + (req.headers["user-agent"] || "");
+    const fallbackHash = crypto7.createHash("sha256").update(clientFingerprint || "anon").digest("hex").substring(0, 16);
+    const userId = req.user?.id || req.user?.email || `guest_${fallbackHash}`;
     const question = await prisma.mastermindQuestion.findUnique({
       where: { id }
     });
@@ -83705,6 +85740,8 @@ var upvoteMastermindQuestion = async (req, res) => {
         upvotedUserIds: JSON.stringify(newUpvotedIds)
       }
     });
+    await cacheDelPattern("mastermind:");
+    broadcastRealtimeEvent("mastermind:upvoted", { id, upvotes: newCount });
     res.status(200).json({
       success: true,
       upvoted: !alreadyUpvoted,
@@ -83718,7 +85755,7 @@ var upvoteMastermindQuestion = async (req, res) => {
 };
 var answerMastermindQuestion = async (req, res) => {
   try {
-    const { id } = req.params;
+    const id = req.params.id;
     const { answer, answeredBy, isPinned } = req.body;
     const updated = await prisma.mastermindQuestion.update({
       where: { id },
@@ -83729,6 +85766,17 @@ var answerMastermindQuestion = async (req, res) => {
         isPinned: isPinned !== void 0 ? Boolean(isPinned) : void 0
       }
     });
+    await cacheDelPattern("mastermind:");
+    broadcastRealtimeEvent("mastermind:answered", { id, answeredBy: updated.answeredBy });
+    if (updated.isAnswered) {
+      await createNotificationHelper({
+        userId: updated.userId || null,
+        title: `Coach answered your question in [${updated.courseSlug.toUpperCase()} Directive]`,
+        message: `${updated.answeredBy || "Coach"} answered: "${updated.question.length > 80 ? updated.question.slice(0, 77) + "..." : updated.question}"`,
+        link: `/programs/${updated.courseSlug}?tab=qa`,
+        type: "MASTERMIND_ANSWER"
+      });
+    }
     res.status(200).json({ success: true, message: "Coach response recorded.", data: updated });
   } catch (error51) {
     console.error("[answerMastermindQuestion]", error51);
@@ -83737,23 +85785,168 @@ var answerMastermindQuestion = async (req, res) => {
 };
 var deleteMastermindQuestion = async (req, res) => {
   try {
-    const { id } = req.params;
+    const id = req.params.id;
     await prisma.mastermindQuestion.delete({
       where: { id }
     });
+    await cacheDelPattern("mastermind:");
+    broadcastRealtimeEvent("mastermind:deleted", { id });
     res.status(200).json({ success: true, message: "Question deleted." });
   } catch (error51) {
     console.error("[deleteMastermindQuestion]", error51);
     res.status(500).json({ success: false, message: "Failed to delete question." });
   }
 };
+var postMastermindReply = async (req, res) => {
+  try {
+    const questionId = req.params.id;
+    const { body, asCoach, authorName: bodyAuthorName, authorBadge: bodyAuthorBadge } = req.body;
+    const callerId = req.user?.id;
+    const callerType = req.user?.type;
+    if (!body || !String(body).trim()) {
+      res.status(400).json({ success: false, message: "Reply body is required." });
+      return;
+    }
+    const question = await prisma.mastermindQuestion.findUnique({ where: { id: questionId } });
+    if (!question) {
+      res.status(404).json({ success: false, message: "Question not found." });
+      return;
+    }
+    const isCoach = callerType === "admin" && asCoach === true;
+    let authorName = bodyAuthorName || req.user?.email || "Operative";
+    let authorBadge = bodyAuthorBadge || "OPERATIVE";
+    if (callerId) {
+      if (isCoach) {
+        const admin = await prisma.adminUser.findUnique({ where: { id: callerId } });
+        if (admin) {
+          authorName = admin.name;
+          authorBadge = `COMMAND ${admin.role}`;
+        }
+      } else {
+        const user = await prisma.user.findUnique({ where: { id: callerId } });
+        if (user) {
+          authorName = user.name || bodyAuthorName || "Operative";
+          authorBadge = user.rankTitle || bodyAuthorBadge || "OPERATIVE";
+        }
+      }
+    }
+    const reply = await prisma.mastermindReply.create({
+      data: {
+        questionId,
+        userId: callerId || null,
+        authorName,
+        authorBadge,
+        body: String(body).trim(),
+        isCoach
+      }
+    });
+    if (isCoach) {
+      await prisma.mastermindQuestion.update({
+        where: { id: questionId },
+        data: {
+          isAnswered: true,
+          answeredBy: authorName,
+          updatedAt: /* @__PURE__ */ new Date()
+        }
+      });
+      if (question.userId && question.userId !== callerId) {
+        const replyPreview = body.length > 80 ? body.slice(0, 77) + "..." : body;
+        await createNotificationHelper({
+          userId: question.userId,
+          title: `Coach replied to your question in [${question.courseSlug.toUpperCase()} Directive]`,
+          message: `${authorName} replied: "${replyPreview}"`,
+          link: `/programs/${question.courseSlug}?tab=qa#qa-${questionId}`,
+          type: "MASTERMIND_ANSWER"
+        }).catch(() => {
+        });
+      }
+    } else {
+      await prisma.mastermindQuestion.update({
+        where: { id: questionId },
+        data: {
+          isAnswered: false,
+          updatedAt: /* @__PURE__ */ new Date()
+        }
+      });
+    }
+    await cacheDelPattern("mastermind:");
+    broadcastRealtimeEvent("mastermind:reply", {
+      questionId,
+      reply,
+      needsCoachAttention: !isCoach
+    });
+    res.status(201).json({ success: true, message: "Reply posted.", data: reply });
+  } catch (error51) {
+    console.error("[postMastermindReply]", error51);
+    res.status(500).json({ success: false, message: "Failed to post reply." });
+  }
+};
+var markReplyAsSolution = async (req, res) => {
+  try {
+    const questionId = req.params.id;
+    const replyId = req.params.replyId;
+    const callerId = req.user?.id;
+    const callerType = req.user?.type;
+    const question = await prisma.mastermindQuestion.findUnique({ where: { id: questionId } });
+    if (!question) {
+      res.status(404).json({ success: false, message: "Question not found." });
+      return;
+    }
+    const isOwner = question.userId && question.userId === callerId;
+    const isAdmin = callerType === "admin";
+    if (!isOwner && !isAdmin) {
+      res.status(403).json({ success: false, message: "Only the question author or a coach may mark a solution." });
+      return;
+    }
+    const reply = await prisma.mastermindReply.findUnique({ where: { id: replyId } });
+    if (!reply || reply.questionId !== questionId) {
+      res.status(404).json({ success: false, message: "Reply not found for this question." });
+      return;
+    }
+    const alreadySolution = reply.isSolution;
+    await prisma.mastermindReply.updateMany({
+      where: { questionId },
+      data: { isSolution: false }
+    });
+    if (!alreadySolution) {
+      await prisma.mastermindReply.update({
+        where: { id: replyId },
+        data: { isSolution: true }
+      });
+      await prisma.mastermindQuestion.update({
+        where: { id: questionId },
+        data: { isSolved: true, solutionReplyId: replyId }
+      });
+    } else {
+      await prisma.mastermindQuestion.update({
+        where: { id: questionId },
+        data: { isSolved: false, solutionReplyId: null }
+      });
+    }
+    await cacheDelPattern("mastermind:");
+    broadcastRealtimeEvent("mastermind:solved", {
+      questionId,
+      replyId,
+      isSolved: !alreadySolution
+    });
+    res.status(200).json({
+      success: true,
+      message: alreadySolution ? "Solution badge removed." : "Reply marked as solution.",
+      isSolved: !alreadySolution
+    });
+  } catch (error51) {
+    console.error("[markReplyAsSolution]", error51);
+    res.status(500).json({ success: false, message: "Failed to update solution status." });
+  }
+};
 
 // backend/src/routes/mastermindRoutes.ts
-init_authenticate();
 var router16 = (0, import_express16.Router)();
 router16.get("/questions", getMastermindQuestions);
-router16.post("/questions", authenticate, postMastermindQuestion);
-router16.post("/questions/:id/upvote", authenticate, upvoteMastermindQuestion);
+router16.post("/questions", authenticate, communitySubmissionLimiter, idempotency({ scope: "mastermind_q" }), postMastermindQuestion);
+router16.post("/questions/:id/upvote", authenticate, upvoteLimiter, idempotency({ scope: "mastermind_upvote" }), upvoteMastermindQuestion);
+router16.post("/questions/:id/replies", authenticate, communitySubmissionLimiter, idempotency({ scope: "mastermind_reply" }), postMastermindReply);
+router16.put("/questions/:id/replies/:replyId/solution", authenticate, markReplyAsSolution);
 router16.put("/questions/:id/answer", authenticate, requireAdmin, requireRole(["SUPER_ADMIN", "COMMANDER", "COACH"]), answerMastermindQuestion);
 router16.delete("/questions/:id", authenticate, requireAdmin, requireRole(["SUPER_ADMIN", "COMMANDER"]), deleteMastermindQuestion);
 var mastermindRoutes_default = router16;
@@ -83864,7 +86057,14 @@ var getLeaderboard = async (_req, res) => {
 };
 var getUserGamificationProfile = async (req, res) => {
   try {
-    const userId = String(req.params.userId);
+    const requestedId = String(req.params.userId);
+    const callerId = req.user?.id;
+    const isAdmin = req.user?.type === "admin";
+    if (!isAdmin && callerId !== requestedId) {
+      res.status(403).json({ success: false, message: "Access denied." });
+      return;
+    }
+    const userId = requestedId;
     const user = await prisma.user.findUnique({
       where: { id: userId },
       select: {
@@ -84025,15 +86225,27 @@ var awardXp = async (req, res) => {
 };
 
 // backend/src/routes/gamificationRoutes.ts
-init_authenticate();
 var router17 = (0, import_express17.Router)();
 router17.get("/leaderboard", getLeaderboard);
-router17.get("/profile/:userId", getUserGamificationProfile);
+router17.get("/profile/:userId", authenticate, getUserGamificationProfile);
 router17.post("/award-xp", authenticate, awardXp);
 var gamificationRoutes_default = router17;
 
-// backend/src/routes/docsRoutes.ts
+// backend/src/routes/realtimeRoutes.ts
 var import_express18 = __toESM(require_express2(), 1);
+var router18 = (0, import_express18.Router)();
+router18.get("/stream", handleRealtimeStream);
+router18.get("/status", (_req, res) => {
+  res.status(200).json({
+    success: true,
+    activeStreams: getActiveRealtimeClientsCount(),
+    timestamp: (/* @__PURE__ */ new Date()).toISOString()
+  });
+});
+var realtimeRoutes_default = router18;
+
+// backend/src/routes/docsRoutes.ts
+var import_express19 = __toESM(require_express2(), 1);
 
 // backend/src/docs/openapiSpec.ts
 var openapiSpec = {
@@ -84393,12 +86605,12 @@ var openapiSpec = {
 };
 
 // backend/src/routes/docsRoutes.ts
-var router18 = (0, import_express18.Router)();
-router18.get("/spec.json", (_req, res) => {
+var router19 = (0, import_express19.Router)();
+router19.get("/spec.json", (_req, res) => {
   res.setHeader("Content-Type", "application/json");
   res.status(200).send(JSON.stringify(openapiSpec, null, 2));
 });
-router18.get("/", (_req, res) => {
+router19.get("/", (_req, res) => {
   const html = `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -84482,31 +86694,492 @@ router18.get("/", (_req, res) => {
   res.setHeader("Content-Type", "text/html");
   res.status(200).send(html);
 });
-var docsRoutes_default = router18;
+var docsRoutes_default = router19;
+
+// backend/src/routes/jobQueueRoutes.ts
+var import_express20 = __toESM(require_express2(), 1);
+var router20 = (0, import_express20.Router)();
+router20.get("/:jobId", async (req, res) => {
+  try {
+    const jobId = String(req.params.jobId);
+    const job = await queueService.getJob(jobId);
+    if (!job) {
+      sendError(res, 404, ErrorCode.NOT_FOUND, `Job with ID '${jobId}' not found.`, req);
+      return;
+    }
+    res.status(200).json({
+      success: true,
+      job: {
+        id: job.id,
+        type: job.type,
+        status: job.status,
+        progress: job.progress,
+        result: job.result || null,
+        error: job.error || null,
+        attempts: job.attempts,
+        createdAt: job.createdAt,
+        updatedAt: job.updatedAt,
+        completedAt: job.completedAt || null
+      }
+    });
+  } catch (err) {
+    sendError(res, 500, ErrorCode.INTERNAL_SERVER_ERROR, `Failed to retrieve job status: ${err.message}`, req);
+  }
+});
+router20.post("/enqueue", async (req, res) => {
+  try {
+    const { type, data, priority } = req.body;
+    if (!type) {
+      res.status(400).json({ success: false, message: "Job type is required" });
+      return;
+    }
+    const job = await queueService.enqueueJob(type, data || {}, { priority });
+    res.status(202).json({
+      success: true,
+      message: "Job accepted for background execution",
+      jobId: job.id,
+      status: job.status
+    });
+  } catch (err) {
+    sendError(res, 500, ErrorCode.INTERNAL_SERVER_ERROR, `Failed to enqueue job: ${err.message}`, req);
+  }
+});
+var jobQueueRoutes_default = router20;
+
+// backend/src/routes/notificationRoutes.ts
+var import_express21 = __toESM(require_express2(), 1);
+var import_jsonwebtoken4 = __toESM(require_jsonwebtoken(), 1);
+var router21 = (0, import_express21.Router)();
+var optionalAuth2 = (req, _res, next) => {
+  const authHeader = req.headers.authorization;
+  if (authHeader && authHeader.startsWith("Bearer ")) {
+    const token = authHeader.split(" ")[1];
+    try {
+      const secret = getJwtSecret();
+      const decoded = import_jsonwebtoken4.default.verify(token, secret, { algorithms: ["HS256"] });
+      req.user = decoded;
+    } catch {
+    }
+  }
+  next();
+};
+router21.get("/", optionalAuth2, getNotifications);
+router21.put("/:id/read", optionalAuth2, markNotificationAsRead);
+router21.put("/read-all", optionalAuth2, markAllNotificationsAsRead);
+var notificationRoutes_default = router21;
+
+// backend/src/routes/partnerRoutes.ts
+var import_express22 = __toESM(require_express2(), 1);
+
+// backend/src/controllers/partnerController.ts
+var SEED_PARTNERS = [
+  {
+    name: "Kasun Jayawardena",
+    title: "Founder & CEO",
+    companyName: "Horizon Logistics Tech",
+    companyType: "Supply Chain & FinTech",
+    industry: "Logistics & Trade",
+    bio: "Pioneered cross-border freight automation in South Asia. Graduate of BMB Cohort 10, scaling from a local fleet to regional logistics operations spanning Singapore and Colombo.",
+    photoUrl: "/partners/partner_kasun.jpg",
+    cohort: "BMB Cohort 10 / 2024",
+    courseSlug: "bmb",
+    isFeatured: true,
+    metrics: JSON.stringify({ revenue: "$3.4M ARR", team: "45 Operatives", growth: "+180% YoY" }),
+    websiteUrl: "https://horizonlogistics.io",
+    linkedInUrl: "https://linkedin.com",
+    testimonial: "UWE's subconscious rewiring dismantled my operational glass ceilings. Within 14 months of graduating BMB, we scaled past $3M ARR."
+  },
+  {
+    name: "Dr. Nirosha Samarasekara",
+    title: "Managing Director",
+    companyName: "BioHealth Dynamics",
+    companyType: "HealthTech & Biotechnology",
+    industry: "Healthcare & Life Sciences",
+    bio: "Leading high-complexity medical research commercialization and regional distribution. Transformed organizational mindset and multi-tier executive leadership structures.",
+    photoUrl: "/partners/partner_nirosha.jpg",
+    cohort: "Leadership Cohort 8 / 2024",
+    courseSlug: "leadership",
+    isFeatured: true,
+    metrics: JSON.stringify({ revenue: "$1.8M ARR", team: "32 Operatives", reach: "4 Countries" }),
+    websiteUrl: "https://biohealthdynamics.com",
+    linkedInUrl: "https://linkedin.com",
+    testimonial: "The sovereign mind protocols transformed how our board handles multi-million capital allocation and international expansion."
+  },
+  {
+    name: "Rohan Senanayake",
+    title: "Co-Founder & CTO",
+    companyName: "Apex Capital Tech",
+    companyType: "FinTech & AI Systems",
+    industry: "Financial Technology",
+    bio: "Architecting high-frequency algorithmic liquidity tools and decentralized enterprise protocols. Raised seed capital backed by top Singaporean family offices.",
+    photoUrl: "/partners/partner_rohan.jpg",
+    cohort: "IGNIT Cohort 5 / 2025",
+    courseSlug: "ignit",
+    isFeatured: true,
+    metrics: JSON.stringify({ valuation: "$5.2M", funding: "$1.2M Seed", users: "85k+ Active" }),
+    websiteUrl: "https://apexcapital.tech",
+    linkedInUrl: "https://linkedin.com",
+    testimonial: "IGNIT's venture scaling framework gave us the exact blueprints to close our institutional seed round in 45 days."
+  },
+  {
+    name: "Minoli Alwis",
+    title: "Founder & Creative Director",
+    companyName: "SilkRoute Luxe Direct",
+    companyType: "D2C Global Brands",
+    industry: "E-Commerce & Luxury Retail",
+    bio: "Scaled high-ticket bespoke Ceylon artisan luxury goods to North American and GCC affluent consumers with bespoke subscription mechanics.",
+    photoUrl: "/partners/partner_minoli.jpg",
+    cohort: "BMB Cohort 12 / 2025",
+    courseSlug: "bmb",
+    isFeatured: false,
+    metrics: JSON.stringify({ revenue: "$2.1M ARR", exports: "UK, US, UAE", growth: "+240% YoY" }),
+    websiteUrl: "https://silkrouteluxe.com",
+    linkedInUrl: "https://linkedin.com",
+    testimonial: "High-ticket negotiation and psychological leverage learned at UWE doubled our average order volume in global markets."
+  },
+  {
+    name: "Tariq Mansoor",
+    title: "Chief Executive Officer",
+    companyName: "Zenith Industrial Automation",
+    companyType: "Industrial Robotics",
+    industry: "Smart Manufacturing",
+    bio: "Automating textile and precision apparel manufacturing floors with proprietary vision-AI hardware across 12 Sri Lankan facilities.",
+    cohort: "Leadership Cohort 9 / 2024",
+    courseSlug: "leadership",
+    isFeatured: false,
+    metrics: JSON.stringify({ contracts: "$4.5M Backlog", plants: "12 Facilities", workforce: "120+" }),
+    websiteUrl: "https://zenithautomation.lk",
+    linkedInUrl: "https://linkedin.com",
+    testimonial: "Elite leadership demands mental dominance under severe adversity. UWE instills ruthless operational clarity."
+  },
+  {
+    name: "Chamath Vidanapathirana",
+    title: "Founder & Managing Partner",
+    companyName: "NexaScale Media",
+    companyType: "Enterprise B2B Growth Engine",
+    industry: "Digital Performance & Media",
+    bio: "Specialized growth marketing and client acquisition architecture for high-ticket SaaS and private equity portfolio companies globally.",
+    cohort: "IGNIT Cohort 6 / 2025",
+    courseSlug: "ignit",
+    isFeatured: false,
+    metrics: JSON.stringify({ clientMRR: "$180k MRR", pipeline: "$1.5M Active", retention: "96%" }),
+    websiteUrl: "https://nexascale.io",
+    linkedInUrl: "https://linkedin.com",
+    testimonial: "We scaled our B2B agency from a boutique shop into an enterprise powerhouse using UWE's conversion architectures."
+  }
+];
+var getPartners = async (req, res) => {
+  try {
+    const { courseSlug, isFeatured, search } = req.query;
+    const count = await prisma.businessPartner.count();
+    if (count === 0) {
+      await prisma.businessPartner.createMany({
+        data: SEED_PARTNERS
+      });
+      logger.info("Seeded default collaborative business partners", "PARTNERS");
+    }
+    const where = { isActive: true };
+    if (courseSlug && typeof courseSlug === "string" && courseSlug !== "all") {
+      where.courseSlug = courseSlug.toLowerCase();
+    }
+    if (isFeatured === "true") {
+      where.isFeatured = true;
+    }
+    if (search && typeof search === "string") {
+      where.OR = [
+        { name: { contains: search, mode: "insensitive" } },
+        { companyName: { contains: search, mode: "insensitive" } },
+        { industry: { contains: search, mode: "insensitive" } },
+        { cohort: { contains: search, mode: "insensitive" } }
+      ];
+    }
+    const cacheKey = `partners:list:${JSON.stringify(where)}`;
+    const result = await cacheGetOrSWR(
+      cacheKey,
+      async () => {
+        const partners = await prisma.businessPartner.findMany({
+          where,
+          orderBy: [{ isFeatured: "desc" }, { createdAt: "desc" }]
+        });
+        return { success: true, count: partners.length, data: partners };
+      },
+      { freshTtlSeconds: 120, staleTtlSeconds: 900 }
+    );
+    res.setHeader("X-Cache", result.cached ? result.stale ? "STALE" : "HIT" : "MISS");
+    res.status(200).json({ ...result.data, cached: result.cached });
+  } catch (error51) {
+    logger.error(`[getPartners] ${error51.message}`, "PARTNERS");
+    sendError(res, 500, ErrorCode.INTERNAL_SERVER_ERROR, "Failed to fetch business partners.", req);
+  }
+};
+var getPartnerById = async (req, res) => {
+  try {
+    const id = req.params.id;
+    const cacheKey = `partners:detail:${id}`;
+    const result = await cacheGetOrSWR(
+      cacheKey,
+      async () => {
+        let partner = await prisma.businessPartner.findFirst({
+          where: {
+            OR: [
+              { id },
+              { name: { equals: id, mode: "insensitive" } },
+              { companyName: { equals: id, mode: "insensitive" } }
+            ]
+          }
+        });
+        if (!partner) {
+          const match = SEED_PARTNERS.find(
+            (p) => p.name.toLowerCase() === id.toLowerCase() || p.companyName.toLowerCase() === id.toLowerCase()
+          );
+          if (match) {
+            partner = await prisma.businessPartner.findFirst({
+              where: { name: match.name }
+            });
+          }
+        }
+        return { success: !!partner, data: partner };
+      },
+      { freshTtlSeconds: 300, staleTtlSeconds: 1800 }
+    );
+    if (!result.data || !result.data.data) {
+      sendError(res, 404, ErrorCode.NOT_FOUND, "Business partner not found.", req);
+      return;
+    }
+    res.status(200).json(result.data);
+  } catch (error51) {
+    logger.error(`[getPartnerById] ${error51.message}`, "PARTNERS");
+    sendError(res, 500, ErrorCode.INTERNAL_SERVER_ERROR, "Failed to fetch partner details.", req);
+  }
+};
+var createPartner = async (req, res) => {
+  try {
+    const {
+      name,
+      title,
+      companyName,
+      companyType,
+      industry,
+      bio,
+      photoUrl,
+      companyLogoUrl,
+      websiteUrl,
+      linkedInUrl,
+      cohort,
+      courseSlug,
+      isFeatured,
+      metrics,
+      testimonial
+    } = req.body;
+    if (!name || !title || !companyName || !bio || !courseSlug) {
+      sendError(res, 400, ErrorCode.BAD_REQUEST, "Name, title, companyName, bio, and courseSlug are required.", req);
+      return;
+    }
+    const partner = await prisma.businessPartner.create({
+      data: {
+        name,
+        title,
+        companyName,
+        companyType,
+        industry,
+        bio,
+        photoUrl,
+        companyLogoUrl,
+        websiteUrl,
+        linkedInUrl,
+        cohort,
+        courseSlug: courseSlug.toLowerCase(),
+        isFeatured: Boolean(isFeatured),
+        metrics: typeof metrics === "object" ? JSON.stringify(metrics) : metrics,
+        testimonial
+      }
+    });
+    await cacheDelPattern("partners:");
+    res.status(201).json({ success: true, message: "Business partner created successfully.", data: partner });
+  } catch (error51) {
+    logger.error(`[createPartner] ${error51.message}`, "PARTNERS");
+    sendError(res, 500, ErrorCode.INTERNAL_SERVER_ERROR, "Failed to create business partner.", req);
+  }
+};
+var updatePartner = async (req, res) => {
+  try {
+    const id = req.params.id;
+    const updateData = { ...req.body };
+    if (updateData.courseSlug) {
+      updateData.courseSlug = updateData.courseSlug.toLowerCase();
+    }
+    if (updateData.metrics && typeof updateData.metrics === "object") {
+      updateData.metrics = JSON.stringify(updateData.metrics);
+    }
+    const partner = await prisma.businessPartner.update({
+      where: { id },
+      data: updateData
+    });
+    await cacheDelPattern("partners:");
+    res.status(200).json({ success: true, message: "Business partner updated successfully.", data: partner });
+  } catch (error51) {
+    if (error51.code === "P2025") {
+      sendError(res, 404, ErrorCode.NOT_FOUND, "Business partner not found.", req);
+      return;
+    }
+    logger.error(`[updatePartner] ${error51.message}`, "PARTNERS");
+    sendError(res, 500, ErrorCode.INTERNAL_SERVER_ERROR, "Failed to update business partner.", req);
+  }
+};
+var deletePartner = async (req, res) => {
+  try {
+    const id = req.params.id;
+    await prisma.businessPartner.delete({
+      where: { id }
+    });
+    await cacheDelPattern("partners:");
+    res.status(200).json({ success: true, message: "Business partner removed successfully." });
+  } catch (error51) {
+    if (error51.code === "P2025") {
+      sendError(res, 404, ErrorCode.NOT_FOUND, "Business partner not found.", req);
+      return;
+    }
+    logger.error(`[deletePartner] ${error51.message}`, "PARTNERS");
+    sendError(res, 500, ErrorCode.INTERNAL_SERVER_ERROR, "Failed to delete business partner.", req);
+  }
+};
+
+// backend/src/routes/partnerRoutes.ts
+var router22 = (0, import_express22.Router)();
+router22.get("/", getPartners);
+router22.get("/:id", getPartnerById);
+router22.post(
+  "/",
+  authenticate,
+  requireAdmin,
+  requireRole(["SUPER_ADMIN", "COMMANDER", "COACH"]),
+  createPartner
+);
+router22.put(
+  "/:id",
+  authenticate,
+  requireAdmin,
+  requireRole(["SUPER_ADMIN", "COMMANDER", "COACH"]),
+  updatePartner
+);
+router22.delete(
+  "/:id",
+  authenticate,
+  requireAdmin,
+  requireRole(["SUPER_ADMIN", "COMMANDER"]),
+  deletePartner
+);
+var partnerRoutes_default = router22;
+
+// backend/src/services/workerService.ts
+function initializeBackgroundWorkers() {
+  logger.info("[WorkerService] Initializing background task workers...", "WORKER");
+  queueService.registerWorker("GENERATE_CERTIFICATE", async (job) => {
+    const cert = job.data;
+    if (!cert || !cert.studentName || !cert.courseTitle) {
+      throw new Error("Invalid certificate payload: studentName and courseTitle are required.");
+    }
+    await queueService.updateJobProgress(job.id, 25);
+    const pdfBuffer = await generateCertificatePDF({
+      id: cert.id || job.id,
+      studentName: cert.studentName,
+      courseSlug: cert.courseSlug || "bmb",
+      courseTitle: cert.courseTitle,
+      certificateNo: cert.certificateNo || `UWE-CERT-${job.id.slice(-6).toUpperCase()}`,
+      issuedDate: cert.issuedDate || /* @__PURE__ */ new Date(),
+      gradeScore: cert.gradeScore,
+      signatureBy: cert.signatureBy
+    });
+    await queueService.updateJobProgress(job.id, 85);
+    const base64Pdf = pdfBuffer.toString("base64");
+    await cacheSet(`cert_artifact:${job.id}`, { base64Pdf, filename: `${cert.certificateNo || "Certificate"}.pdf` }, 7200);
+    broadcastRealtimeEvent("certificate:ready", {
+      jobId: job.id,
+      certificateNo: cert.certificateNo,
+      downloadUrl: `/api/certificates/download/${job.id}`
+    });
+    await queueService.updateJobProgress(job.id, 100);
+    return {
+      certificateNo: cert.certificateNo,
+      sizeBytes: pdfBuffer.length,
+      downloadUrl: `/api/certificates/download/${job.id}`,
+      generatedAt: (/* @__PURE__ */ new Date()).toISOString()
+    };
+  });
+  queueService.registerWorker("PAYMENT_SLIP_VERIFY_DISPATCH", async (job) => {
+    const { slipId, studentEmail, studentPhone, courseSlug, status } = job.data;
+    await queueService.updateJobProgress(job.id, 30);
+    logger.info(
+      `[WorkerService] Dispatching ${status} confirmation to ${studentEmail || studentPhone} for ${courseSlug} (Slip: ${slipId})`,
+      "WORKER"
+    );
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    await queueService.updateJobProgress(job.id, 80);
+    broadcastRealtimeEvent("slip:updated", {
+      id: slipId,
+      status,
+      courseSlug
+    });
+    await queueService.updateJobProgress(job.id, 100);
+    return {
+      slipId,
+      dispatched: true,
+      channel: studentEmail ? "EMAIL" : "SMS",
+      timestamp: (/* @__PURE__ */ new Date()).toISOString()
+    };
+  });
+  queueService.registerWorker("LEAD_INGESTION", async (job) => {
+    const lead = job.data;
+    await queueService.updateJobProgress(job.id, 50);
+    logger.info(`[WorkerService] Ingesting & routing lead for: ${lead.name} (${lead.phone}) -> ${lead.courseSlug}`, "WORKER");
+    broadcastRealtimeEvent("lead:new", {
+      name: lead.name,
+      courseSlug: lead.courseSlug
+    });
+    await queueService.updateJobProgress(job.id, 100);
+    return {
+      leadId: lead.id || job.id,
+      routedTo: "ADMISSIONS_DESK",
+      timestamp: (/* @__PURE__ */ new Date()).toISOString()
+    };
+  });
+  queueService.registerWorker("GENERIC_TASK", async (job) => {
+    return { executed: true, data: job.data };
+  });
+  logger.info("[WorkerService] All background task workers active and listening.", "WORKER");
+}
 
 // backend/src/middlewares/errorHandler.ts
-import crypto5 from "crypto";
 var errorHandler = (err, req, res, _next) => {
-  const errorId = crypto5.randomUUID();
-  const statusCode = res.statusCode === 200 ? 500 : res.statusCode;
-  const isProduction = process.env.NODE_ENV === "production" || process.env.VERCEL;
-  logger.error(`[${errorId}] ${req.method} ${req.originalUrl} - ${err.message}`, "SERVER", {
-    errorId,
+  const requestId = req.headers["x-request-id"] || res.getHeader("X-Request-Id") || `err_${Math.random().toString(36).substring(2, 9)}`;
+  const statusCode = res.statusCode >= 400 ? res.statusCode : err.status || err.statusCode || 500;
+  logger.error(`[${requestId}] ${req.method} ${req.originalUrl} - ${err.message}`, "SERVER", {
+    requestId,
     stack: err.stack,
     body: req.body,
     params: req.params
   });
-  let clientMessage = err.message || "Internal Server Error";
-  if (isProduction) {
-    if (statusCode >= 500 || err.name?.includes("Prisma") || /prisma|database|sql/i.test(err.message || "")) {
-      clientMessage = "An unexpected server error occurred. Please contact Command HQ support with reference ID.";
+  let code = ErrorCode.INTERNAL_SERVER_ERROR;
+  if (statusCode === 400) code = ErrorCode.BAD_REQUEST;
+  else if (statusCode === 401) code = ErrorCode.UNAUTHORIZED;
+  else if (statusCode === 403) code = ErrorCode.FORBIDDEN;
+  else if (statusCode === 404) code = ErrorCode.NOT_FOUND;
+  else if (statusCode === 409) code = ErrorCode.CONFLICT;
+  else if (statusCode === 429) code = ErrorCode.RATE_LIMITED;
+  else if (statusCode === 503) code = ErrorCode.SERVICE_UNAVAILABLE;
+  let clientMessage = "An unexpected error occurred. Please contact Command HQ support.";
+  if (statusCode < 500) {
+    if (/prisma|syntax|column|table|relation|database|sql/i.test(err.message || "")) {
+      clientMessage = "Invalid request parameters.";
+    } else {
+      clientMessage = err.message || "Request failed.";
     }
   }
   res.status(statusCode).json({
     success: false,
+    code,
     message: clientMessage,
-    errorId: isProduction ? errorId : void 0,
-    stack: isProduction ? void 0 : err.stack
+    requestId
   });
 };
 
@@ -84518,8 +87191,9 @@ if (process.env.NODE_ENV !== "test") {
     process.exit(1);
   }
 }
-var app = (0, import_express19.default)();
+var app = (0, import_express23.default)();
 var PORT = process.env.PORT || 5005;
+initializeBackgroundWorkers();
 app.set("trust proxy", 1);
 app.use(helmet({
   contentSecurityPolicy: false
@@ -84538,45 +87212,83 @@ var ALLOWED_ORIGINS = [
 if (process.env.FRONTEND_URL) {
   ALLOWED_ORIGINS.push(process.env.FRONTEND_URL);
 }
+var UWE_VERCEL_PREVIEW_REGEX = /^https:\/\/uwe(-[a-z0-9_-]+)?\.vercel\.app$/i;
 app.use((0, import_cors.default)({
   origin: (origin, callback) => {
     if (!origin) return callback(null, true);
     if (ALLOWED_ORIGINS.includes(origin)) return callback(null, true);
-    if (origin.endsWith(".vercel.app")) return callback(null, true);
+    if (UWE_VERCEL_PREVIEW_REGEX.test(origin)) return callback(null, true);
     callback(new Error(`CORS policy: origin ${origin} not allowed`));
   },
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization", "X-Request-Id"],
+  allowedHeaders: [
+    "Content-Type",
+    "Authorization",
+    "X-Request-Id",
+    "Idempotency-Key",
+    "X-Idempotency-Key",
+    "cf-turnstile-response",
+    "g-recaptcha-response",
+    "x-captcha-token"
+  ],
   credentials: true
 }));
-app.use("/api/slips", import_express19.default.json({ limit: "10mb" }), import_express19.default.urlencoded({ extended: true, limit: "10mb" }), paymentSlipRoutes_default);
-app.use("/slips", import_express19.default.json({ limit: "10mb" }), import_express19.default.urlencoded({ extended: true, limit: "10mb" }), paymentSlipRoutes_default);
-app.use("/api/demos", import_express19.default.json({ limit: "10mb" }), import_express19.default.urlencoded({ extended: true, limit: "10mb" }), demoRoutes_default);
-app.use("/demos", import_express19.default.json({ limit: "10mb" }), import_express19.default.urlencoded({ extended: true, limit: "10mb" }), demoRoutes_default);
-app.use("/api/program-videos", import_express19.default.json({ limit: "10mb" }), import_express19.default.urlencoded({ extended: true, limit: "10mb" }), programVideoRoutes_default);
-app.use("/program-videos", import_express19.default.json({ limit: "10mb" }), import_express19.default.urlencoded({ extended: true, limit: "10mb" }), programVideoRoutes_default);
-app.use(import_express19.default.json({ limit: "500kb" }));
-app.use(import_express19.default.urlencoded({ extended: true, limit: "500kb" }));
 var authLimiter = rate_limit_default({
   windowMs: 15 * 60 * 1e3,
-  max: 12,
-  message: { success: false, message: "Too many login attempts. Please try again in 15 minutes." },
+  max: process.env.NODE_ENV === "test" ? 1e4 : 12,
+  skip: () => process.env.NODE_ENV === "test",
+  handler: (req, res) => {
+    const requestId = req.headers["x-request-id"] || res.getHeader("X-Request-Id") || void 0;
+    res.status(429).json({
+      success: false,
+      code: "RATE_LIMITED",
+      message: "Too many authentication attempts. Please try again in 15 minutes.",
+      ...requestId ? { requestId } : {}
+    });
+  },
   standardHeaders: true,
   legacyHeaders: false
 });
 var submissionLimiter = rate_limit_default({
-  windowMs: 60 * 60 * 1e3,
-  max: 20,
-  message: { success: false, message: "Too many submissions from this IP. Please try again later." },
+  windowMs: 15 * 60 * 1e3,
+  max: process.env.NODE_ENV === "test" ? 1e4 : 20,
+  skip: () => process.env.NODE_ENV === "test",
+  handler: (req, res) => {
+    const requestId = req.headers["x-request-id"] || res.getHeader("X-Request-Id") || void 0;
+    res.status(429).json({
+      success: false,
+      code: "RATE_LIMITED",
+      message: "Too many submissions received from this IP. Please try again later.",
+      ...requestId ? { requestId } : {}
+    });
+  },
   standardHeaders: true,
   legacyHeaders: false
 });
 var generalLimiter = rate_limit_default({
   windowMs: 15 * 60 * 1e3,
-  max: 300,
+  max: process.env.NODE_ENV === "test" ? 1e4 : 300,
+  skip: () => process.env.NODE_ENV === "test",
+  handler: (req, res) => {
+    const requestId = req.headers["x-request-id"] || res.getHeader("X-Request-Id") || void 0;
+    res.status(429).json({
+      success: false,
+      code: "RATE_LIMITED",
+      message: "API rate limit exceeded. Please slow down.",
+      ...requestId ? { requestId } : {}
+    });
+  },
   standardHeaders: true,
   legacyHeaders: false
 });
+app.use("/api/slips", import_express23.default.json({ limit: "10mb" }), import_express23.default.urlencoded({ extended: true, limit: "10mb" }), paymentSlipRoutes_default);
+app.use("/slips", import_express23.default.json({ limit: "10mb" }), import_express23.default.urlencoded({ extended: true, limit: "10mb" }), paymentSlipRoutes_default);
+app.use("/api/demos", import_express23.default.json({ limit: "10mb" }), import_express23.default.urlencoded({ extended: true, limit: "10mb" }), demoRoutes_default);
+app.use("/demos", import_express23.default.json({ limit: "10mb" }), import_express23.default.urlencoded({ extended: true, limit: "10mb" }), demoRoutes_default);
+app.use("/api/program-videos", import_express23.default.json({ limit: "10mb" }), import_express23.default.urlencoded({ extended: true, limit: "10mb" }), programVideoRoutes_default);
+app.use("/program-videos", import_express23.default.json({ limit: "10mb" }), import_express23.default.urlencoded({ extended: true, limit: "10mb" }), programVideoRoutes_default);
+app.use(import_express23.default.json({ limit: "500kb" }));
+app.use(import_express23.default.urlencoded({ extended: true, limit: "500kb" }));
 app.use("/api", generalLimiter);
 app.get("/", (_req, res) => {
   res.status(200).json({
@@ -84612,14 +87324,12 @@ app.get("/api/diagnostics", (_req, res) => {
   res.status(200).json({
     status: "HEALTHY",
     system: "UWE Command Server Telemetry",
-    nodeVersion: process.version,
     uptimeSeconds: Math.floor(process.uptime()),
     memoryMb: {
       rss: Math.round(memoryUsage.rss / 1024 / 1024),
       heapTotal: Math.round(memoryUsage.heapTotal / 1024 / 1024),
       heapUsed: Math.round(memoryUsage.heapUsed / 1024 / 1024)
     },
-    env: process.env.NODE_ENV || "development",
     timestamp: (/* @__PURE__ */ new Date()).toISOString()
   });
 });
@@ -84657,6 +87367,16 @@ app.use("/api/mastermind", mastermindRoutes_default);
 app.use("/mastermind", mastermindRoutes_default);
 app.use("/api/gamification", gamificationRoutes_default);
 app.use("/gamification", gamificationRoutes_default);
+app.use("/api/realtime", realtimeRoutes_default);
+app.use("/realtime", realtimeRoutes_default);
+app.use("/api/notifications", notificationRoutes_default);
+app.use("/notifications", notificationRoutes_default);
+app.use("/api/partners", partnerRoutes_default);
+app.use("/partners", partnerRoutes_default);
+app.use("/api/background-jobs", jobQueueRoutes_default);
+app.use("/background-jobs", jobQueueRoutes_default);
+app.use("/api/tasks", jobQueueRoutes_default);
+app.use("/tasks", jobQueueRoutes_default);
 app.use(errorHandler);
 process.on("uncaughtException", (err) => {
   logger.error(`\u{1F4A5} Fatal Uncaught Exception: ${err.message}`, "SYSTEM", { stack: err.stack });

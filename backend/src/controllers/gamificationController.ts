@@ -123,9 +123,20 @@ export const getLeaderboard = async (_req: Request, res: Response): Promise<void
 
 // @desc    Get single user's gamification profile and progression
 // @route   GET /api/gamification/profile/:userId
+// @access  Authenticated — non-admins may only read their own profile
 export const getUserGamificationProfile = async (req: Request, res: Response): Promise<void> => {
   try {
-    const userId = String(req.params.userId);
+    const requestedId = String(req.params.userId);
+    const callerId   = req.user?.id;
+    const isAdmin    = req.user?.type === 'admin';
+
+    // IDOR guard: students can only read their own profile
+    if (!isAdmin && callerId !== requestedId) {
+      res.status(403).json({ success: false, message: 'Access denied.' });
+      return;
+    }
+
+    const userId = requestedId;
     const user = await prisma.user.findUnique({
       where: { id: userId },
       select: {

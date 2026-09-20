@@ -12,6 +12,7 @@ interface AnalyticsTabProps {
   jobVacancies: any[];
   jobApplications: any[];
   users: any[];
+  unansweredQACount?: number;
   setActiveTab: (tab: AdminTab) => void;
   addToast: (text: string, type?: 'success' | 'error' | 'info') => void;
 }
@@ -24,26 +25,41 @@ export const AnalyticsTab: React.FC<AnalyticsTabProps> = ({
   jobVacancies,
   jobApplications,
   users,
+  unansweredQACount = 0,
   setActiveTab,
   addToast,
 }) => {
+  const toMoneyNumber = (value: unknown): number => {
+    if (typeof value === 'number' && Number.isFinite(value)) return value;
+    if (typeof value === 'string' || typeof value === 'bigint') {
+      const parsed = Number(value);
+      return Number.isFinite(parsed) ? parsed : 0;
+    }
+    if (value && typeof value === 'object' && 'toString' in value) {
+      const parsed = Number(String(value));
+      return Number.isFinite(parsed) ? parsed : 0;
+    }
+    return 0;
+  };
+
   const verifiedSlips = paymentSlips.filter((s) => s.status === 'VERIFIED');
   const enrolledLeads = leads.filter((l) => l.status === 'ENROLLED');
 
   // Financial Ledger Calculations — based on actual payment slip data
-  const estimatedGrossRevenue = verifiedSlips.reduce(
-    (acc, s) => acc + (typeof s.amount === 'number' ? s.amount : 0), 0
-  );
+  const estimatedGrossRevenue = verifiedSlips.reduce((acc, s) => acc + toMoneyNumber(s.amount), 0);
 
   const pendingRevenue = paymentSlips
     .filter((s) => s.status === 'PENDING')
-    .reduce((acc, s) => acc + (typeof s.amount === 'number' ? s.amount : 0), 0);
+    .reduce((acc, s) => acc + toMoneyNumber(s.amount), 0);
 
 
   const conversionRate = leads.length > 0 ? ((enrolledLeads.length / leads.length) * 100).toFixed(1) : '0';
   const activeStaffCount = staffMembers.filter((s) => s.isActive).length;
   const totalOpenSlots = jobVacancies.reduce((a, j) => a + (j.openPositions || 1), 0);
   const totalHiredSlots = jobVacancies.reduce((a, j) => a + (j.hiredCount || 0), 0);
+  
+  const totalCallAttempts = leads.reduce((acc, l) => acc + (l.totalCallAttempts || 0), 0);
+  const totalPositiveCalls = leads.filter(l => l.isPositiveContact).length;
 
   // Synthesize Live Chronological Radar Events
   const radarEvents = [
@@ -164,8 +180,225 @@ export const AnalyticsTab: React.FC<AnalyticsTabProps> = ({
       exit={{ opacity: 0, y: -15 }}
       className="space-y-6"
     >
+
+      {/* ━━━ 0A. COMMAND PRIORITY QUEUE — Pending Actions Bar ━━━ */}
+      {(() => {
+        const pendingSlipsCount = paymentSlips.filter((s) => s.status === 'PENDING').length;
+        const newLeadsCount    = leads.filter((l) => l.status === 'NEW').length;
+        const pendingAppsCount = jobApplications.filter((a) => a.status === 'PENDING' || a.status === 'NEW').length;
+        const contactedLeads   = leads.filter((l) => l.status === 'CONTACTED').length;
+        const totalPending = pendingSlipsCount + newLeadsCount + unansweredQACount + pendingAppsCount;
+
+        const actions = [
+          {
+            tab: 'slips' as AdminTab,
+            count: pendingSlipsCount,
+            label: 'Bank Slips',
+            sublabel: 'Awaiting Verification',
+            icon: 'receipt_long',
+            activeColor: 'border-[#2ED573]/50 bg-[#2ED573]/10 shadow-[0_0_16px_rgba(46,213,115,0.12)]',
+            countColor: 'text-[#2ED573]',
+            badgeColor: 'bg-[#2ED573]/20 text-[#2ED573] border-[#2ED573]/40',
+            iconColor: 'text-[#2ED573]',
+            btnColor: 'hover:bg-[#2ED573]/20 hover:text-[#2ED573] hover:border-[#2ED573]/50',
+            cta: 'VERIFY →',
+          },
+          {
+            tab: 'leads' as AdminTab,
+            count: newLeadsCount,
+            label: 'New Leads',
+            sublabel: 'Need WhatsApp Reply',
+            icon: 'chat',
+            activeColor: 'border-secondary/50 bg-secondary/10 shadow-[0_0_16px_rgba(255,184,0,0.12)]',
+            countColor: 'text-secondary',
+            badgeColor: 'bg-secondary/20 text-secondary border-secondary/40',
+            iconColor: 'text-secondary',
+            btnColor: 'hover:bg-secondary/20 hover:text-secondary hover:border-secondary/50',
+            cta: 'RESPOND →',
+          },
+          {
+            tab: 'mastermind' as AdminTab,
+            count: unansweredQACount,
+            label: 'Q&A Unanswered',
+            sublabel: 'Awaiting Coach Reply',
+            icon: 'question_answer',
+            activeColor: 'border-purple-500/50 bg-purple-500/10 shadow-[0_0_16px_rgba(168,85,247,0.12)]',
+            countColor: 'text-purple-400',
+            badgeColor: 'bg-purple-500/20 text-purple-400 border-purple-500/40',
+            iconColor: 'text-purple-400',
+            btnColor: 'hover:bg-purple-500/20 hover:text-purple-400 hover:border-purple-500/50',
+            cta: 'ANSWER →',
+          },
+          {
+            tab: 'jobs' as AdminTab,
+            count: pendingAppsCount,
+            label: 'Job Applications',
+            sublabel: 'Pending Review',
+            icon: 'work',
+            activeColor: 'border-[#00D2FF]/50 bg-[#00D2FF]/10 shadow-[0_0_16px_rgba(0,210,255,0.12)]',
+            countColor: 'text-[#00D2FF]',
+            badgeColor: 'bg-[#00D2FF]/20 text-[#00D2FF] border-[#00D2FF]/40',
+            iconColor: 'text-[#00D2FF]',
+            btnColor: 'hover:bg-[#00D2FF]/20 hover:text-[#00D2FF] hover:border-[#00D2FF]/50',
+            cta: 'REVIEW →',
+          },
+          {
+            tab: 'leads' as AdminTab,
+            count: contactedLeads,
+            label: 'Contacted Leads',
+            sublabel: 'Awaiting Payment',
+            icon: 'hourglass_top',
+            activeColor: 'border-amber-500/50 bg-amber-500/10 shadow-[0_0_16px_rgba(245,158,11,0.12)]',
+            countColor: 'text-amber-400',
+            badgeColor: 'bg-amber-500/20 text-amber-400 border-amber-500/40',
+            iconColor: 'text-amber-400',
+            btnColor: 'hover:bg-amber-500/20 hover:text-amber-400 hover:border-amber-500/50',
+            cta: 'FOLLOW UP →',
+          },
+        ];
+
+        return (
+          <div className="bg-[#0E131F] rounded-2xl border border-outline-variant/30 shadow-2xl overflow-hidden">
+            {/* Header */}
+            <div className="flex items-center justify-between px-5 py-3.5 border-b border-outline-variant/20 bg-[#080C14]">
+              <div className="flex items-center gap-2.5">
+                <span className="material-symbols-outlined text-[#FF4757] text-lg">priority_high</span>
+                <h3 className="font-headline-md text-sm font-bold text-on-surface uppercase tracking-widest">Command Priority Queue</h3>
+                <span className="font-mono-data text-[10px] px-2 py-0.5 rounded bg-[#FF4757]/20 text-[#FF4757] border border-[#FF4757]/40 font-bold">
+                  {totalPending} PENDING
+                </span>
+              </div>
+              <span className="w-2 h-2 rounded-full bg-[#2ED573] animate-ping" />
+            </div>
+
+            {/* Action badges row */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 divide-x divide-y sm:divide-y-0 divide-outline-variant/20">
+              {actions.map((action) => (
+                <button
+                  key={`${action.tab}-${action.label}`}
+                  onClick={() => setActiveTab(action.tab)}
+                  className={`group flex flex-col gap-1.5 p-4 text-left transition-all cursor-pointer border border-transparent ${
+                    action.count > 0
+                      ? `${action.activeColor}`
+                      : 'hover:bg-white/5'
+                  }`}
+                >
+                  <div className="flex items-center justify-between w-full">
+                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
+                      action.count > 0 ? `${action.badgeColor} border` : 'bg-[#0E131F] border border-outline-variant/30'
+                    }`}>
+                      <span className={`material-symbols-outlined text-base ${
+                        action.count > 0 ? action.iconColor : 'text-on-surface-variant'
+                      }`}>{action.icon}</span>
+                    </div>
+                    <span className={`font-mono-data text-2xl font-black ${
+                      action.count > 0 ? action.countColor : 'text-on-surface-variant'
+                    }`}>{action.count}</span>
+                  </div>
+                  <div>
+                    <p className="font-headline-md text-xs font-bold text-on-surface">{action.label}</p>
+                    <p className="font-mono-data text-[10px] text-on-surface-variant">{action.sublabel}</p>
+                  </div>
+                  {action.count > 0 && (
+                    <span className={`self-start font-mono-data text-[9px] font-black uppercase px-2 py-0.5 rounded border transition-all ${
+                      action.badgeColor
+                    } ${action.btnColor}`}>
+                      {action.cta}
+                    </span>
+                  )}
+                </button>
+              ))}
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* ━━━ 0B. QUICK LAUNCH — 1-Click Shortcut Grid ━━━ */}
+      <div className="bg-[#0E131F] rounded-2xl border border-outline-variant/30 shadow-2xl overflow-hidden">
+        <div className="flex items-center gap-2.5 px-5 py-3.5 border-b border-outline-variant/20 bg-[#080C14]">
+          <span className="material-symbols-outlined text-secondary text-lg">bolt</span>
+          <h3 className="font-headline-md text-sm font-bold text-on-surface uppercase tracking-widest">Quick Launch</h3>
+          <span className="font-mono-data text-[10px] text-on-surface-variant">1-click access to frequent operations</span>
+        </div>
+
+        <div className="grid grid-cols-3 sm:grid-cols-6 divide-x divide-outline-variant/20">
+          {[
+            {
+              icon: 'receipt_long',
+              label: 'Verify Slip',
+              desc: 'Bank payment',
+              tab: 'slips' as AdminTab,
+              color: 'text-[#2ED573]',
+              glow: 'group-hover:shadow-[0_0_20px_rgba(46,213,115,0.2)]',
+              bg: 'group-hover:bg-[#2ED573]/8',
+            },
+            {
+              icon: 'chat',
+              label: 'Mark Lead',
+              desc: 'WhatsApp contact',
+              tab: 'leads' as AdminTab,
+              color: 'text-secondary',
+              glow: 'group-hover:shadow-[0_0_20px_rgba(255,184,0,0.2)]',
+              bg: 'group-hover:bg-secondary/8',
+            },
+            {
+              icon: 'campaign',
+              label: 'Post Announcement',
+              desc: 'Ticker banner',
+              tab: 'banner' as AdminTab,
+              color: 'text-[#FF4757]',
+              glow: 'group-hover:shadow-[0_0_20px_rgba(255,71,87,0.2)]',
+              bg: 'group-hover:bg-[#FF4757]/8',
+            },
+            {
+              icon: 'video_call',
+              label: 'Add Zoom Link',
+              desc: 'Batch schedule',
+              tab: 'batches' as AdminTab,
+              color: 'text-[#00D2FF]',
+              glow: 'group-hover:shadow-[0_0_20px_rgba(0,210,255,0.2)]',
+              bg: 'group-hover:bg-[#00D2FF]/8',
+            },
+            {
+              icon: 'local_offer',
+              label: 'Create Coupon',
+              desc: 'Promo codes',
+              tab: 'coupons' as AdminTab,
+              color: 'text-purple-400',
+              glow: 'group-hover:shadow-[0_0_20px_rgba(168,85,247,0.2)]',
+              bg: 'group-hover:bg-purple-500/8',
+            },
+            {
+              icon: 'question_answer',
+              label: 'Answer Q&A',
+              desc: 'Mastermind board',
+              tab: 'mastermind' as AdminTab,
+              color: 'text-amber-400',
+              glow: 'group-hover:shadow-[0_0_20px_rgba(245,158,11,0.2)]',
+              bg: 'group-hover:bg-amber-500/8',
+            },
+          ].map((item) => (
+            <button
+              key={item.tab + item.label}
+              onClick={() => setActiveTab(item.tab)}
+              className={`group flex flex-col items-center justify-center gap-2 py-5 px-3 text-center transition-all cursor-pointer ${
+                item.bg
+              } ${item.glow} hover:border-outline-variant/50`}
+            >
+              <div className="w-11 h-11 rounded-xl bg-[#131929] border border-outline-variant/30 flex items-center justify-center transition-all group-hover:border-current group-hover:scale-105">
+                <span className={`material-symbols-outlined text-2xl transition-all ${item.color}`}>{item.icon}</span>
+              </div>
+              <div>
+                <p className="font-headline-md text-xs font-bold text-on-surface">{item.label}</p>
+                <p className="font-mono-data text-[10px] text-on-surface-variant">{item.desc}</p>
+              </div>
+            </button>
+          ))}
+        </div>
+      </div>
+
       {/* ━━━ 1. REAL-TIME REVENUE & COMMAND FINANCIAL LEDGER ━━━ */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
         {/* Card 1: Gross Verified Revenue */}
         <div className="bg-[#0E131F] p-5 rounded-2xl border border-secondary/40 shadow-xl relative overflow-hidden group">
           <div className="absolute top-0 right-0 w-24 h-24 bg-secondary/10 rounded-bl-full pointer-events-none" />
@@ -252,299 +485,31 @@ export const AnalyticsTab: React.FC<AnalyticsTabProps> = ({
             <span className="text-on-surface-variant text-[11px]">{jobApplications.length} Applicants</span>
           </div>
         </div>
-      </div>
 
-      {/* ━━━ 2. MIDDLE ROW: TODAY'S ACTION ITEMS & DIVISION CAPACITY GAUGES ━━━ */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* Left (7 Cols): Today's Action Items */}
-        <div className="lg:col-span-7 bg-[#0E131F] p-6 rounded-2xl border border-secondary/30 shadow-2xl space-y-5">
-          <div className="flex justify-between items-center flex-wrap gap-2 border-b border-outline-variant/20 pb-3">
-            <div>
-              <h3 className="font-headline-md text-lg text-on-surface font-bold flex items-center gap-2">
-                <span className="material-symbols-outlined text-secondary">task_alt</span>
-                Today's Action Items
-              </h3>
-              <p className="font-mono-data text-xs text-on-surface-variant">
-                Items requiring your immediate attention — all backed by live database records
-              </p>
-            </div>
-            <span className="font-label-caps text-xs px-2.5 py-1 rounded bg-secondary/20 text-secondary font-bold border border-secondary/40 flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-secondary animate-pulse" />
-              {leads.filter((l) => l.status === 'NEW').length +
-                paymentSlips.filter((s) => s.status === 'PENDING').length +
-                jobApplications.filter((a) => a.status === 'PENDING' || a.status === 'NEW').length}{' '}
-              PENDING
+        {/* Card 5: Call Tracking */}
+        <div className="bg-[#0E131F] p-5 rounded-2xl border border-[#FFB800]/40 shadow-xl relative overflow-hidden group">
+          <div className="absolute top-0 right-0 w-24 h-24 bg-[#FFB800]/10 rounded-bl-full pointer-events-none" />
+          <div className="flex justify-between items-start mb-2">
+            <span className="font-mono-data text-[11px] text-on-surface-variant uppercase font-bold tracking-wider">
+              Outbound Calls
+            </span>
+            <span className="p-1.5 rounded-lg bg-[#FFB800]/15 text-[#FFB800] border border-[#FFB800]/40 flex items-center justify-center">
+              <span className="material-symbols-outlined text-lg">call</span>
             </span>
           </div>
-
-          <div className="space-y-3">
-            {/* Unread Leads */}
-            {(() => {
-              const newLeads = leads.filter((l) => l.status === 'NEW');
-              return (
-                <div
-                  className={`p-4 rounded-xl border transition-all ${
-                    newLeads.length > 0
-                      ? 'bg-[#131929] border-secondary/40 shadow-[0_0_12px_rgba(255,184,0,0.1)]'
-                      : 'bg-[#131929]/60 border-outline-variant/20'
-                  }`}
-                >
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="flex items-center gap-3 min-w-0">
-                      <div
-                        className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
-                          newLeads.length > 0
-                            ? 'bg-secondary/15 border border-secondary/40'
-                            : 'bg-[#0E131F] border border-outline-variant/30'
-                        }`}
-                      >
-                        <span
-                          className={`material-symbols-outlined text-xl ${
-                            newLeads.length > 0 ? 'text-secondary' : 'text-on-surface-variant'
-                          }`}
-                        >
-                          chat
-                        </span>
-                      </div>
-                      <div className="min-w-0">
-                        <h5 className="font-headline-md text-sm font-bold text-on-surface flex items-center gap-2">
-                          Unread Leads — Need WhatsApp Reply
-                          {newLeads.length > 0 && <span className="w-2 h-2 rounded-full bg-secondary animate-pulse" />}
-                        </h5>
-                        <p className="font-mono-data text-[11px] text-on-surface-variant truncate">
-                          {newLeads.length > 0
-                            ? `${newLeads
-                                .slice(0, 3)
-                                .map((l) => l.name)
-                                .join(', ')}${newLeads.length > 3 ? ` and ${newLeads.length - 3} more` : ''}`
-                            : 'All leads have been contacted ✓'}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2 shrink-0">
-                      <span
-                        className={`font-mono-data text-2xl font-black ${
-                          newLeads.length > 0 ? 'text-secondary' : 'text-[#2ED573]'
-                        }`}
-                      >
-                        {newLeads.length}
-                      </span>
-                      {newLeads.length > 0 && (
-                        <button
-                          onClick={() => setActiveTab('leads')}
-                          className="px-3 py-1.5 rounded-lg bg-secondary/15 border border-secondary/50 text-secondary font-mono-data text-[10px] font-bold uppercase hover:bg-secondary hover:text-black transition-all cursor-pointer"
-                        >
-                          VIEW →
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              );
-            })()}
-
-            {/* Pending Slips */}
-            {(() => {
-              const pendingSlips = paymentSlips.filter((s) => s.status === 'PENDING');
-              return (
-                <div
-                  className={`p-4 rounded-xl border transition-all ${
-                    pendingSlips.length > 0
-                      ? 'bg-[#131929] border-[#2ED573]/40 shadow-[0_0_12px_rgba(46,213,115,0.1)]'
-                      : 'bg-[#131929]/60 border-outline-variant/20'
-                  }`}
-                >
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="flex items-center gap-3 min-w-0">
-                      <div
-                        className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
-                          pendingSlips.length > 0
-                            ? 'bg-[#2ED573]/15 border border-[#2ED573]/40'
-                            : 'bg-[#0E131F] border border-outline-variant/30'
-                        }`}
-                      >
-                        <span
-                          className={`material-symbols-outlined text-xl ${
-                            pendingSlips.length > 0 ? 'text-[#2ED573]' : 'text-on-surface-variant'
-                          }`}
-                        >
-                          receipt_long
-                        </span>
-                      </div>
-                      <div className="min-w-0">
-                        <h5 className="font-headline-md text-sm font-bold text-on-surface flex items-center gap-2">
-                          Bank Slips — Waiting for Verification
-                          {pendingSlips.length > 0 && (
-                            <span className="w-2 h-2 rounded-full bg-[#2ED573] animate-pulse" />
-                          )}
-                        </h5>
-                        <p className="font-mono-data text-[11px] text-on-surface-variant truncate">
-                          {pendingSlips.length > 0
-                            ? `${pendingSlips
-                                .slice(0, 3)
-                                .map((s) => s.studentName)
-                                .join(', ')}${pendingSlips.length > 3 ? ` and ${pendingSlips.length - 3} more` : ''}`
-                            : 'All payment slips have been processed ✓'}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2 shrink-0">
-                      <span
-                        className={`font-mono-data text-2xl font-black ${
-                          pendingSlips.length > 0 ? 'text-[#2ED573]' : 'text-[#2ED573]'
-                        }`}
-                      >
-                        {pendingSlips.length}
-                      </span>
-                      {pendingSlips.length > 0 && (
-                        <button
-                          onClick={() => setActiveTab('slips')}
-                          className="px-3 py-1.5 rounded-lg bg-[#2ED573]/15 border border-[#2ED573]/50 text-[#2ED573] font-mono-data text-[10px] font-bold uppercase hover:bg-[#2ED573] hover:text-black transition-all cursor-pointer"
-                        >
-                          VERIFY →
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              );
-            })()}
-
-            {/* Pending Job Apps */}
-            {(() => {
-              const pendingApps = jobApplications.filter((a) => a.status === 'PENDING' || a.status === 'NEW');
-              return (
-                <div
-                  className={`p-4 rounded-xl border transition-all ${
-                    pendingApps.length > 0
-                      ? 'bg-[#131929] border-[#00D2FF]/40 shadow-[0_0_12px_rgba(0,210,255,0.1)]'
-                      : 'bg-[#131929]/60 border-outline-variant/20'
-                  }`}
-                >
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="flex items-center gap-3 min-w-0">
-                      <div
-                        className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
-                          pendingApps.length > 0
-                            ? 'bg-[#00D2FF]/15 border border-[#00D2FF]/40'
-                            : 'bg-[#0E131F] border border-outline-variant/30'
-                        }`}
-                      >
-                        <span
-                          className={`material-symbols-outlined text-xl ${
-                            pendingApps.length > 0 ? 'text-[#00D2FF]' : 'text-on-surface-variant'
-                          }`}
-                        >
-                          work
-                        </span>
-                      </div>
-                      <div className="min-w-0">
-                        <h5 className="font-headline-md text-sm font-bold text-on-surface flex items-center gap-2">
-                          Job Applications — Pending Review
-                          {pendingApps.length > 0 && (
-                            <span className="w-2 h-2 rounded-full bg-[#00D2FF] animate-pulse" />
-                          )}
-                        </h5>
-                        <p className="font-mono-data text-[11px] text-on-surface-variant truncate">
-                          {pendingApps.length > 0
-                            ? `${pendingApps
-                                .slice(0, 3)
-                                .map((a) => a.name)
-                                .join(', ')}${pendingApps.length > 3 ? ` and ${pendingApps.length - 3} more` : ''}`
-                            : 'No pending job applications ✓'}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2 shrink-0">
-                      <span
-                        className={`font-mono-data text-2xl font-black ${
-                          pendingApps.length > 0 ? 'text-[#00D2FF]' : 'text-[#2ED573]'
-                        }`}
-                      >
-                        {pendingApps.length}
-                      </span>
-                      {pendingApps.length > 0 && (
-                        <button
-                          onClick={() => setActiveTab('jobs')}
-                          className="px-3 py-1.5 rounded-lg bg-[#00D2FF]/15 border border-[#00D2FF]/50 text-[#00D2FF] font-mono-data text-[10px] font-bold uppercase hover:bg-[#00D2FF] hover:text-black transition-all cursor-pointer"
-                        >
-                          REVIEW →
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              );
-            })()}
-
-            {/* Contacted Leads */}
-            {(() => {
-              const awaitingPayment = leads.filter((l) => l.status === 'CONTACTED');
-              return (
-                <div
-                  className={`p-4 rounded-xl border transition-all ${
-                    awaitingPayment.length > 0
-                      ? 'bg-[#131929] border-purple-500/40 shadow-[0_0_12px_rgba(168,85,247,0.1)]'
-                      : 'bg-[#131929]/60 border-outline-variant/20'
-                  }`}
-                >
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="flex items-center gap-3 min-w-0">
-                      <div
-                        className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
-                          awaitingPayment.length > 0
-                            ? 'bg-purple-500/15 border border-purple-500/40'
-                            : 'bg-[#0E131F] border border-outline-variant/30'
-                        }`}
-                      >
-                        <span
-                          className={`material-symbols-outlined text-xl ${
-                            awaitingPayment.length > 0 ? 'text-purple-400' : 'text-on-surface-variant'
-                          }`}
-                        >
-                          hourglass_top
-                        </span>
-                      </div>
-                      <div className="min-w-0">
-                        <h5 className="font-headline-md text-sm font-bold text-on-surface flex items-center gap-2">
-                          Contacted Leads — Awaiting Payment
-                        </h5>
-                        <p className="font-mono-data text-[11px] text-on-surface-variant truncate">
-                          {awaitingPayment.length > 0
-                            ? `${awaitingPayment
-                                .slice(0, 3)
-                                .map((l) => l.name)
-                                .join(', ')}${awaitingPayment.length > 3 ? ` and ${awaitingPayment.length - 3} more` : ''}`
-                            : 'No leads stuck in contacted stage ✓'}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2 shrink-0">
-                      <span
-                        className={`font-mono-data text-2xl font-black ${
-                          awaitingPayment.length > 0 ? 'text-purple-400' : 'text-[#2ED573]'
-                        }`}
-                      >
-                        {awaitingPayment.length}
-                      </span>
-                      {awaitingPayment.length > 0 && (
-                        <button
-                          onClick={() => setActiveTab('leads')}
-                          className="px-3 py-1.5 rounded-lg bg-purple-500/15 border border-purple-500/50 text-purple-400 font-mono-data text-[10px] font-bold uppercase hover:bg-purple-500 hover:text-black transition-all cursor-pointer"
-                        >
-                          FOLLOW UP →
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              );
-            })()}
+          <div className="font-mono-data text-2xl sm:text-3xl font-black text-[#FFB800] tracking-tight">
+            {totalCallAttempts}
+          </div>
+          <div className="flex items-center justify-between text-xs font-mono-data pt-2 mt-2 border-t border-outline-variant/20">
+            <span className="text-[#2ED573] font-bold">{totalPositiveCalls} Positive Contacts</span>
           </div>
         </div>
+      </div>
 
-        {/* Right (5 Cols): Division Breakdown & Seat Capacity Gauges */}
-        <div className="lg:col-span-5 bg-[#0E131F] p-6 rounded-2xl border border-secondary/30 shadow-2xl space-y-5">
+      {/* ━━━ 2. MIDDLE ROW: DIVISION CAPACITY & EXECUTIVE INTELLIGENCE ━━━ */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        {/* Left (7 Cols): Division Breakdown & Seat Capacity Gauges */}
+        <div className="lg:col-span-7 bg-[#0E131F] p-6 rounded-2xl border border-secondary/30 shadow-2xl space-y-5">
           <div className="border-b border-outline-variant/20 pb-3 flex justify-between items-center">
             <div>
               <h3 className="font-headline-md text-lg text-on-surface font-bold flex items-center gap-2">
@@ -571,18 +536,19 @@ export const AnalyticsTab: React.FC<AnalyticsTabProps> = ({
 
               return (
                 <div key={course.id} className="p-4 rounded-xl bg-[#131929] border border-outline-variant/30 space-y-2.5">
-                  <div className="flex justify-between items-center">
-                    <div className="flex items-center gap-2">
-                      <span className="font-label-caps text-[10px] px-2 py-0.5 rounded bg-secondary/15 text-secondary font-black border border-secondary/30">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 sm:gap-2">
+                    <div className="flex items-center gap-2 flex-wrap min-w-0">
+                      <span className="font-label-caps text-[10px] px-2 py-0.5 rounded bg-secondary/15 text-secondary font-black border border-secondary/30 shrink-0">
                         {course.badge || `${(course.slug || 'BMB').toUpperCase()} DIVISION`}
                       </span>
-                      <h4 className="font-headline-md text-sm text-on-surface font-bold truncate max-w-[150px]">
+                      <h4 className="font-headline-md text-sm text-on-surface font-bold break-words">
                         {course.name || (course as any).title || 'Division Program'}
                       </h4>
                     </div>
-                    <span className="font-mono-data text-xs font-bold text-secondary">
-                      RS. {divisionRevenue.toLocaleString('en-US')}
-                    </span>
+                    <div className="flex items-center gap-1 font-mono-data text-xs font-bold text-secondary self-start sm:self-auto shrink-0">
+                      <span className="text-[10px] text-on-surface-variant font-normal sm:hidden">Revenue: </span>
+                      <span>RS. {divisionRevenue.toLocaleString('en-US')}</span>
+                    </div>
                   </div>
 
                   <div className="space-y-1">
@@ -629,59 +595,6 @@ export const AnalyticsTab: React.FC<AnalyticsTabProps> = ({
                 </div>
               );
             })}
-          </div>
-        </div>
-      </div>
-
-      {/* ━━━ 3. BOTTOM ROW: LIVE COMMAND RADAR STREAM & EXECUTIVE EXPORT DECK ━━━ */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* Left (7 Cols): Live Tactical Command Radar Stream */}
-        <div className="lg:col-span-7 bg-[#0E131F] p-6 rounded-2xl border border-secondary/30 shadow-2xl space-y-4">
-          <div className="flex justify-between items-center border-b border-outline-variant/20 pb-3">
-            <div>
-              <h3 className="font-headline-md text-lg text-on-surface font-bold flex items-center gap-2">
-                <span className="material-symbols-outlined text-[#2ED573] animate-pulse">radar</span>
-                Live Command Radar (Real-Time Activity)
-              </h3>
-              <p className="font-mono-data text-xs text-on-surface-variant">
-                Chronological tactical events synthesized across all operational divisions
-              </p>
-            </div>
-            <span className="w-2.5 h-2.5 rounded-full bg-[#2ED573] animate-ping" />
-          </div>
-
-          <div className="space-y-3">
-            {radarEvents.length === 0 ? (
-              <div className="p-6 text-center text-on-surface-variant font-mono-data text-xs italic">
-                No recent tactical radar events logged.
-              </div>
-            ) : (
-              radarEvents.map((evt) => (
-                <div
-                  key={evt.id}
-                  className="p-3.5 rounded-xl bg-[#131929] border border-outline-variant/30 flex items-center justify-between gap-3 hover:border-secondary/50 transition-colors"
-                >
-                  <div className="flex items-center gap-3 min-w-0">
-                    <div className="w-9 h-9 rounded-lg bg-black/40 border border-outline-variant/30 flex items-center justify-center shrink-0">
-                      <span className={`material-symbols-outlined text-lg ${evt.iconColor}`}>{evt.icon}</span>
-                    </div>
-                    <div className="min-w-0 space-y-0.5">
-                      <h5 className="font-headline-md text-xs font-bold text-on-surface truncate">{evt.title}</h5>
-                      <p className="font-mono-data text-[11px] text-on-surface-variant truncate">{evt.subtitle}</p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-3 shrink-0">
-                    <span className={`font-mono-data text-[10px] font-bold px-2.5 py-0.5 rounded-full border ${evt.badgeColor}`}>
-                      {evt.badge}
-                    </span>
-                    <span className="font-mono-data text-[10px] text-on-surface-variant hidden sm:inline">
-                      {evt.time}
-                    </span>
-                  </div>
-                </div>
-              ))
-            )}
           </div>
         </div>
 
@@ -739,6 +652,56 @@ export const AnalyticsTab: React.FC<AnalyticsTabProps> = ({
               <span>PRINT / SAVE AS PDF SUMMARY</span>
             </button>
           </div>
+        </div>
+      </div>
+
+      {/* ━━━ 3. BOTTOM ROW: LIVE COMMAND RADAR STREAM ━━━ */}
+      <div className="bg-[#0E131F] p-6 rounded-2xl border border-secondary/30 shadow-2xl space-y-4">
+        <div className="flex justify-between items-center border-b border-outline-variant/20 pb-3">
+          <div>
+            <h3 className="font-headline-md text-lg text-on-surface font-bold flex items-center gap-2">
+              <span className="material-symbols-outlined text-[#2ED573] animate-pulse">radar</span>
+              Live Command Radar (Real-Time Activity)
+            </h3>
+            <p className="font-mono-data text-xs text-on-surface-variant">
+              Chronological tactical events synthesized across all operational divisions
+            </p>
+          </div>
+          <span className="w-2.5 h-2.5 rounded-full bg-[#2ED573] animate-ping" />
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          {radarEvents.length === 0 ? (
+            <div className="col-span-full p-6 text-center text-on-surface-variant font-mono-data text-xs italic">
+              No recent tactical radar events logged.
+            </div>
+          ) : (
+            radarEvents.map((evt) => (
+              <div
+                key={evt.id}
+                className="p-3.5 rounded-xl bg-[#131929] border border-outline-variant/30 flex items-center justify-between gap-3 hover:border-secondary/50 transition-colors"
+              >
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="w-9 h-9 rounded-lg bg-black/40 border border-outline-variant/30 flex items-center justify-center shrink-0">
+                    <span className={`material-symbols-outlined text-lg ${evt.iconColor}`}>{evt.icon}</span>
+                  </div>
+                  <div className="min-w-0 space-y-0.5">
+                    <h5 className="font-headline-md text-xs font-bold text-on-surface truncate">{evt.title}</h5>
+                    <p className="font-mono-data text-[11px] text-on-surface-variant truncate">{evt.subtitle}</p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3 shrink-0">
+                  <span className={`font-mono-data text-[10px] font-bold px-2.5 py-0.5 rounded-full border ${evt.badgeColor}`}>
+                    {evt.badge}
+                  </span>
+                  <span className="font-mono-data text-[10px] text-on-surface-variant hidden sm:inline">
+                    {evt.time}
+                  </span>
+                </div>
+              </div>
+            ))
+          )}
         </div>
       </div>
     </motion.div>

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { api } from '../../services/api';
+import { LeaderboardSkeleton } from './ShimmerSkeletons';
 
 interface LeaderboardUser {
   standing: number;
@@ -124,12 +125,7 @@ export const LeaderboardModal: React.FC<LeaderboardModalProps> = ({
           {/* Content Area */}
           <div className="p-5 overflow-y-auto flex-1 space-y-5 custom-scrollbar">
             {loading ? (
-              <div className="py-16 text-center space-y-3">
-                <div className="w-10 h-10 rounded-full border-2 border-secondary border-t-transparent animate-spin mx-auto" />
-                <p className="font-mono-data text-xs text-secondary tracking-widest uppercase">
-                  SYNCHRONIZING OPERATIVE DOSSIERS...
-                </p>
-              </div>
+              <LeaderboardSkeleton />
             ) : leaderboard.length === 0 ? (
               <div className="py-16 text-center space-y-2">
                 <span className="material-symbols-outlined text-4xl text-on-surface-variant">military_tech</span>

@@ -11,11 +11,14 @@ import { authenticate } from '../middlewares/authenticate';
 import { requireAdmin } from '../middlewares/requireAdmin';
 import { requireRole } from '../middlewares/requireRole';
 import { validateBody, paymentSlipSchema } from '../middlewares/validate';
+import { idempotency } from '../middlewares/idempotency';
+import { verifyCaptcha } from '../middlewares/captcha';
+import { publicSubmissionLimiter } from '../middlewares/abuseLimiter';
 
 const router = Router();
 
-// Public: student submits bank payment slip with server-side magic byte validation
-router.post('/', validateBody(paymentSlipSchema), createPaymentSlip);
+// Public: student submits bank payment slip with server-side magic byte validation & idempotency
+router.post('/', publicSubmissionLimiter, idempotency({ scope: 'slips' }), verifyCaptcha(), validateBody(paymentSlipSchema), createPaymentSlip);
 
 // ── Signed receipt viewer ───────────────────────────────────────────────────
 // No auth middleware — the HMAC signed token IS the proof of access.

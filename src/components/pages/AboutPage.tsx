@@ -3,6 +3,8 @@ import { motion } from 'framer-motion';
 import type { Variants } from 'framer-motion';
 import { PageSEO } from '../ui/PageSEO';
 import uweHeroEmblem from '../../assets/images/uwe_hero_emblem.png';
+import uweHeroEmblemWebp from '../../assets/images/uwe_hero_emblem.webp';
+import { OptimizedPicture } from '../ui/OptimizedPicture';
 
 const containerVariants: Variants = {
   initial: { opacity: 0 },
@@ -112,10 +114,11 @@ export const AboutPage: React.FC = () => {
             transition={{ duration: 0.6 }}
             className="relative rounded-xl overflow-hidden glass-card aspect-square md:aspect-auto md:h-full min-h-[300px] sm:min-h-[400px] flex items-center justify-center glow-accent border border-outline-variant/40 shadow-2xl group"
           >
-            <img 
-              className="w-full h-full object-cover absolute inset-0 opacity-85 group-hover:scale-105 transition-transform duration-700"
+            <OptimizedPicture
+              webpSrc={uweHeroEmblemWebp}
+              fallbackSrc={uweHeroEmblem}
               alt="UWE Tactical Command"
-              src={uweHeroEmblem}
+              className="w-full h-full object-cover absolute inset-0 opacity-85 group-hover:scale-105 transition-transform duration-700"
             />
           </motion.div>
         </div>

@@ -7,10 +7,10 @@ const router = Router();
 // Public / cached leaderboard
 router.get('/leaderboard', getLeaderboard);
 
-// User profile & XP progress
-router.get('/profile/:userId', getUserGamificationProfile);
+// User gamification profile — authenticated; non-admins may only read their own profile
+router.get('/profile/:userId', authenticate, getUserGamificationProfile);
 
-// Award XP (Authenticated student or coach)
+// Award XP (Authenticated student or coach/admin)
 router.post('/award-xp', authenticate, awardXp);
 
 export default router;

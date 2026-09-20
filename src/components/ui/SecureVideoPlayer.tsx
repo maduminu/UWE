@@ -44,6 +44,7 @@ export const SecureVideoPlayer: React.FC<SecureVideoPlayerProps> = ({
   const [showControls, setShowControls] = useState(true);
   const [buffered, setBuffered] = useState(0);
   const [watermarkPos, setWatermarkPos] = useState({ x: 20, y: 20 });
+  const [videoLoading, setVideoLoading] = useState(true);
 
   // Track which milestones have already been reported so we don't fire duplicates
   const reportedMilestones = useRef<Set<number>>(new Set());
@@ -262,6 +263,10 @@ export const SecureVideoPlayer: React.FC<SecureVideoPlayerProps> = ({
         src={videoUrl}
         className="w-full h-full object-contain"
         onLoadedMetadata={handleLoadedMetadata}
+        onLoadedData={() => setVideoLoading(false)}
+        onWaiting={() => setVideoLoading(true)}
+        onPlaying={() => setVideoLoading(false)}
+        onCanPlay={() => setVideoLoading(false)}
         onTimeUpdate={handleTimeUpdate}
         onPlay={() => setIsPlaying(true)}
         onPause={() => setIsPlaying(false)}
@@ -272,6 +277,33 @@ export const SecureVideoPlayer: React.FC<SecureVideoPlayerProps> = ({
         disablePictureInPicture
         autoPlay
       />
+
+      {/* ── Video Decryption & Buffering Shimmer HUD ── */}
+      <AnimatePresence>
+        {videoLoading && !isYouTube && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="absolute inset-0 z-25 bg-[#06080D]/90 backdrop-blur-sm flex flex-col items-center justify-center p-6 space-y-4 shimmer-sweep pointer-events-none select-none"
+          >
+            <div className="relative flex items-center justify-center">
+              <div className="w-20 h-20 rounded-full border border-dashed border-secondary/40 animate-spin" style={{ animationDuration: '6s' }} />
+              <div className="w-14 h-14 rounded-full border border-secondary/60 bg-secondary/15 flex items-center justify-center shadow-[0_0_30px_rgba(255,184,0,0.3)] absolute">
+                <span className="material-symbols-outlined text-secondary text-2xl animate-pulse">lock_open</span>
+              </div>
+            </div>
+            <div className="text-center space-y-1">
+              <p className="font-mono-data text-xs text-secondary font-bold tracking-widest uppercase">
+                DECRYPTING CLASSIFIED STREAM...
+              </p>
+              <p className="font-mono-data text-[10px] text-on-surface-variant">
+                1080p Tactical Video Pipeline • Anti-Piracy Watermarking Active
+              </p>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* ── Dynamic Watermark Overlay ── */}
       {watermarkText && (

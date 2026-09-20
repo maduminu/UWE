@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { PageId } from '../layout/Navbar';
 import { PageSEO } from '../ui/PageSEO';
@@ -6,6 +6,8 @@ import { TiltCard } from '../ui/TiltCard';
 import { BankSlipUploadModal } from '../ui/BankSlipUploadModal';
 import { parsePrice, formatPrice } from '../../utils/priceFormatter';
 import { api } from '../../services/api';
+import { useRealtimeEvent } from '../../services/realtime';
+import { TestimonialsMarquee } from '../ui/TestimonialsMarquee';
 
 interface ProductPageProps {
   setActivePage: (page: PageId) => void;
@@ -95,47 +97,51 @@ export const ProductPage: React.FC<ProductPageProps> = ({ setActivePage, onSelec
 
   const [programs, setPrograms] = useState(defaultPrograms);
 
+  const fetchLivePrices = useCallback(async () => {
+    try {
+      const json = await api.getCourses();
+      if (json.data && json.data.length > 0) {
+        const mapped = json.data.map((c: any) => {
+          const numericPrice = parsePrice(c.price);
+          const defaultMatch = defaultPrograms.find((p) => p.id === c.slug);
+          const category = c.category?.toLowerCase() || (c.slug === 'leadership' ? 'leadership' : c.slug === 'ignit' ? 'ignit' : 'bmb');
+          const upcomingBatch = c.batches?.find((b: any) => b.status === 'UPCOMING' || b.status === 'ACTIVE') || c.batches?.[0];
+          return {
+            id: c.slug,
+            category,
+            title: c.title,
+            subtitle: c.subtitle || defaultMatch?.subtitle || 'Tactical Directive',
+            duration: c.duration || defaultMatch?.duration || '5 Days Intensive',
+            price: formatPrice(numericPrice, c.currency || 'RS.'),
+            period: 'per operative',
+            icon: c.slug === 'leadership' ? 'military_tech' : c.slug === 'ignit' ? 'rocket_launch' : 'psychology',
+            color: c.slug === 'leadership' ? 'error-container' : 'tertiary',
+            borderColor: c.slug === 'leadership' ? 'border-[#00D2FF]/50' : c.slug === 'ignit' ? 'border-[#00FF66]/50' : 'border-secondary/50',
+            rating: defaultMatch?.rating || 4.95,
+            instructor: defaultMatch?.instructor || 'Commander Janith Perera',
+            description: c.description || defaultMatch?.description || 'Tactical mind and command protocol.',
+            features: defaultMatch?.features || [
+              'Subconscious Paradigm Rewiring',
+              'Tactical Command & Control',
+              'Official Verified Certificate Included',
+            ],
+            badge: c.badge || defaultMatch?.badge || 'MIND DIVISION',
+            seatsLeft: upcomingBatch?.availableSeats ?? defaultMatch?.seatsLeft ?? 20,
+          };
+        });
+        setPrograms(mapped);
+      }
+    } catch {
+      // API offline
+    }
+  }, []);
+
+  useRealtimeEvent('course:updated', () => fetchLivePrices());
+
   // Fetch live courses from Supabase via API
   useEffect(() => {
-    const fetchLivePrices = async () => {
-      try {
-        const json = await api.getCourses();
-        if (json.data && json.data.length > 0) {
-          const mapped = json.data.map((c: any) => {
-            const numericPrice = parsePrice(c.price);
-            const defaultMatch = defaultPrograms.find((p) => p.id === c.slug);
-            const category = c.category?.toLowerCase() || (c.slug === 'leadership' ? 'leadership' : c.slug === 'ignit' ? 'ignit' : 'bmb');
-            return {
-              id: c.slug,
-              category,
-              title: c.title,
-              subtitle: c.subtitle || defaultMatch?.subtitle || 'Tactical Directive',
-              duration: c.duration || defaultMatch?.duration || '5 Days Intensive',
-              price: formatPrice(numericPrice, c.currency || 'RS.'),
-              period: 'per operative',
-              icon: c.slug === 'leadership' ? 'military_tech' : c.slug === 'ignit' ? 'rocket_launch' : 'psychology',
-              color: c.slug === 'leadership' ? 'error-container' : 'tertiary',
-              borderColor: c.slug === 'leadership' ? 'border-[#00D2FF]/50' : c.slug === 'ignit' ? 'border-[#00FF66]/50' : 'border-secondary/50',
-              rating: defaultMatch?.rating || 4.95,
-              instructor: defaultMatch?.instructor || 'Commander Janith Perera',
-              description: c.description || defaultMatch?.description || 'Tactical mind and command protocol.',
-              features: defaultMatch?.features || [
-                'Subconscious Paradigm Rewiring',
-                'Tactical Command & Control',
-                'Official Verified Certificate Included',
-              ],
-              badge: c.badge || defaultMatch?.badge || 'MIND DIVISION',
-              seatsLeft: c.batches?.[0]?.availableSeats ?? defaultMatch?.seatsLeft ?? 20,
-            };
-          });
-          setPrograms(mapped);
-        }
-      } catch {
-        // API offline
-      }
-    };
     fetchLivePrices();
-  }, []);
+  }, [fetchLivePrices]);
 
   const filteredPrograms = programs.filter((p) => {
     const matchesCategory = filter === 'all' || p.category === filter;
@@ -336,6 +342,13 @@ export const ProductPage: React.FC<ProductPageProps> = ({ setActivePage, onSelec
         isOpen={slipModalOpen}
         onClose={() => setSlipModalOpen(false)}
         defaultCourseSlug={selectedCourseForSlip}
+      />
+
+      {/* Verified Operative Testimonials Marquee Strip */}
+      <TestimonialsMarquee 
+        onNavigatePartners={() => setActivePage('partners')} 
+        title="AUDITED DIRECTIVE OUTCOMES"
+        subtitle="Real-world results and sovereign breakthroughs reported across all UWE training tiers."
       />
 
       {/* Comparison Matrix Section */}

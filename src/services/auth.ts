@@ -31,7 +31,7 @@ export interface StudentSession {
 
 const ADMIN_SESSION_KEY = 'uwe_admin_session';
 const STUDENT_SESSION_KEY = 'uwe_student_session';
-const DEFAULT_ACCESS_DURATION = 15 * 60 * 1000; // 15 minutes (short-lived access token)
+const DEFAULT_ACCESS_DURATION = 7 * 24 * 60 * 60 * 1000; // 7 days (matches refresh token lifetime)
 
 // Helper to safely parse JSON from localStorage
 const safeGetItem = <T>(key: string): T | null => {
@@ -109,6 +109,13 @@ export const authService = {
     // Check expiration
     if (session.expiresAt && Date.now() > session.expiresAt) {
       authService.clearAdminSession();
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(
+          new CustomEvent('auth:session_expired', {
+            detail: { type: 'admin', reason: 'Your Command HQ admin session has expired.' },
+          })
+        );
+      }
       return null;
     }
     return session;
@@ -169,6 +176,13 @@ export const authService = {
     // Check expiration
     if (session.expiresAt && Date.now() > session.expiresAt) {
       authService.clearStudentSession();
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(
+          new CustomEvent('auth:session_expired', {
+            detail: { type: 'student', reason: 'Your operative session has expired.' },
+          })
+        );
+      }
       return null;
     }
     return session;

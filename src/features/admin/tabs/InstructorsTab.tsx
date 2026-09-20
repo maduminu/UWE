@@ -18,6 +18,9 @@ export const InstructorsTab: React.FC<InstructorsTabProps> = ({
   addToast,
 }) => {
   const [addInstructorModalOpen, setAddInstructorModalOpen] = useState(false);
+  const [editInstructorModalOpen, setEditInstructorModalOpen] = useState(false);
+  const [editingInstructor, setEditingInstructor] = useState<any | null>(null);
+
   const [newInstructor, setNewInstructor] = useState({
     name: '',
     title: '',
@@ -52,6 +55,54 @@ export const InstructorsTab: React.FC<InstructorsTabProps> = ({
           rating: '4.95',
           studentCount: '1000',
         });
+      }
+    } catch (err: any) {
+      addToast(`❌ ${err.message}`, 'error');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleOpenEdit = (inst: any) => {
+    setEditingInstructor({
+      id: inst.id,
+      name: inst.name || '',
+      title: inst.title || '',
+      bio: inst.bio || '',
+      credentials: inst.credentials || '',
+      specialties: inst.specialties || '',
+      courseSlugs: inst.courseSlugs || 'bmb,leadership,ignit',
+      rating: inst.rating ? String(inst.rating) : '4.95',
+      studentCount: inst.studentCount ? String(inst.studentCount) : '1000',
+    });
+    setEditInstructorModalOpen(true);
+  };
+
+  const handleSaveEdit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingInstructor?.id || !editingInstructor.name || !editingInstructor.title) {
+      addToast('Name and Title are required', 'error');
+      return;
+    }
+    setSaving(true);
+    try {
+      const res = await api.updateInstructor(editingInstructor.id, {
+        name: editingInstructor.name,
+        title: editingInstructor.title,
+        bio: editingInstructor.bio,
+        credentials: editingInstructor.credentials,
+        specialties: editingInstructor.specialties,
+        courseSlugs: editingInstructor.courseSlugs,
+        rating: editingInstructor.rating,
+        studentCount: editingInstructor.studentCount,
+      });
+      if (res.data) {
+        setAdminInstructors((prev) =>
+          prev.map((i) => (i.id === editingInstructor.id ? res.data : i))
+        );
+        addToast(`✅ Faculty profile for ${res.data.name} updated!`);
+        setEditInstructorModalOpen(false);
+        setEditingInstructor(null);
       }
     } catch (err: any) {
       addToast(`❌ ${err.message}`, 'error');
@@ -99,7 +150,7 @@ export const InstructorsTab: React.FC<InstructorsTabProps> = ({
         {adminInstructors.map((inst) => (
           <div
             key={inst.id}
-            className="p-6 rounded-2xl bg-[#0E131F] border border-outline-variant/30 flex flex-col justify-between space-y-4"
+            className="p-6 rounded-2xl bg-[#0E131F] border border-outline-variant/30 flex flex-col justify-between space-y-4 hover:border-secondary/40 transition-all shadow-md"
           >
             <div className="space-y-3">
               <div className="flex items-center gap-3">
@@ -118,16 +169,33 @@ export const InstructorsTab: React.FC<InstructorsTabProps> = ({
                 <p className="text-[10px] text-on-surface-variant uppercase">Credentials:</p>
                 <p className="text-on-surface truncate">{inst.credentials}</p>
               </div>
+
+              {inst.specialties && (
+                <div className="p-2.5 rounded-xl bg-[#111624] border border-outline-variant/20 text-xs font-mono-data space-y-1">
+                  <p className="text-[10px] text-secondary uppercase">Specialties:</p>
+                  <p className="text-on-surface-variant truncate">{inst.specialties}</p>
+                </div>
+              )}
             </div>
 
             <div className="pt-3 border-t border-outline-variant/20 flex justify-between items-center text-xs font-mono-data">
               <span className="text-[#FFB800]">★ {inst.rating || 4.95}</span>
-              <button
-                onClick={() => handleDeleteInstructor(inst.id)}
-                className="p-1 rounded bg-red-500/15 text-red-400 hover:bg-red-500/25 cursor-pointer"
-              >
-                <span className="material-symbols-outlined text-sm">delete</span>
-              </button>
+              <div className="flex items-center gap-1.5">
+                <button
+                  onClick={() => handleOpenEdit(inst)}
+                  className="p-1.5 rounded-lg bg-[#131929] text-secondary hover:bg-secondary hover:text-black transition-colors cursor-pointer"
+                  title="Edit Faculty Member"
+                >
+                  <span className="material-symbols-outlined text-sm">edit</span>
+                </button>
+                <button
+                  onClick={() => handleDeleteInstructor(inst.id)}
+                  className="p-1.5 rounded-lg bg-red-500/15 text-red-400 hover:bg-red-500 hover:text-white transition-colors cursor-pointer"
+                  title="Delete Faculty Member"
+                >
+                  <span className="material-symbols-outlined text-sm">delete</span>
+                </button>
+              </div>
             </div>
           </div>
         ))}
@@ -152,7 +220,7 @@ export const InstructorsTab: React.FC<InstructorsTabProps> = ({
                 </div>
                 <button
                   onClick={() => setAddInstructorModalOpen(false)}
-                  className="text-on-surface-variant hover:text-on-surface"
+                  className="text-on-surface-variant hover:text-on-surface cursor-pointer"
                 >
                   <span className="material-symbols-outlined">close</span>
                 </button>
@@ -166,7 +234,7 @@ export const InstructorsTab: React.FC<InstructorsTabProps> = ({
                     value={newInstructor.name}
                     onChange={(e) => setNewInstructor({ ...newInstructor, name: e.target.value })}
                     placeholder="e.g. Commander Janith Perera"
-                    className="input-field w-full p-2.5 rounded-lg bg-[#131929] border-secondary/40"
+                    className="input-field w-full p-2.5 rounded-lg bg-[#131929] border border-secondary/40"
                   />
                 </div>
                 <div>
@@ -177,17 +245,17 @@ export const InstructorsTab: React.FC<InstructorsTabProps> = ({
                     value={newInstructor.title}
                     onChange={(e) => setNewInstructor({ ...newInstructor, title: e.target.value })}
                     placeholder="Founder & Chief Mindset Architect"
-                    className="input-field w-full p-2.5 rounded-lg bg-[#131929] border-secondary/40 text-secondary"
+                    className="input-field w-full p-2.5 rounded-lg bg-[#131929] border border-secondary/40 text-secondary"
                   />
                 </div>
                 <div>
-                  <label className="text-on-surface-variant block mb-1">Academic & Professional Credentials</label>
+                  <label className="text-on-surface-variant block mb-1">Academic &amp; Professional Credentials</label>
                   <input
                     type="text"
                     value={newInstructor.credentials}
                     onChange={(e) => setNewInstructor({ ...newInstructor, credentials: e.target.value })}
                     placeholder="B.Sc (Hons), Certified Master NLP, 10+ Yrs Experience"
-                    className="input-field w-full p-2.5 rounded-lg bg-[#131929] border-secondary/40"
+                    className="input-field w-full p-2.5 rounded-lg bg-[#131929] border border-secondary/40"
                   />
                 </div>
                 <div>
@@ -197,29 +265,121 @@ export const InstructorsTab: React.FC<InstructorsTabProps> = ({
                     value={newInstructor.specialties}
                     onChange={(e) => setNewInstructor({ ...newInstructor, specialties: e.target.value })}
                     placeholder="Subconscious Reprogramming, High-Ticket Negotiation"
-                    className="input-field w-full p-2.5 rounded-lg bg-[#131929] border-secondary/40"
+                    className="input-field w-full p-2.5 rounded-lg bg-[#131929] border border-secondary/40"
                   />
                 </div>
                 <div>
-                  <label className="text-on-surface-variant block mb-1">Bio / Profile Summary</label>
+                  <label className="text-on-surface-variant block mb-1">Bio / Profile Summary *</label>
                   <textarea
                     rows={3}
+                    required
                     value={newInstructor.bio}
                     onChange={(e) => setNewInstructor({ ...newInstructor, bio: e.target.value })}
                     placeholder="Extensive background summary and achievements..."
-                    className="input-field w-full p-2.5 rounded-lg bg-[#131929] border-secondary/40"
+                    className="input-field w-full p-2.5 rounded-lg bg-[#131929] border border-secondary/40"
                   />
                 </div>
                 <div className="pt-3 flex justify-end gap-3 border-t border-outline-variant/30">
                   <button
                     type="button"
                     onClick={() => setAddInstructorModalOpen(false)}
-                    className="px-4 py-2 rounded bg-[#131929] text-on-surface-variant"
+                    className="px-4 py-2 rounded bg-[#131929] text-on-surface-variant hover:text-on-surface cursor-pointer"
                   >
                     CANCEL
                   </button>
-                  <button type="submit" disabled={saving} className="btn-elite px-5 py-2 rounded font-bold uppercase">
+                  <button type="submit" disabled={saving} className="btn-elite px-5 py-2 rounded font-bold uppercase cursor-pointer">
                     {saving ? 'SAVING...' : 'REGISTER FACULTY'}
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* ━━━ EDIT INSTRUCTOR MODAL ━━━ */}
+      <AnimatePresence>
+        {editInstructorModalOpen && editingInstructor && (
+          <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md overflow-y-auto">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              className="bg-[#0D111A] border border-secondary/40 rounded-2xl p-6 max-w-lg w-full space-y-4 text-left shadow-2xl"
+            >
+              <div className="flex justify-between items-center border-b border-outline-variant/30 pb-3">
+                <div className="flex items-center gap-2">
+                  <span className="material-symbols-outlined text-secondary text-xl">edit</span>
+                  <h3 className="font-headline-md text-lg text-on-surface font-black uppercase">
+                    EDIT <span className="text-secondary">FACULTY MEMBER</span>
+                  </h3>
+                </div>
+                <button
+                  onClick={() => setEditInstructorModalOpen(false)}
+                  className="text-on-surface-variant hover:text-on-surface cursor-pointer"
+                >
+                  <span className="material-symbols-outlined">close</span>
+                </button>
+              </div>
+              <form onSubmit={handleSaveEdit} className="space-y-3.5 text-xs font-mono-data">
+                <div>
+                  <label className="text-secondary font-bold block mb-1">Instructor Full Name *</label>
+                  <input
+                    type="text"
+                    required
+                    value={editingInstructor.name}
+                    onChange={(e) => setEditingInstructor({ ...editingInstructor, name: e.target.value })}
+                    className="input-field w-full p-2.5 rounded-lg bg-[#131929] border border-secondary/40"
+                  />
+                </div>
+                <div>
+                  <label className="text-secondary font-bold block mb-1">Title / Designation *</label>
+                  <input
+                    type="text"
+                    required
+                    value={editingInstructor.title}
+                    onChange={(e) => setEditingInstructor({ ...editingInstructor, title: e.target.value })}
+                    className="input-field w-full p-2.5 rounded-lg bg-[#131929] border border-secondary/40 text-secondary"
+                  />
+                </div>
+                <div>
+                  <label className="text-on-surface-variant block mb-1">Academic &amp; Professional Credentials</label>
+                  <input
+                    type="text"
+                    value={editingInstructor.credentials}
+                    onChange={(e) => setEditingInstructor({ ...editingInstructor, credentials: e.target.value })}
+                    className="input-field w-full p-2.5 rounded-lg bg-[#131929] border border-secondary/40"
+                  />
+                </div>
+                <div>
+                  <label className="text-on-surface-variant block mb-1">Core Specialties</label>
+                  <input
+                    type="text"
+                    value={editingInstructor.specialties}
+                    onChange={(e) => setEditingInstructor({ ...editingInstructor, specialties: e.target.value })}
+                    className="input-field w-full p-2.5 rounded-lg bg-[#131929] border border-secondary/40"
+                  />
+                </div>
+                <div>
+                  <label className="text-on-surface-variant block mb-1">Bio / Profile Summary *</label>
+                  <textarea
+                    rows={3}
+                    required
+                    value={editingInstructor.bio}
+                    onChange={(e) => setEditingInstructor({ ...editingInstructor, bio: e.target.value })}
+                    className="input-field w-full p-2.5 rounded-lg bg-[#131929] border border-secondary/40"
+                  />
+                </div>
+                <div className="pt-3 flex justify-end gap-3 border-t border-outline-variant/30">
+                  <button
+                    type="button"
+                    onClick={() => setEditInstructorModalOpen(false)}
+                    className="px-4 py-2 rounded bg-[#131929] text-on-surface-variant hover:text-on-surface cursor-pointer"
+                  >
+                    CANCEL
+                  </button>
+                  <button type="submit" disabled={saving} className="btn-elite px-5 py-2 rounded font-bold uppercase cursor-pointer">
+                    {saving ? 'SAVING...' : 'SAVE CHANGES'}
                   </button>
                 </div>
               </form>

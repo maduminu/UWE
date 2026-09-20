@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { api } from '../../../services/api';
 import { exportToCSV } from '../utils/exportCsv';
+import { useRealtimeEvent } from '../../../services/realtime';
 
 interface JobsTabProps {
   jobVacancies: any[];
@@ -23,6 +24,9 @@ export const JobsTab: React.FC<JobsTabProps> = ({
   addToast,
 }) => {
   const [addJobModalOpen, setAddJobModalOpen] = useState(false);
+  const [editJobModalOpen, setEditJobModalOpen] = useState(false);
+  const [editingJob, setEditingJob] = useState<any | null>(null);
+
   const [appSearchQuery, setAppSearchQuery] = useState('');
   const [appSelectedStatus, setAppSelectedStatus] = useState('ALL');
 
@@ -32,6 +36,30 @@ export const JobsTab: React.FC<JobsTabProps> = ({
     setAppSearchQuery('');
     setAppSelectedStatus('ALL');
   };
+
+  const fetchJobsAndApps = useCallback(async () => {
+    try {
+      const [jobsRes, appsRes] = await Promise.allSettled([
+        api.getJobVacancies(),
+        api.getJobApplications(),
+      ]);
+      if (jobsRes.status === 'fulfilled' && jobsRes.value?.data) {
+        setJobVacancies(jobsRes.value.data);
+      }
+      if (appsRes.status === 'fulfilled' && appsRes.value?.data) {
+        setJobApplications(appsRes.value.data);
+      }
+    } catch {
+      // offline fallback
+    }
+  }, [setJobVacancies, setJobApplications]);
+
+  useEffect(() => {
+    fetchJobsAndApps();
+  }, [fetchJobsAndApps]);
+
+  useRealtimeEvent('job:updated', () => fetchJobsAndApps());
+  useRealtimeEvent('job_app:updated', () => fetchJobsAndApps());
 
   const displayedApplications = jobApplications.filter((a) => {
     if (appSearchQuery.trim()) {
@@ -93,6 +121,73 @@ export const JobsTab: React.FC<JobsTabProps> = ({
     }
   };
 
+  const handleOpenEditJob = (job: any) => {
+    setEditingJob({
+      id: job.id,
+      title: job.title || '',
+      department: job.department || 'Sales & Growth',
+      employmentType: job.employmentType || 'WORK_FROM_HOME',
+      incomeText: job.incomeText || '',
+      requirements: job.requirements || '',
+      openPositions: job.openPositions ?? 5,
+      isActive: job.isActive ?? true,
+    });
+    setEditJobModalOpen(true);
+  };
+
+  const handleSaveEditJob = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingJob?.id || !editingJob.title || !editingJob.incomeText) {
+      addToast('Title and Income details are required', 'error');
+      return;
+    }
+    setSaving(true);
+    try {
+      const res = await api.updateJobVacancy(editingJob.id, {
+        title: editingJob.title,
+        department: editingJob.department,
+        employmentType: editingJob.employmentType,
+        incomeText: editingJob.incomeText,
+        requirements: editingJob.requirements,
+        openPositions: Number(editingJob.openPositions) || 5,
+        isActive: editingJob.isActive,
+      });
+      if (res.data) {
+        setJobVacancies((prev) => prev.map((j) => (j.id === editingJob.id ? res.data : j)));
+        addToast(`✅ Vacancy "${res.data.title}" updated!`);
+        setEditJobModalOpen(false);
+        setEditingJob(null);
+      }
+    } catch (err: any) {
+      addToast(`❌ Edit failed: ${err.message}`, 'error');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDeleteJob = async (jobId: string, title: string) => {
+    if (!window.confirm(`Permanently delete the "${title}" job opening?`)) return;
+    try {
+      await api.deleteJobVacancy(jobId);
+      setJobVacancies((prev) => prev.filter((j) => j.id !== jobId));
+      addToast(`🗑️ Job vacancy "${title}" removed.`);
+    } catch (err: any) {
+      addToast(`❌ Delete failed: ${err.message}`, 'error');
+    }
+  };
+
+  const handleDeleteApplication = async (appId: string, applicantName: string) => {
+    if (!window.confirm(`Delete application for "${applicantName}"?`)) return;
+    try {
+      await api.deleteJobApplication(appId);
+      setJobApplications((prev) => prev.filter((a) => a.id !== appId));
+      addToast(`🗑️ Application for "${applicantName}" deleted.`);
+      fetchJobsAndApps();
+    } catch (err: any) {
+      addToast(`❌ Delete failed: ${err.message}`, 'error');
+    }
+  };
+
   const handleToggleJobActive = async (jobId: string, currentIsActive: boolean) => {
     try {
       const res = await api.updateJobVacancy(jobId, { isActive: !currentIsActive });
@@ -109,7 +204,7 @@ export const JobsTab: React.FC<JobsTabProps> = ({
 
   const handleUpdateJobSlots = async (jobId: string, openPositions: number) => {
     try {
-      const res = await api.updateJob(jobId, { openPositions });
+      const res = await api.updateJobVacancy(jobId, { openPositions });
       if (res.data) {
         setJobVacancies((prev) =>
           prev.map((j) =>
@@ -137,7 +232,6 @@ export const JobsTab: React.FC<JobsTabProps> = ({
         setJobApplications((prev) =>
           prev.map((a) => (a.id === appId ? { ...a, status: newStatus } : a))
         );
-        // Re-sync job vacancies to reflect updated hired counts & hiring status
         const updatedJobs = await api.getJobVacancies().catch(() => null);
         if (updatedJobs?.data) setJobVacancies(updatedJobs.data);
 
@@ -162,7 +256,7 @@ export const JobsTab: React.FC<JobsTabProps> = ({
           <div>
             <h3 className="font-headline-md text-lg text-on-surface font-bold flex items-center gap-2">
               <span className="material-symbols-outlined text-secondary">work</span>
-              Job Vacancies & Live Hiring Sync
+              Job Vacancies &amp; Live Hiring Sync
             </h3>
             <p className="font-mono-data text-xs text-on-surface-variant">
               Automatic slot calculation: Available Positions = Total Slots − Hired Applicants
@@ -179,8 +273,8 @@ export const JobsTab: React.FC<JobsTabProps> = ({
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {jobVacancies.length === 0 && (
-            <div className="col-span-2 p-6 text-center font-mono-data text-xs text-on-surface-variant">
-              No active job openings. Click <strong>+ PUBLISH VACANCY</strong> to create one.
+            <div className="col-span-2 p-8 text-center font-mono-data text-xs text-on-surface-variant border border-dashed border-outline-variant/30 rounded-xl bg-[#080C16]">
+              No active job openings in database. Click <strong>+ PUBLISH VACANCY</strong> to create one.
             </div>
           )}
           {jobVacancies.map((job) => {
@@ -229,16 +323,32 @@ export const JobsTab: React.FC<JobsTabProps> = ({
                     <h4 className="font-headline-md text-base text-on-surface font-bold">{job.title}</h4>
                   </div>
 
-                  <button
-                    onClick={() => handleToggleJobActive(job.id, job.isActive)}
-                    className={`px-3 py-1 rounded text-xs font-mono-data font-bold border cursor-pointer transition-all ${
-                      job.isActive
-                        ? 'bg-[#2ED573]/20 text-[#2ED573] border-[#2ED573]/50 hover:bg-[#2ED573]/30'
-                        : 'bg-red-500/20 text-red-400 border-red-500/50 hover:bg-red-500/30'
-                    }`}
-                  >
-                    {job.isActive ? 'ACTIVE' : 'INACTIVE'}
-                  </button>
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      onClick={() => handleOpenEditJob(job)}
+                      className="p-1.5 rounded-lg bg-[#1D253B] text-secondary hover:bg-secondary hover:text-black transition-all cursor-pointer"
+                      title="Edit Vacancy"
+                    >
+                      <span className="material-symbols-outlined text-sm">edit</span>
+                    </button>
+                    <button
+                      onClick={() => handleDeleteJob(job.id, job.title)}
+                      className="p-1.5 rounded-lg bg-red-500/15 text-red-400 hover:bg-red-500 hover:text-white transition-all cursor-pointer"
+                      title="Delete Vacancy"
+                    >
+                      <span className="material-symbols-outlined text-sm">delete</span>
+                    </button>
+                    <button
+                      onClick={() => handleToggleJobActive(job.id, job.isActive)}
+                      className={`px-2.5 py-1 rounded text-xs font-mono-data font-bold border cursor-pointer transition-all ${
+                        job.isActive
+                          ? 'bg-[#2ED573]/20 text-[#2ED573] border-[#2ED573]/50 hover:bg-[#2ED573]/30'
+                          : 'bg-red-500/20 text-red-400 border-red-500/50 hover:bg-red-500/30'
+                      }`}
+                    >
+                      {job.isActive ? 'ACTIVE' : 'INACTIVE'}
+                    </button>
+                  </div>
                 </div>
 
                 {/* Slots & Live Progress Bar */}
@@ -269,14 +379,14 @@ export const JobsTab: React.FC<JobsTabProps> = ({
                     <div className="flex items-center gap-1.5">
                       <button
                         onClick={() => handleUpdateJobSlots(job.id, Math.max(1, openPos - 1))}
-                        className="w-6 h-6 rounded bg-[#1A2133] hover:bg-secondary/20 hover:text-secondary border border-outline-variant/40 flex items-center justify-center font-bold"
+                        className="w-6 h-6 rounded bg-[#1A2133] hover:bg-secondary/20 hover:text-secondary border border-outline-variant/40 flex items-center justify-center font-bold cursor-pointer"
                       >
                         -
                       </button>
                       <span className="w-8 text-center font-bold text-secondary">{openPos}</span>
                       <button
                         onClick={() => handleUpdateJobSlots(job.id, openPos + 1)}
-                        className="w-6 h-6 rounded bg-[#1A2133] hover:bg-secondary/20 hover:text-secondary border border-outline-variant/40 flex items-center justify-center font-bold"
+                        className="w-6 h-6 rounded bg-[#1A2133] hover:bg-secondary/20 hover:text-secondary border border-outline-variant/40 flex items-center justify-center font-bold cursor-pointer"
                       >
                         +
                       </button>
@@ -301,202 +411,143 @@ export const JobsTab: React.FC<JobsTabProps> = ({
         </div>
       </div>
 
-      {/* Recruitment Applications Table */}
-      <div className="bg-[#0E131F] rounded-2xl border border-outline-variant/30 overflow-hidden">
-        <div className="p-5 bg-[#131929] border-b border-outline-variant/30 flex justify-between items-center flex-wrap gap-2">
+      {/* Recruitment Applications Section */}
+      <div className="bg-[#0E131F] p-6 rounded-2xl border border-outline-variant/30 space-y-5">
+        <div className="flex justify-between items-center flex-wrap gap-4 border-b border-outline-variant/30 pb-4">
           <div>
             <h3 className="font-headline-md text-lg text-on-surface font-bold flex items-center gap-2">
-              <span className="material-symbols-outlined text-secondary">assignment_ind</span>
-              Recruitment Job Applications & Auto-Hiring Sync
+              <span className="material-symbols-outlined text-secondary">badge</span>
+              Recruitment Job Applications &amp; Auto-Hiring Sync
             </h3>
             <p className="font-mono-data text-xs text-on-surface-variant">
-              Setting an applicant status to <strong>HIRED</strong> auto-deducts available slots and closes vacancy when
-              capacity is reached.
+              Setting an applicant status to <strong>HIRED</strong> auto-deducts available slots and closes vacancy when capacity is reached.
             </p>
           </div>
-          <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex items-center gap-2">
             <button
-              onClick={() =>
-                exportToCSV(
-                  'uwe_job_applicants',
-                  displayedApplications.map((a) => ({
-                    ID: a.id,
-                    Name: a.name,
-                    Phone: a.phone,
-                    Email: a.email || 'N/A',
-                    AppliedFor: a.vacancy?.title || 'General Vacancy',
-                    Experience: a.experience || 'N/A',
-                    Status: a.status,
-                    Date: new Date(a.createdAt).toLocaleString(),
-                  })),
-                  addToast
-                )
-              }
-              className="px-3.5 py-1.5 rounded-xl bg-secondary/15 border border-secondary/50 text-secondary hover:bg-secondary hover:text-black transition-all text-xs font-mono-data font-bold flex items-center gap-1 cursor-pointer"
+              onClick={() => exportToCSV('uwe_job_applications', jobApplications, addToast)}
+              className="px-3.5 py-2 rounded-xl bg-surface-variant/40 border border-outline-variant/40 text-xs font-mono-data text-on-surface font-bold hover:bg-surface-variant transition-all flex items-center gap-1.5 cursor-pointer"
             >
-              <span className="material-symbols-outlined text-sm">download</span> EXPORT CSV
+              <span className="material-symbols-outlined text-sm">download</span>
+              <span>EXPORT CSV</span>
             </button>
-            <span className="px-2.5 py-1 rounded bg-[#131929] border border-outline-variant/40 font-mono-data text-xs text-secondary font-bold">
+            <span className="px-3 py-1.5 rounded-xl bg-secondary/15 border border-secondary/30 text-secondary font-mono-data text-xs font-bold">
               {displayedApplications.length} / {jobApplications.length} CANDIDATES
             </span>
           </div>
         </div>
 
-        {/* ── Contextual Tactical Search & Filter Bar for Candidates ── */}
-        <div className="p-4 bg-[#0A0E18] border-b border-outline-variant/30 flex flex-wrap items-center gap-3">
-          {/* Search Input */}
-          <div className="relative flex-1 min-w-[240px]">
-            <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-base">
+        {/* Filters */}
+        <div className="flex flex-col sm:flex-row gap-3">
+          <div className="relative flex-1">
+            <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-sm">
               search
             </span>
             <input
               type="text"
+              placeholder="Search Candidate Name, Email, or Phone..."
               value={appSearchQuery}
               onChange={(e) => setAppSearchQuery(e.target.value)}
-              placeholder="Search Candidate Name, Email, or Phone..."
-              className="w-full pl-9 pr-3 py-2 rounded-xl bg-[#131929] border border-outline-variant/40 text-xs font-mono-data text-on-surface placeholder:text-on-surface-variant/60 focus:border-secondary focus:outline-none transition-colors"
+              className="input-field w-full pl-9 pr-3 py-2 text-xs font-mono-data rounded-xl bg-[#131929] border border-outline-variant/30"
             />
-            {appSearchQuery && (
-              <button
-                onClick={() => setAppSearchQuery('')}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-on-surface-variant hover:text-on-surface text-xs"
+          </div>
+
+          <select
+            value={appSelectedStatus}
+            onChange={(e) => setAppSelectedStatus(e.target.value)}
+            className="px-3 py-2 rounded-xl bg-[#131929] border border-outline-variant/30 text-xs font-mono-data text-on-surface cursor-pointer"
+          >
+            <option value="ALL">All Application Statuses</option>
+            <option value="NEW">NEW</option>
+            <option value="REVIEWED">REVIEWED</option>
+            <option value="INTERVIEW_SCHEDULED">INTERVIEW SCHEDULED</option>
+            <option value="HIRED">HIRED (Auto-Slot Deduction)</option>
+            <option value="REJECTED">REJECTED</option>
+          </select>
+        </div>
+
+        {/* Applications List */}
+        {displayedApplications.length === 0 ? (
+          <div className="p-8 text-center font-mono-data text-xs text-on-surface-variant border border-dashed border-outline-variant/30 rounded-xl">
+            {isAppFiltered ? 'No candidates match your current filter.' : 'No job applications submitted yet.'}
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {displayedApplications.map((app) => (
+              <div
+                key={app.id}
+                className="p-4 rounded-xl bg-[#131929] border border-outline-variant/30 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 hover:border-secondary/40 transition-colors"
               >
-                ✕
-              </button>
-            )}
-          </div>
-
-          {/* Application Status Filter Dropdown */}
-          <div className="min-w-[170px]">
-            <select
-              value={appSelectedStatus}
-              onChange={(e) => setAppSelectedStatus(e.target.value)}
-              className="w-full px-3 py-2 rounded-xl bg-[#131929] border border-outline-variant/40 text-xs font-mono-data text-on-surface focus:border-secondary focus:outline-none cursor-pointer"
-            >
-              <option value="ALL">All Application Statuses</option>
-              <option value="APPLIED">APPLIED</option>
-              <option value="REVIEWED">REVIEWED</option>
-              <option value="SHORTLISTED">SHORTLISTED</option>
-              <option value="HIRED">HIRED</option>
-              <option value="REJECTED">REJECTED</option>
-            </select>
-          </div>
-
-          {/* Reset Filters Button */}
-          {isAppFiltered && (
-            <button
-              onClick={resetAppFilters}
-              className="px-3 py-2 rounded-xl bg-red-500/15 border border-red-500/30 text-red-400 hover:bg-red-500/25 transition-all text-xs font-mono-data font-bold flex items-center gap-1 cursor-pointer"
-            >
-              <span className="material-symbols-outlined text-xs">filter_alt_off</span>
-              RESET
-            </button>
-          )}
-        </div>
-
-        <div className="divide-y divide-outline-variant/20">
-          {displayedApplications.length === 0 && (
-            <div className="p-8 text-center font-mono-data text-sm text-on-surface-variant">
-              {isAppFiltered
-                ? 'No candidate applications match your search criteria. Try resetting filters.'
-                : 'No job applications submitted yet.'}
-            </div>
-          )}
-          {displayedApplications.map((app) => (
-            <div
-              key={app.id}
-              className="p-4 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-3 hover:bg-[#131929]/60 transition-colors"
-            >
-              <div className="flex items-center gap-3">
-                <div
-                  className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 border ${
-                    app.status === 'HIRED'
-                      ? 'bg-[#2ED573]/20 text-[#2ED573] border-[#2ED573]/50'
-                      : 'bg-secondary/20 text-secondary border border-secondary/40'
-                  }`}
-                >
-                  <span className="material-symbols-outlined text-lg">
-                    {app.status === 'HIRED' ? 'verified' : 'badge'}
-                  </span>
-                </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <h4 className="font-headline-md text-sm text-on-surface font-bold">{app.name}</h4>
-                    {app.status === 'HIRED' && (
-                      <span className="px-2 py-0.5 rounded-full bg-[#2ED573]/20 text-[#2ED573] border border-[#2ED573]/40 font-mono-data text-[10px] font-black">
-                        HIRED OPERATIVE
-                      </span>
-                    )}
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h5 className="font-headline-md text-sm text-on-surface font-bold">{app.name}</h5>
+                    <span className="font-mono-data text-[10px] px-2 py-0.5 rounded bg-secondary/15 text-secondary border border-secondary/30">
+                      {app.vacancy?.title || 'General Position'}
+                    </span>
                   </div>
-                  <span className="font-mono-data text-xs text-on-surface-variant">
-                    {app.phone} • {app.email || 'No Email'}
-                  </span>
-                  <span className="font-mono-data text-xs text-secondary block mt-0.5">
-                    Applied for: {app.vacancy?.title || 'General Vacancy'}
-                  </span>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-3 flex-wrap">
-                <div className="text-xs font-mono-data text-on-surface-variant max-w-xs truncate">
-                  Exp: <span className="text-on-surface">{app.experience}</span>
+                  <div className="flex items-center gap-4 text-xs font-mono-data text-on-surface-variant flex-wrap">
+                    <span>📧 {app.email || 'N/A'}</span>
+                    <span>📞 {app.phone}</span>
+                    <span>🕒 {new Date(app.createdAt).toLocaleDateString()}</span>
+                  </div>
+                  {app.experience && (
+                    <p className="font-mono-data text-xs text-on-surface-variant bg-[#0E131F] p-2 rounded-lg border border-outline-variant/20 max-w-xl">
+                      "{app.experience}"
+                    </p>
+                  )}
                 </div>
 
-                {/* Status Select with Auto-Sync */}
-                <select
-                  value={app.status}
-                  onChange={(e) => handleUpdateApplicationStatus(app.id, e.target.value)}
-                  className={`px-2.5 py-1.5 rounded-lg text-xs font-mono-data font-bold border cursor-pointer transition-colors ${
-                    app.status === 'HIRED'
-                      ? 'bg-[#2ED573]/20 text-[#2ED573] border-[#2ED573]/60'
-                      : 'bg-[#131929] text-secondary border-secondary/40'
-                  }`}
-                >
-                  <option value="APPLIED">APPLIED</option>
-                  <option value="REVIEWED">REVIEWED</option>
-                  <option value="SHORTLISTED">SHORTLISTED</option>
-                  <option value="HIRED">HIRED (Auto-Deduct Position)</option>
-                  <option value="REJECTED">REJECTED</option>
-                </select>
+                <div className="flex items-center gap-3 self-end md:self-center">
+                  <select
+                    value={app.status}
+                    onChange={(e) => handleUpdateApplicationStatus(app.id, e.target.value)}
+                    className="px-3 py-1.5 rounded-lg bg-[#0E131F] border border-secondary/40 text-xs font-mono-data text-secondary font-bold cursor-pointer"
+                  >
+                    <option value="NEW">🟢 NEW</option>
+                    <option value="REVIEWED">🟡 REVIEWED</option>
+                    <option value="INTERVIEW_SCHEDULED">🔵 INTERVIEW</option>
+                    <option value="HIRED">⭐ HIRED (SLOT -1)</option>
+                    <option value="REJECTED">🔴 REJECTED</option>
+                  </select>
 
-                <a
-                  href={`https://wa.me/94717096386?text=Hello%20${encodeURIComponent(
-                    app.name
-                  )}%2C%20regarding%20your%20application%20for%20${encodeURIComponent(app.vacancy?.title || 'position')}`}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="px-3 py-1.5 rounded bg-[#25D366] text-black font-label-caps text-[11px] font-bold uppercase hover:scale-105 transition-transform flex items-center gap-1"
-                >
-                  WHATSAPP <span className="material-symbols-outlined text-xs">east</span>
-                </a>
+                  <button
+                    onClick={() => handleDeleteApplication(app.id, app.name)}
+                    className="p-1.5 rounded-lg bg-red-500/15 text-red-400 hover:bg-red-500 hover:text-white transition-all cursor-pointer"
+                    title="Delete Application"
+                  >
+                    <span className="material-symbols-outlined text-sm">delete</span>
+                  </button>
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
 
-      {/* ━━━ PUBLISH JOB VACANCY MODAL ━━━ */}
+      {/* ━━━ ADD JOB VACANCY MODAL ━━━ */}
       <AnimatePresence>
         {addJobModalOpen && (
-          <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md overflow-y-auto">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
             <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.9 }}
-              className="bg-[#0D111A] border border-secondary/40 rounded-2xl p-6 max-w-lg w-full space-y-4 text-left shadow-2xl"
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="w-full max-w-lg rounded-2xl bg-[#0E131F] border border-secondary/60 p-6 space-y-5 shadow-2xl"
             >
               <div className="flex justify-between items-center border-b border-outline-variant/30 pb-3">
-                <h3 className="font-headline-md text-lg text-on-surface font-black uppercase">
-                  PUBLISH JOB <span className="text-secondary">VACANCY</span>
-                </h3>
+                <div className="flex items-center gap-2">
+                  <span className="material-symbols-outlined text-secondary text-xl">work</span>
+                  <h3 className="font-display text-lg font-bold text-on-surface">Publish New Job Vacancy</h3>
+                </div>
                 <button
                   onClick={() => setAddJobModalOpen(false)}
-                  className="text-on-surface-variant hover:text-on-surface"
+                  className="text-on-surface-variant hover:text-on-surface text-xl cursor-pointer"
                 >
-                  <span className="material-symbols-outlined">close</span>
+                  ✕
                 </button>
               </div>
-              <form onSubmit={handleCreateJob} className="space-y-3.5 text-xs font-mono-data">
+
+              <form onSubmit={handleCreateJob} className="space-y-4 font-mono-data text-xs">
                 <div>
                   <label className="text-secondary font-bold block mb-1">Position Title *</label>
                   <input
@@ -504,80 +555,214 @@ export const JobsTab: React.FC<JobsTabProps> = ({
                     required
                     value={newJob.title}
                     onChange={(e) => setNewJob({ ...newJob, title: e.target.value })}
-                    placeholder="e.g. Sales & Growth Officer"
-                    className="input-field w-full p-2.5 rounded-lg bg-[#131929] border-secondary/40"
+                    placeholder="e.g. Senior Mind Transformation Coach"
+                    className="input-field w-full p-2.5 rounded-lg bg-[#131929] border border-secondary/40"
                   />
                 </div>
+
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="text-on-surface-variant block mb-1">Department</label>
-                    <input
-                      type="text"
+                    <label className="text-secondary font-bold block mb-1">Department</label>
+                    <select
                       value={newJob.department}
                       onChange={(e) => setNewJob({ ...newJob, department: e.target.value })}
-                      placeholder="Sales & Growth"
-                      className="input-field w-full p-2.5 rounded-lg bg-[#131929] border-secondary/40"
-                    />
+                      className="input-field w-full p-2.5 rounded-lg bg-[#131929] border border-secondary/40 text-on-surface"
+                    >
+                      <option value="Sales & Growth">Sales &amp; Growth</option>
+                      <option value="Coaching & Training">Coaching &amp; Training</option>
+                      <option value="Technology & Digital">Technology &amp; Digital</option>
+                      <option value="Marketing & Branding">Marketing &amp; Branding</option>
+                    </select>
                   </div>
+
                   <div>
-                    <label className="text-on-surface-variant block mb-1">Employment Type</label>
+                    <label className="text-secondary font-bold block mb-1">Employment Type</label>
                     <select
                       value={newJob.employmentType}
                       onChange={(e) => setNewJob({ ...newJob, employmentType: e.target.value })}
-                      className="input-field w-full p-2.5 rounded-lg bg-[#131929] border-secondary/40 text-on-surface"
+                      className="input-field w-full p-2.5 rounded-lg bg-[#131929] border border-secondary/40 text-on-surface"
                     >
-                      <option value="WORK_FROM_HOME">WORK FROM HOME</option>
-                      <option value="FULL_TIME">FULL TIME</option>
-                      <option value="PART_TIME">PART TIME</option>
-                      <option value="HYBRID">HYBRID</option>
+                      <option value="WORK_FROM_HOME">Work From Home</option>
+                      <option value="FULL_TIME">Full Time (On-Site)</option>
+                      <option value="PART_TIME">Part Time</option>
+                      <option value="HYBRID">Hybrid</option>
                     </select>
                   </div>
                 </div>
+
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="text-secondary font-bold block mb-1">Income & Salary Text *</label>
+                    <label className="text-secondary font-bold block mb-1">Income / Salary Package *</label>
                     <input
                       type="text"
                       required
                       value={newJob.incomeText}
                       onChange={(e) => setNewJob({ ...newJob, incomeText: e.target.value })}
-                      placeholder="RS. 45,000 - RS. 120,000"
-                      className="input-field w-full p-2.5 rounded-lg bg-[#131929] border-secondary/40 text-secondary font-bold"
+                      placeholder="RS. 60,000 - RS. 120,000"
+                      className="input-field w-full p-2.5 rounded-lg bg-[#131929] border border-secondary/40 text-secondary font-bold"
                     />
                   </div>
+
                   <div>
-                    <label className="text-secondary font-bold block mb-1">Total Open Slots *</label>
+                    <label className="text-secondary font-bold block mb-1">Total Open Positions *</label>
                     <input
                       type="number"
                       min={1}
                       required
                       value={newJob.openPositions}
                       onChange={(e) => setNewJob({ ...newJob, openPositions: parseInt(e.target.value) || 1 })}
-                      placeholder="5"
-                      className="input-field w-full p-2.5 rounded-lg bg-[#131929] border-secondary/40 text-secondary font-bold"
+                      className="input-field w-full p-2.5 rounded-lg bg-[#131929] border border-secondary/40 text-secondary font-bold"
                     />
                   </div>
                 </div>
+
                 <div>
-                  <label className="text-on-surface-variant block mb-1">Requirements & Qualifications</label>
+                  <label className="text-on-surface-variant block mb-1">Candidate Requirements</label>
                   <textarea
-                    rows={2}
+                    rows={3}
                     value={newJob.requirements}
                     onChange={(e) => setNewJob({ ...newJob, requirements: e.target.value })}
-                    placeholder="Key skills required..."
-                    className="input-field w-full p-2.5 rounded-lg bg-[#131929] border-secondary/40"
+                    placeholder="Key skills, experience and prerequisites..."
+                    className="input-field w-full p-2.5 rounded-lg bg-[#131929] border border-secondary/40"
                   />
                 </div>
+
                 <div className="pt-3 flex justify-end gap-3 border-t border-outline-variant/30">
                   <button
                     type="button"
                     onClick={() => setAddJobModalOpen(false)}
-                    className="px-4 py-2 rounded bg-[#131929] text-on-surface-variant"
+                    className="px-4 py-2 rounded-xl bg-[#131929] text-on-surface-variant hover:text-on-surface cursor-pointer"
                   >
                     CANCEL
                   </button>
-                  <button type="submit" disabled={saving} className="btn-elite px-5 py-2 rounded font-bold uppercase">
-                    {saving ? 'SAVING...' : 'PUBLISH VACANCY'}
+                  <button
+                    type="submit"
+                    disabled={saving}
+                    className="btn-elite px-5 py-2 rounded-xl font-bold uppercase cursor-pointer"
+                  >
+                    {saving ? 'PUBLISHING...' : 'PUBLISH VACANCY'}
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* ━━━ EDIT JOB VACANCY MODAL ━━━ */}
+      <AnimatePresence>
+        {editJobModalOpen && editingJob && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="w-full max-w-lg rounded-2xl bg-[#0E131F] border border-secondary/60 p-6 space-y-5 shadow-2xl"
+            >
+              <div className="flex justify-between items-center border-b border-outline-variant/30 pb-3">
+                <div className="flex items-center gap-2">
+                  <span className="material-symbols-outlined text-secondary text-xl">edit</span>
+                  <h3 className="font-display text-lg font-bold text-on-surface">Edit Job Vacancy</h3>
+                </div>
+                <button
+                  onClick={() => setEditJobModalOpen(false)}
+                  className="text-on-surface-variant hover:text-on-surface text-xl cursor-pointer"
+                >
+                  ✕
+                </button>
+              </div>
+
+              <form onSubmit={handleSaveEditJob} className="space-y-4 font-mono-data text-xs">
+                <div>
+                  <label className="text-secondary font-bold block mb-1">Position Title *</label>
+                  <input
+                    type="text"
+                    required
+                    value={editingJob.title}
+                    onChange={(e) => setEditingJob({ ...editingJob, title: e.target.value })}
+                    className="input-field w-full p-2.5 rounded-lg bg-[#131929] border border-secondary/40"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-secondary font-bold block mb-1">Department</label>
+                    <select
+                      value={editingJob.department}
+                      onChange={(e) => setEditingJob({ ...editingJob, department: e.target.value })}
+                      className="input-field w-full p-2.5 rounded-lg bg-[#131929] border border-secondary/40 text-on-surface"
+                    >
+                      <option value="Sales & Growth">Sales &amp; Growth</option>
+                      <option value="Coaching & Training">Coaching &amp; Training</option>
+                      <option value="Technology & Digital">Technology &amp; Digital</option>
+                      <option value="Marketing & Branding">Marketing &amp; Branding</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="text-secondary font-bold block mb-1">Employment Type</label>
+                    <select
+                      value={editingJob.employmentType}
+                      onChange={(e) => setEditingJob({ ...editingJob, employmentType: e.target.value })}
+                      className="input-field w-full p-2.5 rounded-lg bg-[#131929] border border-secondary/40 text-on-surface"
+                    >
+                      <option value="WORK_FROM_HOME">Work From Home</option>
+                      <option value="FULL_TIME">Full Time (On-Site)</option>
+                      <option value="PART_TIME">Part Time</option>
+                      <option value="HYBRID">Hybrid</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-secondary font-bold block mb-1">Income / Salary Package *</label>
+                    <input
+                      type="text"
+                      required
+                      value={editingJob.incomeText}
+                      onChange={(e) => setEditingJob({ ...editingJob, incomeText: e.target.value })}
+                      className="input-field w-full p-2.5 rounded-lg bg-[#131929] border border-secondary/40 text-secondary font-bold"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-secondary font-bold block mb-1">Total Open Positions *</label>
+                    <input
+                      type="number"
+                      min={1}
+                      required
+                      value={editingJob.openPositions}
+                      onChange={(e) => setEditingJob({ ...editingJob, openPositions: parseInt(e.target.value) || 1 })}
+                      className="input-field w-full p-2.5 rounded-lg bg-[#131929] border border-secondary/40 text-secondary font-bold"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-on-surface-variant block mb-1">Candidate Requirements</label>
+                  <textarea
+                    rows={3}
+                    value={editingJob.requirements}
+                    onChange={(e) => setEditingJob({ ...editingJob, requirements: e.target.value })}
+                    className="input-field w-full p-2.5 rounded-lg bg-[#131929] border border-secondary/40"
+                  />
+                </div>
+
+                <div className="pt-3 flex justify-end gap-3 border-t border-outline-variant/30">
+                  <button
+                    type="button"
+                    onClick={() => setEditJobModalOpen(false)}
+                    className="px-4 py-2 rounded-xl bg-[#131929] text-on-surface-variant hover:text-on-surface cursor-pointer"
+                  >
+                    CANCEL
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={saving}
+                    className="btn-elite px-5 py-2 rounded-xl font-bold uppercase cursor-pointer"
+                  >
+                    {saving ? 'SAVING...' : 'SAVE CHANGES'}
                   </button>
                 </div>
               </form>

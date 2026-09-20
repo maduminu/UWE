@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { prisma } from '../config/db';
+import { logger } from '../utils/logger';
 
 const VALID_INQUIRY_TYPES = ['BMB', 'LEADERSHIP', 'IGNIT', 'CORPORATE', 'JOB_APPLICATION', 'GENERAL'];
 const VALID_LEAD_STATUSES = ['NEW', 'CONTACTED', 'ENROLLED', 'REJECTED'];
@@ -47,7 +48,7 @@ export const getAllLeads = async (req: Request, res: Response): Promise<void> =>
       data: filtered,
     });
   } catch (error: any) {
-    console.error('[getAllLeads]', error);
+    logger.error(`[getAllLeads] ${error.message}`, 'LEADS');
     res.status(500).json({ success: false, message: 'Failed to retrieve leads.' });
   }
 };
@@ -81,7 +82,7 @@ export const recordAbandonedReminder = async (req: Request, res: Response): Prom
       data: updated,
     });
   } catch (error: any) {
-    console.error('[recordAbandonedReminder]', error);
+    logger.error(`[recordAbandonedReminder] ${error.message}`, 'LEADS');
     res.status(500).json({ success: false, message: 'Failed to record reminder.' });
   }
 };
@@ -178,7 +179,7 @@ export const createLead = async (req: Request, res: Response): Promise<void> => 
 
     res.status(201).json({ success: true, data: lead });
   } catch (error: any) {
-    console.error('[createLead]', error);
+    logger.error(`[createLead] ${error.message}`, 'LEADS');
     res.status(500).json({ success: false, message: 'Failed to submit inquiry. Please try again.' });
   }
 };
@@ -225,7 +226,7 @@ export const updateLeadStatus = async (req: Request, res: Response): Promise<voi
 
     res.status(200).json({ success: true, data: updated });
   } catch (error: any) {
-    console.error('[updateLeadStatus]', error);
+    logger.error(`[updateLeadStatus] ${error.message}`, 'LEADS');
     res.status(500).json({ success: false, message: 'Failed to update lead status.' });
   }
 };
@@ -244,7 +245,7 @@ export const deleteLead = async (req: Request, res: Response): Promise<void> => 
     await prisma.lead.delete({ where: { id } });
     res.status(200).json({ success: true, message: 'Lead record deleted successfully.' });
   } catch (error: any) {
-    console.error('[deleteLead]', error);
+    logger.error(`[deleteLead] ${error.message}`, 'LEADS');
     res.status(500).json({ success: false, message: 'Failed to delete lead.' });
   }
 };

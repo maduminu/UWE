@@ -48,9 +48,12 @@ export const authenticate = (req: Request, res: Response, next: NextFunction): v
   const authHeader = req.headers.authorization;
 
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    const requestId = (req.headers['x-request-id'] as string) || (res.getHeader('X-Request-Id') as string) || undefined;
     res.status(401).json({
       success: false,
+      code: 'UNAUTHORIZED',
       message: 'Access Denied: Missing or invalid authorization token.',
+      ...(requestId ? { requestId } : {}),
     });
     return;
   }
@@ -59,15 +62,19 @@ export const authenticate = (req: Request, res: Response, next: NextFunction): v
 
   try {
     const secret = getJwtSecret();
-    const decoded = jwt.verify(token, secret) as AuthUserPayload;
+    // SEC-HIGH-1 Fix: Pin cryptographic algorithm to prevent alg: none and asymmetric confusion attacks
+    const decoded = jwt.verify(token, secret, { algorithms: ['HS256'] }) as AuthUserPayload;
     req.user = decoded;
     next();
   } catch (error: any) {
+    const requestId = (req.headers['x-request-id'] as string) || (res.getHeader('X-Request-Id') as string) || undefined;
     res.status(401).json({
       success: false,
+      code: 'UNAUTHORIZED',
       message: error.name === 'TokenExpiredError'
         ? 'Session Expired: Please log in again.'
         : 'Access Denied: Invalid authentication token.',
+      ...(requestId ? { requestId } : {}),
     });
   }
 };

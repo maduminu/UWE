@@ -2,6 +2,8 @@ import React, { useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import { api } from '../../services/api';
 import uweLogoAsset from '../../assets/images/uwe_shield_isolated.png';
+import uweLogoWebp from '../../assets/images/uwe_shield_isolated.webp';
+import { OptimizedPicture } from './OptimizedPicture';
 
 interface CertificateModalProps {
   isOpen: boolean;
@@ -133,14 +135,14 @@ export const CertificateModal: React.FC<CertificateModalProps> = ({ isOpen, onCl
 
           {/* Subtle Watermark Logo */}
           <div className="absolute inset-0 flex items-center justify-center opacity-5 pointer-events-none">
-            <img src={uweLogoAsset} alt="" className="w-96 h-96 object-contain filter grayscale" />
+            <OptimizedPicture webpSrc={uweLogoWebp} fallbackSrc={uweLogoAsset} alt="" className="w-96 h-96 object-contain filter grayscale" />
           </div>
 
           {/* Certificate Header */}
           <div className="flex flex-col items-center gap-3 mb-6 relative z-10">
             <div className="w-16 h-16 rounded-full bg-gradient-to-br from-secondary via-[#FFD700] to-secondary-container p-[3px] shadow-[0_0_25px_rgba(255,184,0,0.5)]">
               <div className="w-full h-full rounded-full bg-[#0a0e18] flex items-center justify-center overflow-hidden">
-                <img src={uweLogoAsset} alt="UWE Emblem" className="w-[85%] h-[85%] object-contain" />
+                <OptimizedPicture webpSrc={uweLogoWebp} fallbackSrc={uweLogoAsset} alt="UWE Emblem" className="w-[85%] h-[85%] object-contain" />
               </div>
             </div>
 

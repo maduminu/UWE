@@ -52,6 +52,12 @@ export const Footer: React.FC<FooterProps> = ({ setActivePage }) => {
           >
             Elite Programs
           </button>
+          <button 
+            onClick={() => handlePageChange('partners')}
+            className="text-left min-h-[36px] bg-transparent border-none p-0 font-body-md text-sm text-on-surface-variant hover:text-secondary transition-colors cursor-pointer active-press"
+          >
+            Business Partners
+          </button>
         </div>
 
         <div className="flex flex-col gap-2">

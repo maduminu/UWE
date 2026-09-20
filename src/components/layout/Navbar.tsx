@@ -1,13 +1,20 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 import { UserProfileModal } from '../ui/UserProfileModal';
 import { AuthModal } from '../ui/AuthModal';
+import { NotificationBell } from '../ui/NotificationBell';
 import uweLogoAsset from '../../assets/images/uwe_shield_isolated.png';
-import { safeGetStorage } from '../../utils/storage';
+import uweLogoWebp from '../../assets/images/uwe_shield_isolated.webp';
+import uweLogoWebpSm from '../../assets/images/uwe_shield_isolated-sm.webp';
+import { OptimizedPicture } from '../ui/OptimizedPicture';
+import { safeGetStorage, safeSetStorage } from '../../utils/storage';
 import { authService } from '../../services/auth';
+import { api } from '../../services/api';
+import { useRealtimeEvent } from '../../services/realtime';
 
-export type PageId = 'home' | 'about' | 'vision' | 'product' | 'demos' | 'careers' | 'program-videos' | 'posters' | 'admin' | 'contact' | 'dashboard' | 'course-detail';
+export type PageId = 'home' | 'about' | 'vision' | 'product' | 'demos' | 'careers' | 'program-videos' | 'posters' | 'admin' | 'contact' | 'dashboard' | 'course-detail' | 'partners' | 'partner-detail';
 
 interface NavbarProps {
   activePage: PageId;
@@ -15,6 +22,7 @@ interface NavbarProps {
 }
 
 export const Navbar: React.FC<NavbarProps> = ({ activePage, setActivePage }) => {
+  const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [toolsDropdownOpen, setToolsDropdownOpen] = useState(false);
   const triggerRef = useRef<HTMLButtonElement>(null);
@@ -26,6 +34,22 @@ export const Navbar: React.FC<NavbarProps> = ({ activePage, setActivePage }) => 
 
   const [profileModalOpen, setProfileModalOpen] = useState(false);
   const [authModalOpen, setAuthModalOpen] = useState(false);
+
+  const refreshUserAccount = useCallback(async () => {
+    const local = safeGetStorage<any>('uwe_user_account', null);
+    if (!local || !local.id) return;
+    try {
+      const res = await api.getUserById(local.id);
+      if (res.success && res.data) {
+        const updated = { ...local, ...res.data };
+        safeSetStorage('uwe_user_account', updated);
+        setCurrentUser(updated);
+      }
+    } catch { /* silent */ }
+  }, []);
+
+  useRealtimeEvent('user:updated', refreshUserAccount);
+  useRealtimeEvent('slip:verified', refreshUserAccount);
 
   useEffect(() => {
     const handleStorageChange = () => {
@@ -91,6 +115,7 @@ export const Navbar: React.FC<NavbarProps> = ({ activePage, setActivePage }) => 
   ];
 
   const toolNavItems: { id: PageId; label: string; icon: string }[] = [
+    { id: 'partners', label: 'Partner Network', icon: 'handshake' },
     { id: 'dashboard', label: 'My Student Portal', icon: 'school' },
     { id: 'program-videos', label: 'Series & Vault', icon: 'video_library' },
     { id: 'posters', label: 'Command Flyers', icon: 'photo_library' },
@@ -151,9 +176,12 @@ export const Navbar: React.FC<NavbarProps> = ({ activePage, setActivePage }) => 
           >
             <div className="w-10 h-10 rounded-full bg-gradient-to-br from-secondary via-[#FFD700] to-secondary-container p-[2.5px] shadow-[0_0_15px_rgba(255,184,0,0.5)] flex items-center justify-center shrink-0">
               <div className="w-full h-full rounded-full bg-[#0a0e18] flex items-center justify-center overflow-hidden">
-                <img 
-                  src={uweLogoAsset} 
-                  alt="UWE Shield" 
+                <OptimizedPicture
+                  webpSrcSet={`${uweLogoWebpSm} 320w, ${uweLogoWebp} 1024w`}
+                  fallbackSrc={uweLogoAsset}
+                  alt="UWE Shield"
+                  sizes="40px"
+                  priority={true}
                   className="w-[85%] h-[85%] object-contain filter drop-shadow-md group-hover:scale-110 transition-transform duration-300"
                 />
               </div>
@@ -215,6 +243,17 @@ export const Navbar: React.FC<NavbarProps> = ({ activePage, setActivePage }) => 
 
           {/* Action CTA Button / User Profile & Mobile Quick Admin */}
           <div className="flex items-center gap-2 shrink-0">
+            {/* Realtime Notification Bell with unread counter */}
+            <NotificationBell
+              onNavigate={(target) => {
+                if (target.startsWith('/')) {
+                  navigate(target);
+                } else {
+                  handleNavClick(target as PageId);
+                }
+              }}
+            />
+
             {/* Mobile Quick Admin HQ Trigger */}
             <motion.button
               whileHover={{ scale: 1.05 }}

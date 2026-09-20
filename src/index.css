@@ -249,3 +249,66 @@ body {
 .stagger-item:nth-child(4) { animation-delay: 0.32s; }
 .stagger-item:nth-child(5) { animation-delay: 0.40s; }
 .stagger-item:nth-child(6) { animation-delay: 0.48s; }
+
+/* ── Glassmorphism Shimmer Skeletons ── */
+
+@keyframes glassShimmerSweep {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.shimmer-sweep {
+  position: relative;
+  overflow: hidden;
+}
+
+.shimmer-sweep::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 184, 0, 0.05) 20%,
+    rgba(255, 255, 255, 0.12) 50%,
+    rgba(0, 210, 255, 0.07) 75%,
+    transparent 100%
+  );
+  animation: glassShimmerSweep 2.2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  pointer-events: none;
+}
+
+.shimmer-sweep-gold::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 184, 0, 0.06) 25%,
+    rgba(255, 215, 0, 0.2) 50%,
+    rgba(255, 184, 0, 0.06) 75%,
+    transparent 100%
+  );
+  animation: glassShimmerSweep 1.9s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  pointer-events: none;
+}
+
+.glass-skeleton {
+  background: rgba(18, 24, 38, 0.7);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 0.75rem;
+}
+
+.skeleton-bone {
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.04) 0%, rgba(255, 255, 255, 0.08) 50%, rgba(255, 255, 255, 0.04) 100%);
+  border-radius: 0.375rem;
+}

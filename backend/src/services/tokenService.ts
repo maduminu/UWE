@@ -93,7 +93,7 @@ export async function rotateRefreshToken(refreshToken: string): Promise<{
   token: string;
 }> {
   const secret = getJwtSecret();
-  const decoded = jwt.verify(refreshToken, secret) as AuthUserPayload & {
+  const decoded = jwt.verify(refreshToken, secret, { algorithms: ['HS256'] }) as AuthUserPayload & {
     jti?: string;
     isRefreshToken?: boolean;
   };
@@ -108,14 +108,29 @@ export async function rotateRefreshToken(refreshToken: string): Promise<{
   // ── Replay Attack & Multi-Deployment Durability Verification ──
   if (jti) {
     // 1. Check Redis cache
-    let isCached = await cacheGet<RefreshTokenRecord>(`rt:${userId}:${jti}`);
+    let isCached: RefreshTokenRecord | null = null;
+    let cacheError: Error | null = null;
+    try {
+      isCached = await cacheGet<RefreshTokenRecord>(`rt:${userId}:${jti}`);
+    } catch (err: any) {
+      cacheError = err;
+      logger.error(`[tokenService] Cache read failure during token verification: ${err.message}`, 'AUTH');
+    }
 
     // 2. Check Database Record (source of truth across all serverless instances)
     let dbToken = null;
+    let dbError: Error | null = null;
     try {
       dbToken = await prisma.refreshToken.findUnique({ where: { jti } });
-    } catch {
-      /* fallback to cached token if DB is temporarily unreachable */
+    } catch (err: any) {
+      dbError = err;
+      logger.error(`[tokenService] Database read failure during token verification: ${err.message}`, 'AUTH');
+    }
+
+    // FAIL-CLOSED: If both DB and cache failed/errored out, fail closed immediately
+    if (dbError && (cacheError || !isCached)) {
+      logger.error('[SECURITY] Authentication failed closed: DB and cache unavailable during token rotation', 'AUTH');
+      throw new Error('Authentication service temporarily unavailable. Token verification failed.');
     }
 
     if (dbToken) {
@@ -147,34 +162,42 @@ export async function rotateRefreshToken(refreshToken: string): Promise<{
     } catch {
       /* ignore if record already cleaned up */
     }
-    await cacheDel(`rt:${userId}:${jti}`);
+    await cacheDel(`rt:${userId}:${jti}`).catch(() => {});
   }
 
-  // ── Live Account & Role Verification ──
+  // ── Live Account & Role Verification (Fail-Closed) ──
   let activeTokenVersion = 1;
   let liveRole = decoded.role;
 
-  if (decoded.type === 'admin') {
-    const admin = await prisma.adminUser.findUnique({ where: { id: userId } });
-    if (!admin) {
-      throw new Error('Revoked: Admin account no longer exists.');
+  try {
+    if (decoded.type === 'admin') {
+      const admin = await prisma.adminUser.findUnique({ where: { id: userId } });
+      if (!admin) {
+        throw new Error('Revoked: Admin account no longer exists.');
+      }
+      activeTokenVersion = admin.tokenVersion || 1;
+      liveRole = admin.role;
+    } else {
+      const user = await prisma.user.findUnique({ where: { id: userId } });
+      if (!user) {
+        throw new Error('Revoked: Operative account no longer exists.');
+      }
+      if (!user.isEnrolled) {
+        throw new Error('Access Denied: Operative account is inactive.');
+      }
+      activeTokenVersion = user.tokenVersion || 1;
     }
-    activeTokenVersion = admin.tokenVersion || 1;
-    liveRole = admin.role;
-  } else {
-    const user = await prisma.user.findUnique({ where: { id: userId } });
-    if (!user) {
-      throw new Error('Revoked: Operative account no longer exists.');
+  } catch (err: any) {
+    if (err.message.startsWith('Revoked:') || err.message.startsWith('Access Denied:')) {
+      throw err;
     }
-    if (!user.isEnrolled) {
-      throw new Error('Access Denied: Operative account is inactive.');
-    }
-    activeTokenVersion = user.tokenVersion || 1;
+    logger.error(`[SECURITY] Fail-closed: Account verification failed: ${err.message}`, 'AUTH');
+    throw new Error('Authentication verification failed.');
   }
 
   const decodedVersion = decoded.tokenVersion || 1;
   if (decodedVersion !== activeTokenVersion) {
-    await cacheDelPattern(`rt:${userId}:`);
+    await cacheDelPattern(`rt:${userId}:`).catch(() => {});
     throw new Error('Session Revoked: Please sign in again.');
   }
 

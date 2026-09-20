@@ -10,11 +10,9 @@ let isRefreshing = false;
 let refreshPromise: Promise<string | null> | null = null;
 
 async function attemptTokenRefresh(type: 'admin' | 'student'): Promise<string | null> {
-  const refreshToken = type === 'admin'
+  const localRefreshToken = type === 'admin'
     ? authService.getAdminRefreshToken()
     : authService.getStudentRefreshToken();
-
-  if (!refreshToken) return null;
 
   if (isRefreshing && refreshPromise) {
     return refreshPromise;
@@ -26,13 +24,14 @@ async function attemptTokenRefresh(type: 'admin' | 'student'): Promise<string | 
       const res = await fetch(`${API_BASE}/auth/refresh`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ refreshToken }),
+        credentials: 'include', // Transports HttpOnly cookie automatically
+        body: JSON.stringify(localRefreshToken ? { refreshToken: localRefreshToken } : {}),
       });
       if (!res.ok) throw new Error('Refresh failed');
       const data = await res.json();
-      if (data.success && data.data?.accessToken) {
-        const newAccess = data.data.accessToken;
-        const newRefresh = data.data.refreshToken || refreshToken;
+      if (data.success && (data.data?.accessToken || data.data?.token)) {
+        const newAccess = data.data.accessToken || data.data.token;
+        const newRefresh = data.data.refreshToken;
         if (type === 'admin') {
           authService.updateAdminToken(newAccess, newRefresh);
         } else {
@@ -67,6 +66,7 @@ async function fetchWithAuth(
 
   let response = await fetch(`${API_BASE}${endpoint}`, {
     ...options,
+    credentials: 'include',
     headers,
   });
 
@@ -88,14 +88,35 @@ async function fetchWithAuth(
       };
       response = await fetch(`${API_BASE}${endpoint}`, {
         ...options,
+        credentials: 'include',
         headers: retryHeaders,
       });
     } else {
-      // Failed to refresh — clear session
+      // Failed to refresh — clear session & trigger real-time expiration alert
       if (targetType === 'admin') {
         authService.clearAdminSession();
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(
+            new CustomEvent('auth:session_expired', {
+              detail: {
+                type: 'admin',
+                reason: 'Command HQ session expired. Please sign in again.',
+              },
+            })
+          );
+        }
       } else {
         authService.clearStudentSession();
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(
+            new CustomEvent('auth:session_expired', {
+              detail: {
+                type: 'student',
+                reason: 'Operative session expired. Please sign in again.',
+              },
+            })
+          );
+        }
       }
     }
   }
@@ -108,6 +129,12 @@ export const api = {
   getCourses: async () => {
     const res = await fetch(`${API_BASE}/courses`);
     if (!res.ok) throw new Error('Failed to fetch courses');
+    return res.json();
+  },
+
+  getCourseBySlug: async (slug: string) => {
+    const res = await fetch(`${API_BASE}/courses/${encodeURIComponent(slug)}`);
+    if (!res.ok) throw new Error('Failed to fetch course details');
     return res.json();
   },
 
@@ -144,6 +171,23 @@ export const api = {
       body: JSON.stringify(data),
     }, 'admin');
     if (!res.ok) throw new Error('Failed to update batch details');
+    return res.json();
+  },
+
+  createBatch: async (data: Record<string, any>) => {
+    const res = await fetchWithAuth('/courses/batches', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }, 'admin');
+    if (!res.ok) throw new Error('Failed to create course batch');
+    return res.json();
+  },
+
+  deleteBatch: async (batchId: string) => {
+    const res = await fetchWithAuth(`/courses/batches/${batchId}`, {
+      method: 'DELETE',
+    }, 'admin');
+    if (!res.ok) throw new Error('Failed to delete course batch');
     return res.json();
   },
 
@@ -188,6 +232,12 @@ export const api = {
     return res.json();
   },
 
+  getAdminBanner: async () => {
+    const res = await fetchWithAuth('/banners', {}, 'admin');
+    if (!res.ok) throw new Error('Failed to fetch admin banner');
+    return res.json();
+  },
+
   updateBanner: async (id: string, data: Record<string, any>) => {
     const res = await fetchWithAuth(`/banners/${id}`, {
       method: 'PUT',
@@ -214,6 +264,7 @@ export const api = {
       const res = await fetch(`${API_BASE}/auth/admin-login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ username, password }),
         signal: controller.signal,
       });
@@ -242,6 +293,7 @@ export const api = {
     const res = await fetch(`${API_BASE}/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
       body: JSON.stringify({ email, password }),
     });
     const data = await res.json();
@@ -262,16 +314,18 @@ export const api = {
     const res = await fetch(`${API_BASE}/auth/register`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
       body: JSON.stringify(registerData),
     });
     return res.json();
   },
 
-  refreshToken: async (refreshToken: string) => {
+  refreshToken: async (refreshToken?: string) => {
     const res = await fetch(`${API_BASE}/auth/refresh`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ refreshToken }),
+      credentials: 'include',
+      body: JSON.stringify(refreshToken ? { refreshToken } : {}),
     });
     return res.json();
   },
@@ -319,6 +373,15 @@ export const api = {
     return res.json();
   },
 
+  updateVideoModule: async (id: string, data: Record<string, any>) => {
+    const res = await fetchWithAuth(`/program-videos/modules/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    }, 'admin');
+    if (!res.ok) throw new Error('Failed to update video module');
+    return res.json();
+  },
+
   deleteVideoModule: async (id: string) => {
     const res = await fetchWithAuth(`/program-videos/modules/${id}`, {
       method: 'DELETE',
@@ -352,6 +415,14 @@ export const api = {
     return res.json();
   },
 
+  deleteJobVacancy: async (id: string) => {
+    const res = await fetchWithAuth(`/jobs/${id}`, {
+      method: 'DELETE',
+    }, 'admin');
+    if (!res.ok) throw new Error('Failed to delete job vacancy');
+    return res.json();
+  },
+
   applyForJob: async (data: Record<string, any>) => {
     const res = await fetch(`${API_BASE}/jobs/apply`, {
       method: 'POST',
@@ -374,6 +445,14 @@ export const api = {
       body: JSON.stringify({ status }),
     }, 'admin');
     if (!res.ok) throw new Error('Failed to update application status');
+    return res.json();
+  },
+
+  deleteJobApplication: async (id: string) => {
+    const res = await fetchWithAuth(`/jobs/applications/${id}`, {
+      method: 'DELETE',
+    }, 'admin');
+    if (!res.ok) throw new Error('Failed to delete application');
     return res.json();
   },
 
@@ -400,8 +479,11 @@ export const api = {
     const res = await fetchWithAuth(`/users/${id}`, {
       method: 'PUT',
       body: JSON.stringify(data),
-    }, 'admin');
-    if (!res.ok) throw new Error('Failed to update user account');
+    }, 'any');
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.message || 'Failed to update user account');
+    }
     return res.json();
   },
 
@@ -410,6 +492,18 @@ export const api = {
       method: 'DELETE',
     }, 'admin');
     if (!res.ok) throw new Error('Failed to delete user account');
+    return res.json();
+  },
+
+  getUserById: async (id: string) => {
+    const res = await fetchWithAuth(`/users/${id}`, {}, 'any');
+    if (!res.ok) throw new Error('Failed to fetch user profile');
+    return res.json();
+  },
+
+  getUserDashboard: async (userId: string) => {
+    const res = await fetchWithAuth(`/users/${userId}/dashboard`, {}, 'student');
+    if (!res.ok) throw new Error('Failed to fetch student dashboard data');
     return res.json();
   },
 
@@ -490,6 +584,14 @@ export const api = {
       body: JSON.stringify({ status, notes }),
     }, 'admin');
     if (!res.ok) throw new Error('Failed to update slip status');
+    return res.json();
+  },
+
+  deleteSlip: async (id: string) => {
+    const res = await fetchWithAuth(`/slips/${id}`, {
+      method: 'DELETE',
+    }, 'admin');
+    if (!res.ok) throw new Error('Failed to delete slip');
     return res.json();
   },
 
@@ -577,8 +679,14 @@ export const api = {
   },
 
   // ── Course Reviews ──
-  getCourseReviews: async (courseSlug: string) => {
-    const res = await fetch(`${API_BASE}/reviews/${courseSlug}`);
+  getCourseReviews: async (courseSlug: string, params?: { rating?: number; page?: number; limit?: number }) => {
+    const query = new URLSearchParams();
+    if (params?.rating) query.set('rating', String(params.rating));
+    if (params?.page) query.set('page', String(params.page));
+    if (params?.limit) query.set('limit', String(params.limit));
+    const qs = query.toString();
+    const url = `${API_BASE}/reviews/${courseSlug}${qs ? `?${qs}` : ''}`;
+    const res = await fetch(url);
     if (!res.ok) throw new Error('Failed to fetch reviews');
     return res.json();
   },
@@ -607,6 +715,52 @@ export const api = {
 
   deleteReview: async (id: string) => {
     const res = await fetchWithAuth(`/reviews/${id}`, { method: 'DELETE' }, 'admin');
+    return res.json();
+  },
+
+  getTopTestimonials: async () => {
+    const res = await fetch(`${API_BASE}/reviews/testimonials/top`);
+    if (!res.ok) throw new Error('Failed to fetch testimonials');
+    return res.json();
+  },
+
+  // ── Business Partners ──
+  getPartners: async (params?: { courseSlug?: string; isFeatured?: boolean; search?: string }) => {
+    const query = new URLSearchParams();
+    if (params?.courseSlug) query.set('courseSlug', params.courseSlug);
+    if (params?.isFeatured !== undefined) query.set('isFeatured', String(params.isFeatured));
+    if (params?.search) query.set('search', params.search);
+    const qs = query.toString();
+    const url = `${API_BASE}/partners${qs ? `?${qs}` : ''}`;
+    const res = await fetch(url);
+    if (!res.ok) throw new Error('Failed to fetch business partners');
+    return res.json();
+  },
+
+  getPartnerById: async (id: string) => {
+    const res = await fetch(`${API_BASE}/partners/${id}`);
+    if (!res.ok) throw new Error('Failed to fetch partner details');
+    return res.json();
+  },
+
+  createPartner: async (data: Record<string, any>) => {
+    const res = await fetchWithAuth('/partners', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }, 'admin');
+    return res.json();
+  },
+
+  updatePartner: async (id: string, data: Record<string, any>) => {
+    const res = await fetchWithAuth(`/partners/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    }, 'admin');
+    return res.json();
+  },
+
+  deletePartner: async (id: string) => {
+    const res = await fetchWithAuth(`/partners/${id}`, { method: 'DELETE' }, 'admin');
     return res.json();
   },
 
@@ -674,10 +828,18 @@ export const api = {
   },
 
   // ── Mastermind Live Q&A & Discussion ──
-  getMastermindQuestions: async (courseSlug = 'bmb', since?: string) => {
+  getMastermindQuestions: async (
+    courseSlug = 'all',
+    params?: string | { since?: string; topic?: string; page?: number; limit?: number }
+  ) => {
     let url = `${API_BASE}/mastermind/questions?courseSlug=${encodeURIComponent(courseSlug)}`;
-    if (since) {
-      url += `&since=${encodeURIComponent(since)}`;
+    if (typeof params === 'string') {
+      url += `&since=${encodeURIComponent(params)}`;
+    } else if (params) {
+      if (params.since) url += `&since=${encodeURIComponent(params.since)}`;
+      if (params.topic && params.topic !== 'ALL') url += `&topic=${encodeURIComponent(params.topic)}`;
+      if (params.page) url += `&page=${params.page}`;
+      if (params.limit) url += `&limit=${params.limit}`;
     }
     const res = await fetch(url);
     if (!res.ok) throw new Error('Failed to fetch mastermind questions');
@@ -692,21 +854,19 @@ export const api = {
     question: string;
     drillTopic?: string;
   }) => {
-    const res = await fetch(`${API_BASE}/mastermind/questions`, {
+    const res = await fetchWithAuth('/mastermind/questions', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data),
-    });
+    }, 'student');
     if (!res.ok) throw new Error('Failed to post question');
     return res.json();
   },
 
   upvoteMastermindQuestion: async (id: string, userId?: string) => {
-    const res = await fetch(`${API_BASE}/mastermind/questions/${id}/upvote`, {
+    const res = await fetchWithAuth(`/mastermind/questions/${id}/upvote`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ userId }),
-    });
+    }, 'student');
     if (!res.ok) throw new Error('Failed to upvote question');
     return res.json();
   },
@@ -728,6 +888,34 @@ export const api = {
     return res.json();
   },
 
+  postMastermindReply: async (
+    questionId: string,
+    body: string,
+    options?: { asCoach?: boolean; authorName?: string; authorBadge?: string }
+  ) => {
+    const authType = options?.asCoach ? 'admin' : (authService.isStudentAuthenticated() ? 'student' : 'any');
+    const res = await fetchWithAuth(`/mastermind/questions/${questionId}/replies`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        body,
+        asCoach: Boolean(options?.asCoach),
+        authorName: options?.authorName,
+        authorBadge: options?.authorBadge,
+      }),
+    }, authType);
+    if (!res.ok) throw new Error('Failed to post reply');
+    return res.json();
+  },
+
+  markReplyAsSolution: async (questionId: string, replyId: string) => {
+    const res = await fetchWithAuth(`/mastermind/questions/${questionId}/replies/${replyId}/solution`, {
+      method: 'PUT',
+    }, 'any');
+    if (!res.ok) throw new Error('Failed to mark reply as solution');
+    return res.json();
+  },
+
   // ── Gamification & Student XP ──
   getLeaderboard: async () => {
     const res = await fetch(`${API_BASE}/gamification/leaderboard`);
@@ -736,7 +924,7 @@ export const api = {
   },
 
   getGamificationProfile: async (userId: string) => {
-    const res = await fetch(`${API_BASE}/gamification/profile/${userId}`);
+    const res = await fetchWithAuth(`/gamification/profile/${userId}`, {}, 'any');
     if (!res.ok) throw new Error('Failed to load operative profile');
     return res.json();
   },
@@ -772,6 +960,83 @@ export const api = {
       body: JSON.stringify(data),
     }, 'admin');
     if (!res.ok) throw new Error('Failed to assign coach');
+    return res.json();
+  },
+
+  // ── Realtime In-App Notifications ──
+  getNotifications: async (userId?: string) => {
+    const qs = userId ? `?userId=${encodeURIComponent(userId)}` : '';
+    const res = await fetchWithAuth(`/notifications${qs}`, { method: 'GET' }, 'any');
+    if (!res.ok) throw new Error('Failed to fetch notifications');
+    return res.json();
+  },
+
+  markNotificationRead: async (id: string) => {
+    const res = await fetchWithAuth(`/notifications/${id}/read`, { method: 'PUT' }, 'any');
+    if (!res.ok) throw new Error('Failed to mark notification as read');
+    return res.json();
+  },
+
+  markAllNotificationsRead: async (userId?: string) => {
+    const res = await fetchWithAuth('/notifications/read-all', {
+      method: 'PUT',
+      body: JSON.stringify(userId ? { userId } : {}),
+    }, 'any');
+    if (!res.ok) throw new Error('Failed to mark all notifications as read');
+    return res.json();
+  },
+
+  // ── Call Tracking System (CRM) ──
+  checkCallNumber: async (phone: string) => {
+    const res = await fetchWithAuth('/calls/check-number', {
+      method: 'POST',
+      body: JSON.stringify({ phone }),
+    }, 'admin');
+    if (!res.ok) throw new Error('Failed to check number');
+    return res.json();
+  },
+  lockCallNumber: async (leadId: string) => {
+    const res = await fetchWithAuth(`/calls/lock/${leadId}`, {
+      method: 'POST',
+    }, 'admin');
+    if (!res.ok) throw new Error('Failed to lock number');
+    return res.json();
+  },
+  logCall: async (data: any) => {
+    const res = await fetchWithAuth('/calls/log', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }, 'admin');
+    if (!res.ok) throw new Error('Failed to log call');
+    return res.json();
+  },
+  getCallHistory: async (leadId: string) => {
+    const res = await fetchWithAuth(`/calls/lead/${leadId}`, { method: 'GET' }, 'admin');
+    if (!res.ok) throw new Error('Failed to fetch call history');
+    return res.json();
+  },
+  getCallStats: async () => {
+    const res = await fetchWithAuth('/calls/stats', { method: 'GET' }, 'admin');
+    if (!res.ok) throw new Error('Failed to fetch call stats');
+    return res.json();
+  },
+  getDailySheet: async (date?: string, adminId?: string) => {
+    const params = new URLSearchParams();
+    if (date) params.append('date', date);
+    if (adminId) params.append('adminId', adminId);
+    const qs = params.toString() ? `?${params.toString()}` : '';
+    const res = await fetchWithAuth(`/calls/daily-sheet${qs}`, { method: 'GET' }, 'admin');
+    if (!res.ok) throw new Error('Failed to fetch daily sheet');
+    return res.json();
+  },
+  getAllCallLogs: async (limit: number = 50, page: number = 1) => {
+    const res = await fetchWithAuth(`/calls?limit=${limit}&page=${page}`, { method: 'GET' }, 'admin');
+    if (!res.ok) throw new Error('Failed to fetch global call logs');
+    return res.json();
+  },
+  deleteCallLog: async (id: string) => {
+    const res = await fetchWithAuth(`/calls/${id}`, { method: 'DELETE' }, 'admin');
+    if (!res.ok) throw new Error('Failed to delete call log');
     return res.json();
   },
 

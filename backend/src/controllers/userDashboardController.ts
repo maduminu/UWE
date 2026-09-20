@@ -26,8 +26,8 @@ export const getUserDashboard = async (req: Request, res: Response): Promise<voi
       return;
     }
 
-    // Parse enrolled course slugs
-    const slugs = (user.enrolledCourseSlugs || 'bmb')
+    // Parse enrolled course slugs — if student has no enrolled courses, accurately return empty list
+    const slugs = (user.enrolledCourseSlugs || '')
       .split(',')
       .map((s) => s.trim().toLowerCase())
       .filter(Boolean);

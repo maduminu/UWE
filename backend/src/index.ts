@@ -20,7 +20,13 @@ import instructorRoutes from './routes/instructorRoutes';
 import certificateRoutes from './routes/certificateRoutes';
 import mastermindRoutes from './routes/mastermindRoutes';
 import gamificationRoutes from './routes/gamificationRoutes';
+import realtimeRoutes from './routes/realtimeRoutes';
 import docsRoutes from './routes/docsRoutes';
+import jobQueueRoutes from './routes/jobQueueRoutes';
+import notificationRoutes from './routes/notificationRoutes';
+import partnerRoutes from './routes/partnerRoutes';
+import callLogRoutes from './routes/callLogRoutes';
+import { initializeBackgroundWorkers } from './services/workerService';
 import { requestLogger, logger } from './utils/logger';
 import { errorHandler } from './middlewares/errorHandler';
 
@@ -37,6 +43,9 @@ if (process.env.NODE_ENV !== 'test') {
 const app: Express = express();
 const PORT = process.env.PORT || 5005;
 
+// Initialize background task workers (PDF generation, slip dispatches, lead routing)
+initializeBackgroundWorkers();
+
 // Trust Vercel / reverse-proxy headers for accurate client IP identification in rate-limiters
 app.set('trust proxy', 1);
 
@@ -48,7 +57,7 @@ app.use(helmet({
 // ── Telemetry & Request Logging ────────────────────────────────────────────
 app.use(requestLogger);
 
-// ── CORS — Restricted to known domains & Vercel deployment URLs ───────────────
+// ── CORS — Strictly restricted to verified UWE domains & preview branches ──────
 const ALLOWED_ORIGINS = [
   'https://uwe-pearl.vercel.app',
   'https://uwe.lk',
@@ -63,23 +72,90 @@ if (process.env.FRONTEND_URL) {
   ALLOWED_ORIGINS.push(process.env.FRONTEND_URL);
 }
 
+// SEC-CRIT-2 Fix: Only allow official UWE Vercel deployment preview subdomains (not any arbitrary *.vercel.app)
+const UWE_VERCEL_PREVIEW_REGEX = /^https:\/\/uwe(-[a-z0-9_-]+)?\.vercel\.app$/i;
+
 app.use(cors({
   origin: (origin, callback) => {
-    // Allow requests with no origin (Postman, curl, server-to-server, or same-origin on Vercel)
+    // Allow non-browser requests (same-origin, curl, server-to-server)
     if (!origin) return callback(null, true);
     
-    // Check exact list
+    // Check exact allowlist
     if (ALLOWED_ORIGINS.includes(origin)) return callback(null, true);
     
-    // Check wildcard for Vercel preview branch deployments (*.vercel.app)
-    if (origin.endsWith('.vercel.app')) return callback(null, true);
+    // Check scoped UWE Vercel preview branch deployments
+    if (UWE_VERCEL_PREVIEW_REGEX.test(origin)) return callback(null, true);
 
     callback(new Error(`CORS policy: origin ${origin} not allowed`));
   },
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Request-Id'],
+  allowedHeaders: [
+    'Content-Type',
+    'Authorization',
+    'X-Request-Id',
+    'Idempotency-Key',
+    'X-Idempotency-Key',
+    'cf-turnstile-response',
+    'g-recaptcha-response',
+    'x-captcha-token',
+  ],
   credentials: true,
 }));
+
+// ── Rate Limiters ───────────────────────────────────────────────────────────
+// Auth: max 12 attempts per 15 minutes per IP (brute-force protection)
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: process.env.NODE_ENV === 'test' ? 10000 : 12,
+  skip: () => process.env.NODE_ENV === 'test',
+  handler: (req, res) => {
+    const requestId = (req.headers['x-request-id'] as string) || (res.getHeader('X-Request-Id') as string) || undefined;
+    res.status(429).json({
+      success: false,
+      code: 'RATE_LIMITED',
+      message: 'Too many authentication attempts. Please try again in 15 minutes.',
+      ...(requestId ? { requestId } : {}),
+    });
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+// Lead / job / slip submissions: max 20 per 15 minutes per IP (spam protection)
+const submissionLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: process.env.NODE_ENV === 'test' ? 10000 : 20,
+  skip: () => process.env.NODE_ENV === 'test',
+  handler: (req, res) => {
+    const requestId = (req.headers['x-request-id'] as string) || (res.getHeader('X-Request-Id') as string) || undefined;
+    res.status(429).json({
+      success: false,
+      code: 'RATE_LIMITED',
+      message: 'Too many submissions received from this IP. Please try again later.',
+      ...(requestId ? { requestId } : {}),
+    });
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+// General API: 300 requests per 15 minutes
+const generalLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: process.env.NODE_ENV === 'test' ? 10000 : 300,
+  skip: () => process.env.NODE_ENV === 'test',
+  handler: (req, res) => {
+    const requestId = (req.headers['x-request-id'] as string) || (res.getHeader('X-Request-Id') as string) || undefined;
+    res.status(429).json({
+      success: false,
+      code: 'RATE_LIMITED',
+      message: 'API rate limit exceeded. Please slow down.',
+      ...(requestId ? { requestId } : {}),
+    });
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
 
 // ── Media & Payment Slip routes — registered BEFORE global body limit so image uploads aren't rejected ──
 app.use('/api/slips', express.json({ limit: '10mb' }), express.urlencoded({ extended: true, limit: '10mb' }), paymentSlipRoutes);
@@ -92,33 +168,6 @@ app.use('/program-videos', express.json({ limit: '10mb' }), express.urlencoded({
 // ── Body Parsers with size limits (all other routes) ────────────────────────
 app.use(express.json({ limit: '500kb' }));
 app.use(express.urlencoded({ extended: true, limit: '500kb' }));
-
-// ── Rate Limiters ───────────────────────────────────────────────────────────
-// Auth: max 12 attempts per 15 minutes per IP (brute-force protection)
-const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 12,
-  message: { success: false, message: 'Too many login attempts. Please try again in 15 minutes.' },
-  standardHeaders: true,
-  legacyHeaders: false,
-});
-
-// Lead / job submissions: max 20 per hour per IP (spam protection)
-const submissionLimiter = rateLimit({
-  windowMs: 60 * 60 * 1000,
-  max: 20,
-  message: { success: false, message: 'Too many submissions from this IP. Please try again later.' },
-  standardHeaders: true,
-  legacyHeaders: false,
-});
-
-// General API: 300 requests per 15 minutes
-const generalLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 300,
-  standardHeaders: true,
-  legacyHeaders: false,
-});
 
 app.use('/api', generalLimiter);
 
@@ -146,20 +195,18 @@ app.get('/health', (_req: Request, res: Response) => {
   res.status(200).json({ status: 'ONLINE', system: 'UWE Backend Command Center API', timestamp: new Date().toISOString() });
 });
 
-// System Diagnostics Route
+// System Diagnostics Route — Server telemetry for monitoring & uptime probes
 app.get('/api/diagnostics', (_req: Request, res: Response) => {
   const memoryUsage = process.memoryUsage();
   res.status(200).json({
     status: 'HEALTHY',
     system: 'UWE Command Server Telemetry',
-    nodeVersion: process.version,
     uptimeSeconds: Math.floor(process.uptime()),
     memoryMb: {
       rss: Math.round(memoryUsage.rss / 1024 / 1024),
       heapTotal: Math.round(memoryUsage.heapTotal / 1024 / 1024),
       heapUsed: Math.round(memoryUsage.heapUsed / 1024 / 1024),
     },
-    env: process.env.NODE_ENV || 'development',
     timestamp: new Date().toISOString(),
   });
 });
@@ -216,6 +263,22 @@ app.use('/mastermind', mastermindRoutes);
 
 app.use('/api/gamification', gamificationRoutes);
 app.use('/gamification', gamificationRoutes);
+
+app.use('/api/realtime', realtimeRoutes);
+app.use('/realtime', realtimeRoutes);
+
+app.use('/api/notifications', notificationRoutes);
+app.use('/notifications', notificationRoutes);
+
+app.use('/api/partners', partnerRoutes);
+app.use('/api/calls', callLogRoutes);
+app.use('/partners', partnerRoutes);
+
+// ── Background Job Queue & Asynchronous Workers Gateway ────────────────────
+app.use('/api/background-jobs', jobQueueRoutes);
+app.use('/background-jobs', jobQueueRoutes);
+app.use('/api/tasks', jobQueueRoutes);
+app.use('/tasks', jobQueueRoutes);
 
 // Error Middleware
 app.use(errorHandler);

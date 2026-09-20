@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { API_BASE } from '../../services/api';
+import { useRealtimeEvent } from '../../services/realtime';
 
 interface ActiveBanner {
   id: string;
@@ -19,37 +20,40 @@ const bannerStyles: Record<string, string> = {
 export const ActiveBannerBar: React.FC = () => {
   const [banner, setBanner] = useState<ActiveBanner | null>(null);
 
-  useEffect(() => {
-    let isMounted = true;
+  const loadBanner = useCallback(async () => {
+    try {
+      const res = await fetch(`${API_BASE}/banners/active`);
+      if (!res.ok) return;
 
-    const loadBanner = async () => {
-      try {
-        const res = await fetch(`${API_BASE}/banners/active`);
-        if (!res.ok) return;
+      const json = await res.json();
+      const activeBanner = Array.isArray(json?.data) ? json.data[0] : json?.data;
 
-        const json = await res.json();
-        const activeBanner = Array.isArray(json?.data) ? json.data[0] : json?.data;
-
-        if (isMounted && activeBanner?.isActive) {
-          setBanner(activeBanner);
-        } else if (isMounted) {
-          setBanner(null);
-        }
-      } catch {
-        if (isMounted) {
-          setBanner(null);
-        }
+      if (activeBanner?.isActive) {
+        setBanner(activeBanner);
+      } else {
+        setBanner(null);
       }
-    };
+    } catch {
+      setBanner(null);
+    }
+  }, []);
 
+  useRealtimeEvent('banner:updated', (detail) => {
+    if (detail?.banner) {
+      setBanner(detail.banner.isActive ? detail.banner : null);
+    } else {
+      loadBanner();
+    }
+  });
+
+  useEffect(() => {
     loadBanner();
     const intervalId = window.setInterval(loadBanner, 60000);
 
     return () => {
-      isMounted = false;
       window.clearInterval(intervalId);
     };
-  }, []);
+  }, [loadBanner]);
 
   if (!banner) return null;
 

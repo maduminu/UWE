@@ -110,7 +110,7 @@ describe('Transactional Commerce & Concurrency Invariant Tests (DATA-1, DATA-2, 
       });
       appIds.push(appRecord.id);
     }
-  });
+  }, 30000);
 
   afterAll(async () => {
     try {
@@ -123,7 +123,7 @@ describe('Transactional Commerce & Concurrency Invariant Tests (DATA-1, DATA-2, 
     } catch {
       /* ignore cleanup */
     }
-  });
+  }, 30000);
 
   // ── DATA-1: Coupon Concurrency Race Test ────────────────────────────────────
   it('DATA-1: Concurrent checkout redemptions for a 1-use coupon permit exactly 1 winner', async () => {

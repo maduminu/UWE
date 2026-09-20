@@ -8,10 +8,13 @@ export type AdminRole = 'SUPER_ADMIN' | 'COMMANDER' | 'COACH' | 'RECRUITER';
  */
 export const requireRole = (allowedRoles: AdminRole[]) => {
   return (req: Request, res: Response, next: NextFunction): void => {
+    const requestId = (req.headers['x-request-id'] as string) || (res.getHeader('X-Request-Id') as string) || undefined;
     if (!req.user) {
       res.status(401).json({
         success: false,
+        code: 'UNAUTHORIZED',
         message: 'Access Denied: Authentication required.',
+        ...(requestId ? { requestId } : {}),
       });
       return;
     }
@@ -19,7 +22,9 @@ export const requireRole = (allowedRoles: AdminRole[]) => {
     if (req.user.type !== 'admin') {
       res.status(403).json({
         success: false,
+        code: 'FORBIDDEN',
         message: 'Access Forbidden: Command HQ administrator privileges required.',
+        ...(requestId ? { requestId } : {}),
       });
       return;
     }
@@ -34,7 +39,9 @@ export const requireRole = (allowedRoles: AdminRole[]) => {
 
     res.status(403).json({
       success: false,
+      code: 'FORBIDDEN',
       message: `Access Forbidden: Insufficient clearance. Requires one of [${allowedRoles.join(', ')}], current role: ${userRole}.`,
+      ...(requestId ? { requestId } : {}),
     });
   };
 };

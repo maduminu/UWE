@@ -1,5 +1,7 @@
 import { Request, Response } from 'express';
 import { prisma } from '../config/db';
+import { logger } from '../utils/logger';
+import { sendError, ErrorCode } from '../utils/apiResponse';
 
 // @desc    Get category-wise program video series
 // @route   GET /api/program-videos
@@ -19,7 +21,8 @@ export const getProgramVideos = async (req: Request, res: Response): Promise<voi
 
     res.status(200).json({ success: true, count: seriesList.length, data: seriesList });
   } catch (error: any) {
-    res.status(500).json({ success: false, message: error.message });
+    logger.error(`[getProgramVideos] ${error.message}`, 'VIDEOS');
+    sendError(res, 500, ErrorCode.INTERNAL_SERVER_ERROR, 'Failed to retrieve program video series.', req);
   }
 };
 
@@ -30,7 +33,7 @@ export const createSeries = async (req: Request, res: Response): Promise<void> =
     const { courseSlug, seriesTitle, category, description, thumbnailUrl } = req.body;
 
     if (!seriesTitle || !courseSlug) {
-      res.status(400).json({ success: false, message: 'Series Title and Course Slug are required' });
+      sendError(res, 400, ErrorCode.VALIDATION_ERROR, 'Series Title and Course Slug are required', req);
       return;
     }
 
@@ -49,7 +52,8 @@ export const createSeries = async (req: Request, res: Response): Promise<void> =
 
     res.status(201).json({ success: true, data: newSeries });
   } catch (error: any) {
-    res.status(500).json({ success: false, message: error.message });
+    logger.error(`[createSeries] ${error.message}`, 'VIDEOS');
+    sendError(res, 500, ErrorCode.INTERNAL_SERVER_ERROR, 'Failed to create program video series.', req);
   }
 };
 
@@ -78,7 +82,8 @@ export const updateSeries = async (req: Request, res: Response): Promise<void> =
 
     res.status(200).json({ success: true, data: updatedSeries });
   } catch (error: any) {
-    res.status(500).json({ success: false, message: error.message });
+    logger.error(`[updateSeries] ${error.message}`, 'VIDEOS');
+    sendError(res, 500, ErrorCode.INTERNAL_SERVER_ERROR, 'Failed to update video series.', req);
   }
 };
 
@@ -92,7 +97,8 @@ export const deleteSeries = async (req: Request, res: Response): Promise<void> =
     await prisma.programVideoSeries.delete({ where: { id } });
     res.status(200).json({ success: true, message: 'Video series deleted successfully' });
   } catch (error: any) {
-    res.status(500).json({ success: false, message: error.message });
+    logger.error(`[deleteSeries] ${error.message}`, 'VIDEOS');
+    sendError(res, 500, ErrorCode.INTERNAL_SERVER_ERROR, 'Failed to delete video series.', req);
   }
 };
 
@@ -103,7 +109,7 @@ export const createModule = async (req: Request, res: Response): Promise<void> =
     const { seriesId, episodeNumber, title, duration, videoUrl, isFreePreview, description } = req.body;
 
     if (!seriesId || !title || !videoUrl) {
-      res.status(400).json({ success: false, message: 'Series ID, Episode Title and Video URL are required' });
+      sendError(res, 400, ErrorCode.VALIDATION_ERROR, 'Series ID, Episode Title and Video URL are required', req);
       return;
     }
 
@@ -121,7 +127,34 @@ export const createModule = async (req: Request, res: Response): Promise<void> =
 
     res.status(201).json({ success: true, data: newModule });
   } catch (error: any) {
-    res.status(500).json({ success: false, message: error.message });
+    logger.error(`[createModule] ${error.message}`, 'VIDEOS');
+    sendError(res, 500, ErrorCode.INTERNAL_SERVER_ERROR, 'Failed to create video module.', req);
+  }
+};
+
+// @desc    Update video module episode (CMS Admin)
+// @route   PUT /api/program-videos/modules/:id
+export const updateModule = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const id = String(req.params.id);
+    const { episodeNumber, title, duration, videoUrl, isFreePreview, description } = req.body;
+
+    const updated = await prisma.programVideoModule.update({
+      where: { id },
+      data: {
+        ...(episodeNumber !== undefined && { episodeNumber: parseInt(episodeNumber, 10) }),
+        ...(title && { title: title.trim() }),
+        ...(duration && { duration: duration.trim() }),
+        ...(videoUrl && { videoUrl: videoUrl.trim() }),
+        ...(typeof isFreePreview === 'boolean' && { isFreePreview }),
+        ...(description !== undefined && { description: description ? description.trim() : null }),
+      },
+    });
+
+    res.status(200).json({ success: true, data: updated });
+  } catch (error: any) {
+    logger.error(`[updateModule] ${error.message}`, 'VIDEOS');
+    sendError(res, 500, ErrorCode.INTERNAL_SERVER_ERROR, 'Failed to update video module.', req);
   }
 };
 
@@ -133,6 +166,7 @@ export const deleteModule = async (req: Request, res: Response): Promise<void> =
     await prisma.programVideoModule.delete({ where: { id } });
     res.status(200).json({ success: true, message: 'Video module deleted successfully' });
   } catch (error: any) {
-    res.status(500).json({ success: false, message: error.message });
+    logger.error(`[deleteModule] ${error.message}`, 'VIDEOS');
+    sendError(res, 500, ErrorCode.INTERNAL_SERVER_ERROR, 'Failed to delete video module.', req);
   }
 };

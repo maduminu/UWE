@@ -12,12 +12,25 @@ export const MastermindTab: React.FC<MastermindTabProps> = ({ addToast }) => {
   const [questions, setQuestions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedCourse, setSelectedCourse] = useState('ALL');
-  const [filterStatus, setFilterStatus] = useState<'ALL' | 'UNANSWERED' | 'ANSWERED' | 'PINNED'>('ALL');
+  const [filterStatus, setFilterStatus] = useState<'ALL' | 'UNANSWERED' | 'STUDENT_REPLY' | 'ANSWERED' | 'PINNED'>('ALL');
   const [replyingId, setReplyingId] = useState<string | null>(null);
   const [replyText, setReplyText] = useState('');
   const [submittingReply, setSubmittingReply] = useState(false);
 
+  // Threaded reply state (coach can also reply via thread endpoint)
+  const [threadReplyId, setThreadReplyId] = useState<string | null>(null);
+  const [threadReplyText, setThreadReplyText] = useState('');
+  const [submittingThreadReply, setSubmittingThreadReply] = useState(false);
+  const [expandedReplies, setExpandedReplies] = useState<Set<string>>(new Set());
+
   const currentAdmin = authService.getAdminUser();
+
+  const hasStudentFollowUp = (q: any): boolean => {
+    const replies = q.replies || [];
+    if (replies.length === 0) return false;
+    const lastReply = replies[replies.length - 1];
+    return !lastReply.isCoach;
+  };
 
   const fetchQuestions = async () => {
     try {
@@ -33,8 +46,16 @@ export const MastermindTab: React.FC<MastermindTabProps> = ({ addToast }) => {
           combined.push(...res.data);
         }
       });
-      // Sort newest first
-      combined.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      // Sort by latest activity (question creation or latest thread reply)
+      combined.sort((a, b) => {
+        const aReplies = a.replies || [];
+        const bReplies = b.replies || [];
+        const aLatestReply = aReplies.length > 0 ? new Date(aReplies[aReplies.length - 1].createdAt).getTime() : 0;
+        const bLatestReply = bReplies.length > 0 ? new Date(bReplies[bReplies.length - 1].createdAt).getTime() : 0;
+        const aActivity = Math.max(new Date(a.updatedAt || a.createdAt).getTime(), aLatestReply);
+        const bActivity = Math.max(new Date(b.updatedAt || b.createdAt).getTime(), bLatestReply);
+        return bActivity - aActivity;
+      });
       setQuestions(combined);
     } catch (err: any) {
       addToast(`❌ Failed to load questions: ${err.message}`, 'error');
@@ -75,6 +96,41 @@ export const MastermindTab: React.FC<MastermindTabProps> = ({ addToast }) => {
     }
   };
 
+  const handlePostThreadReply = async (qId: string) => {
+    if (!threadReplyText.trim()) return;
+    setSubmittingThreadReply(true);
+    try {
+      const coachName = currentAdmin?.name ? `Commander ${currentAdmin.name}` : 'UWE Command Council';
+      const res = await api.postMastermindReply(qId, threadReplyText.trim(), {
+        asCoach: true,
+        authorName: coachName,
+        authorBadge: currentAdmin?.role ? `COMMAND ${currentAdmin.role}` : 'COMMAND COUNCIL',
+      });
+      if (res.data) {
+        setQuestions((prev) =>
+          prev.map((q) =>
+            q.id === qId
+              ? {
+                  ...q,
+                  isAnswered: true,
+                  answeredBy: coachName,
+                  replies: [...(q.replies || []), res.data],
+                }
+              : q
+          )
+        );
+        setExpandedReplies((prev) => new Set(prev).add(qId));
+        addToast('✅ Thread reply posted!', 'success');
+        setThreadReplyId(null);
+        setThreadReplyText('');
+      }
+    } catch (err: any) {
+      addToast(`❌ Failed to post thread reply: ${err.message}`, 'error');
+    } finally {
+      setSubmittingThreadReply(false);
+    }
+  };
+
   const handleTogglePin = async (q: any) => {
     try {
       const newPinned = !q.isPinned;
@@ -107,13 +163,15 @@ export const MastermindTab: React.FC<MastermindTabProps> = ({ addToast }) => {
     const matchesCourse = selectedCourse === 'ALL' || q.courseSlug === selectedCourse.toLowerCase();
     if (!matchesCourse) return false;
 
-    if (filterStatus === 'UNANSWERED') return !q.isAnswered && !q.answer;
-    if (filterStatus === 'ANSWERED') return q.isAnswered || Boolean(q.answer);
+    if (filterStatus === 'UNANSWERED') return (!q.isAnswered && !q.answer) || hasStudentFollowUp(q);
+    if (filterStatus === 'STUDENT_REPLY') return hasStudentFollowUp(q);
+    if (filterStatus === 'ANSWERED') return (q.isAnswered || Boolean(q.answer)) && !hasStudentFollowUp(q);
     if (filterStatus === 'PINNED') return q.isPinned;
     return true;
   });
 
-  const unansweredCount = questions.filter((q) => !q.isAnswered && !q.answer).length;
+  const studentFollowUpCount = questions.filter(hasStudentFollowUp).length;
+  const unansweredCount = questions.filter((q) => (!q.isAnswered && !q.answer) || hasStudentFollowUp(q)).length;
 
   return (
     <motion.div
@@ -133,7 +191,12 @@ export const MastermindTab: React.FC<MastermindTabProps> = ({ addToast }) => {
             </h3>
             {unansweredCount > 0 && (
               <span className="px-2.5 py-0.5 rounded-full bg-red-500/20 border border-red-500/40 text-red-400 text-[10px] font-bold animate-pulse">
-                {unansweredCount} UNANSWERED
+                {unansweredCount} PENDING ACTION
+              </span>
+            )}
+            {studentFollowUpCount > 0 && (
+              <span className="px-2.5 py-0.5 rounded-full bg-amber-500/20 border border-amber-500/40 text-amber-400 text-[10px] font-bold animate-pulse">
+                {studentFollowUpCount} STUDENT FOLLOW-UPS
               </span>
             )}
           </div>
@@ -187,17 +250,22 @@ export const MastermindTab: React.FC<MastermindTabProps> = ({ addToast }) => {
         {/* Status Filter */}
         <div className="flex items-center gap-2 flex-wrap">
           <span className="text-on-surface-variant text-[11px]">Status:</span>
-          {(['ALL', 'UNANSWERED', 'ANSWERED', 'PINNED'] as const).map((st) => (
+          {(['ALL', 'UNANSWERED', 'STUDENT_REPLY', 'ANSWERED', 'PINNED'] as const).map((st) => (
             <button
               key={st}
               onClick={() => setFilterStatus(st)}
-              className={`px-3 py-1 rounded-lg text-xs transition-all cursor-pointer ${
+              className={`px-3 py-1 rounded-lg text-xs transition-all cursor-pointer flex items-center gap-1.5 ${
                 filterStatus === st
                   ? 'bg-secondary/20 text-secondary border border-secondary font-bold'
                   : 'bg-surface-variant/20 text-on-surface-variant hover:text-on-surface'
               }`}
             >
-              {st}
+              <span>{st === 'STUDENT_REPLY' ? 'STUDENT FOLLOW-UP' : st}</span>
+              {st === 'STUDENT_REPLY' && studentFollowUpCount > 0 && (
+                <span className="px-1.5 py-0.2 rounded-full bg-amber-500 text-black text-[9px] font-black">
+                  {studentFollowUpCount}
+                </span>
+              )}
             </button>
           ))}
         </div>
@@ -238,6 +306,26 @@ export const MastermindTab: React.FC<MastermindTabProps> = ({ addToast }) => {
                     <span className="px-2 py-0.5 rounded bg-secondary text-black font-bold text-[10px] uppercase flex items-center gap-1">
                       <span className="material-symbols-outlined text-xs">push_pin</span> PINNED FOR ZOOM
                     </span>
+                  )}
+                  {q.isSolved && (
+                    <span className="px-2 py-0.5 rounded-full bg-[#2ED573]/15 border border-[#2ED573]/50 text-[#2ED573] font-bold text-[10px] flex items-center gap-1">
+                      <span className="material-symbols-outlined text-xs">verified</span> SOLVED
+                    </span>
+                  )}
+                  {hasStudentFollowUp(q) && (
+                    <span className="px-2.5 py-0.5 rounded-full bg-amber-500/20 border border-amber-500/60 text-amber-400 font-bold text-[10px] flex items-center gap-1 animate-pulse">
+                      <span className="material-symbols-outlined text-xs">priority_high</span> STUDENT FOLLOW-UP
+                    </span>
+                  )}
+                  {(q.replies?.length > 0) && (
+                    <button
+                      type="button"
+                      onClick={() => setExpandedReplies((prev) => { const s = new Set(prev); s.has(q.id) ? s.delete(q.id) : s.add(q.id); return s; })}
+                      className="px-2 py-0.5 rounded-full bg-surface-variant/30 text-on-surface-variant hover:text-secondary border border-outline-variant/30 text-[10px] flex items-center gap-1 cursor-pointer transition-colors"
+                    >
+                      <span className="material-symbols-outlined text-xs">chat_bubble_outline</span>
+                      {q.replies.length} {expandedReplies.has(q.id) ? '▲' : '▼'}
+                    </button>
                   )}
                   <span className="px-2.5 py-0.5 rounded bg-secondary/15 text-secondary border border-secondary/30 text-[10px] font-bold uppercase">
                     {q.courseSlug?.toUpperCase() || 'BMB'}
@@ -304,23 +392,122 @@ export const MastermindTab: React.FC<MastermindTabProps> = ({ addToast }) => {
 
               {/* Action / Reply Bar */}
               <div className="pt-2 border-t border-outline-variant/20 flex justify-between items-center flex-wrap gap-2">
-                <span className={`text-[11px] font-bold ${q.answer ? 'text-[#2ED573]' : 'text-yellow-400'}`}>
-                  {q.answer ? '✓ Answered' : '⏳ Awaiting Coach Response'}
+                <span className={`text-[11px] font-bold ${
+                  hasStudentFollowUp(q)
+                    ? 'text-amber-400 animate-pulse flex items-center gap-1'
+                    : q.answer
+                    ? 'text-[#2ED573]'
+                    : 'text-yellow-400'
+                }`}>
+                  {hasStudentFollowUp(q)
+                    ? '⚠️ Student Follow-up Awaiting Coach Response'
+                    : q.answer
+                    ? '✓ Official Answer Sent'
+                    : '⏳ Awaiting Coach Response'}
                 </span>
 
-                <button
-                  onClick={() => {
-                    setReplyingId(replyingId === q.id ? null : q.id);
-                    setReplyText(q.answer || '');
-                  }}
-                  className="px-3.5 py-1.5 rounded-lg bg-surface-variant/40 hover:bg-surface-variant text-on-surface text-xs font-bold border border-outline-variant/30 transition-all flex items-center gap-1.5 cursor-pointer"
-                >
-                  <span className="material-symbols-outlined text-sm text-secondary">
-                    {q.answer ? 'edit' : 'reply'}
-                  </span>
-                  <span>{q.answer ? 'EDIT RESPONSE' : 'WRITE COACH RESPONSE'}</span>
-                </button>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <button
+                    onClick={() => {
+                      setReplyingId(replyingId === q.id ? null : q.id);
+                      setReplyText(q.answer || '');
+                      setThreadReplyId(null);
+                    }}
+                    className="px-3.5 py-1.5 rounded-lg bg-surface-variant/40 hover:bg-surface-variant text-on-surface text-xs font-bold border border-outline-variant/30 transition-all flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <span className="material-symbols-outlined text-sm text-secondary">
+                      {q.answer ? 'edit' : 'reply'}
+                    </span>
+                    <span>{q.answer ? 'EDIT OFFICIAL RESPONSE' : 'WRITE COACH RESPONSE'}</span>
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setThreadReplyId(threadReplyId === q.id ? null : q.id);
+                      setThreadReplyText('');
+                      setReplyingId(null);
+                    }}
+                    className="px-3.5 py-1.5 rounded-lg bg-[#00D2FF]/10 hover:bg-[#00D2FF]/20 text-[#00D2FF] text-xs font-bold border border-[#00D2FF]/30 transition-all flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <span className="material-symbols-outlined text-sm">forum</span>
+                    <span>POST THREAD REPLY</span>
+                  </button>
+                </div>
               </div>
+
+              {/* Thread Replies (expanded) */}
+              {expandedReplies.has(q.id) && (q.replies || []).length > 0 && (
+                <div className="space-y-2 pl-4 border-l-2 border-outline-variant/30">
+                  {(q.replies || []).map((reply: any) => (
+                    <div
+                      key={reply.id}
+                      className={`p-3 rounded-xl border text-xs space-y-1 ${
+                        reply.isSolution
+                          ? 'bg-[#2ED573]/8 border-[#2ED573]/40'
+                          : reply.isCoach
+                          ? 'bg-[#00D2FF]/5 border-[#00D2FF]/30'
+                          : 'bg-[#0A0F1C] border-outline-variant/20'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2 flex-wrap">
+                        {reply.isSolution && (
+                          <span className="px-1.5 py-0.5 rounded-full bg-[#2ED573]/20 border border-[#2ED573]/50 text-[#2ED573] text-[9px] font-bold flex items-center gap-0.5">
+                            <span className="material-symbols-outlined text-xs">verified</span> SOLUTION
+                          </span>
+                        )}
+                        {reply.isCoach && (
+                          <span className="text-[#00D2FF] font-bold text-[10px] flex items-center gap-0.5">
+                            <span className="material-symbols-outlined text-xs">verified_user</span> COACH
+                          </span>
+                        )}
+                        <span className="text-on-surface font-bold">{reply.authorName}</span>
+                        <span className="text-on-surface-variant">[{reply.authorBadge}]</span>
+                        <span className="text-on-surface-variant">
+                          • {new Date(reply.createdAt).toLocaleString()}
+                        </span>
+                      </div>
+                      <p className="text-on-surface leading-relaxed">{reply.body}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Thread Reply Form (coach) */}
+              {threadReplyId === q.id && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="bg-[#06101E] p-4 rounded-xl border border-[#00D2FF]/40 space-y-3"
+                >
+                  <label className="block text-[#00D2FF] font-bold text-[11px] uppercase">
+                    Coach Thread Reply to {q.authorName} (Markdown supported):
+                  </label>
+                  <textarea
+                    rows={3}
+                    value={threadReplyText}
+                    onChange={(e) => setThreadReplyText(e.target.value)}
+                    placeholder="Type reply with **bold**, `code`, bullet points..."
+                    className="w-full p-3 rounded-lg bg-[#0E1322] border border-outline-variant/40 text-on-surface focus:border-[#00D2FF] outline-none text-xs leading-relaxed font-mono"
+                  />
+                  <div className="flex justify-end gap-2">
+                    <button
+                      onClick={() => setThreadReplyId(null)}
+                      className="px-3.5 py-1.5 rounded-lg bg-surface-variant/30 text-on-surface-variant hover:text-on-surface text-xs cursor-pointer"
+                    >
+                      CANCEL
+                    </button>
+                    <button
+                      onClick={() => handlePostThreadReply(q.id)}
+                      disabled={submittingThreadReply || !threadReplyText.trim()}
+                      className="px-4 py-1.5 rounded-lg bg-[#00D2FF] text-black text-xs font-bold hover:bg-[#00D2FF]/80 transition-all cursor-pointer disabled:opacity-50 flex items-center gap-1"
+                    >
+                      <span className="material-symbols-outlined text-sm">forum</span>
+                      <span>{submittingThreadReply ? 'SENDING...' : 'POST THREAD REPLY'}</span>
+                    </button>
+                  </div>
+                </motion.div>
+              )}
 
               {/* Inline Reply Form */}
               {replyingId === q.id && (

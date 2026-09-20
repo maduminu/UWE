@@ -1,5 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
+import { useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
+import { authService } from '../../services/auth';
 import type { PageId } from './Navbar';
 
 interface MobileBottomNavProps {
@@ -9,6 +12,16 @@ interface MobileBottomNavProps {
 
 export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({ activePage, setActivePage }) => {
   const [moreDrawerOpen, setMoreDrawerOpen] = useState(false);
+  const [authModalActive, setAuthModalActive] = useState(false);
+  const location = useLocation();
+
+  useEffect(() => {
+    const handleAuthModalState = (e: any) => {
+      setAuthModalActive(!!e.detail?.isOpen);
+    };
+    window.addEventListener('auth:modal_state', handleAuthModalState);
+    return () => window.removeEventListener('auth:modal_state', handleAuthModalState);
+  }, []);
 
   // Primary bottom tabs
   const primaryTabs: { id: PageId; label: string; icon: string; highlight?: boolean }[] = [
@@ -22,6 +35,7 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({ activePage, se
   // Secondary items in the "More Menu" drawer
   const moreItems: { id: PageId; label: string; icon: string; desc: string }[] = [
     { id: 'dashboard', label: 'My Student Portal', icon: 'school', desc: 'Enrolled courses, certificates & progress' },
+    { id: 'partners', label: 'Partner Network', icon: 'handshake', desc: 'Collaborative business partner directory' },
     { id: 'contact', label: 'Contact HQ & WhatsApp', icon: 'chat', desc: 'Direct transmission & inquiries' },
     { id: 'demos', label: 'Demo Media Vault', icon: 'movie', desc: 'Watch program preview trailers' },
     { id: 'posters', label: 'Flyers & Posters', icon: 'photo_library', desc: 'Social recruitment assets' },
@@ -34,7 +48,13 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({ activePage, se
     setMoreDrawerOpen(false);
   };
 
-  return (
+  // Hide bottom nav on unauthenticated admin login screen or when student sign-in/sign-up modal is open
+  const isAdminLoginScreen = location.pathname.startsWith('/admin') && !authService.isAdminAuthenticated();
+  if (authModalActive || isAdminLoginScreen) {
+    return null;
+  }
+
+  const navContent = (
     <>
       {/* ── Slide-up "More HQ Systems" Drawer ── */}
       <AnimatePresence>
@@ -46,7 +66,7 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({ activePage, se
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setMoreDrawerOpen(false)}
-              className="fixed inset-0 z-40 bg-black/75 backdrop-blur-md lg:hidden"
+              className="fixed inset-0 z-[9994] bg-black/75 backdrop-blur-md lg:hidden"
             />
 
             {/* Sheet Modal */}
@@ -55,7 +75,7 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({ activePage, se
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 100 }}
               transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-              className="fixed bottom-[88px] left-3 right-3 max-w-[440px] mx-auto z-50 rounded-2xl bg-[#0C101A]/95 border border-secondary/40 p-4 shadow-[0_0_50px_rgba(255,184,0,0.25)] backdrop-blur-2xl lg:hidden space-y-2"
+              className="fixed bottom-[calc(5rem+env(safe-area-inset-bottom,0px))] inset-x-0 mx-auto w-[calc(100%-24px)] max-w-[440px] z-[9995] rounded-2xl bg-[#0C101A]/95 border border-secondary/40 p-4 shadow-[0_0_50px_rgba(255,184,0,0.25)] backdrop-blur-2xl lg:hidden space-y-2"
             >
               <div className="flex justify-between items-center pb-2 border-b border-outline-variant/30 px-1">
                 <div className="flex items-center gap-2">
@@ -66,7 +86,7 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({ activePage, se
                 </div>
                 <button
                   onClick={() => setMoreDrawerOpen(false)}
-                  className="w-6 h-6 rounded-full bg-surface-container-high flex items-center justify-center text-on-surface-variant hover:text-on-surface"
+                  className="w-6 h-6 rounded-full bg-surface-container-high flex items-center justify-center text-on-surface-variant hover:text-on-surface cursor-pointer"
                 >
                   <span className="material-symbols-outlined text-sm">close</span>
                 </button>
@@ -111,7 +131,7 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({ activePage, se
       {/* ── Floating Mobile Bottom Dock Bar ── */}
       <nav
         aria-label="Mobile Navigation Bar"
-        className="fixed bottom-3 left-3 right-3 max-w-[440px] mx-auto z-40 lg:hidden pointer-events-auto"
+        className="fixed bottom-[calc(0.75rem+env(safe-area-inset-bottom,0px))] inset-x-0 mx-auto w-[calc(100%-24px)] max-w-[440px] z-[9990] lg:hidden pointer-events-auto"
       >
         <div className="relative rounded-2xl bg-[#090D16]/95 border border-secondary/35 p-1.5 shadow-[0_10px_35px_rgba(0,0,0,0.9),0_0_25px_rgba(255,184,0,0.18)] backdrop-blur-2xl flex items-center justify-around gap-1">
           {primaryTabs.map((tab) => {
@@ -151,7 +171,7 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({ activePage, se
                   {tab.label}
                 </span>
 
-                {/* Active Indicator Glowing Cyan Dot (Matching Native App Reference) */}
+                {/* Active Indicator Glowing Cyan Dot */}
                 {isActive && (
                   <motion.div
                     layoutId="mobile-active-dot"
@@ -187,4 +207,6 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({ activePage, se
       </nav>
     </>
   );
+
+  return typeof document !== 'undefined' ? createPortal(navContent, document.body) : navContent;
 };

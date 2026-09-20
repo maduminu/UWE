@@ -15,24 +15,26 @@ export const sanitizeExternalUrl = (rawUrl?: string | null, fallback: string = '
     return trimmed;
   }
 
-  // Reject obvious malicious schemes immediately
-  if (/^(javascript|vbscript|data:text\/html|file):/i.test(trimmed)) {
+  // Reject protocol-relative URLs (e.g. //attacker.com) and obvious malicious schemes immediately
+  if (trimmed.startsWith('//') || /^(javascript|vbscript|data:text\/html|file):/i.test(trimmed)) {
     console.warn(`[Security Alert] Blocked unsafe URL scheme: ${trimmed.slice(0, 30)}...`);
     return fallback;
   }
 
+  // Relative paths on same origin are permitted if starting with a single '/'
+  if (trimmed.startsWith('/') && !trimmed.startsWith('//')) {
+    return trimmed;
+  }
+
   try {
-    const parsed = new URL(trimmed, window.location.origin);
+    const baseOrigin = typeof window !== 'undefined' && window.location?.origin ? window.location.origin : 'https://uwe.lk';
+    const parsed = new URL(trimmed, baseOrigin);
     if (!ALLOWED_PROTOCOLS.has(parsed.protocol)) {
       console.warn(`[Security Alert] Protocol not permitted: ${parsed.protocol}`);
       return fallback;
     }
     return trimmed;
   } catch {
-    // Relative paths on same origin are permitted if starting with /
-    if (trimmed.startsWith('/') && !trimmed.startsWith('//')) {
-      return trimmed;
-    }
     return fallback;
   }
 };
@@ -57,3 +59,13 @@ export const sanitizeImageUrl = (rawUrl?: string | null, defaultImage: string = 
 
   return sanitizeExternalUrl(trimmed, defaultImage);
 };
+
+/**
+ * Checks if a given URL is safe according to allowed protocol policy
+ */
+export const isSafeUrl = (rawUrl?: string | null): boolean => {
+  if (!rawUrl || typeof rawUrl !== 'string') return false;
+  const sanitized = sanitizeExternalUrl(rawUrl, '__INVALID__');
+  return sanitized !== '__INVALID__' && sanitized !== '#';
+};
+

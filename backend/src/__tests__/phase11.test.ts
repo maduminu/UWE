@@ -110,13 +110,24 @@ describe('Phase 11: Growth & Student Retention Tools Integration Tests', () => {
   });
 
   it('GET /api/gamification/profile/:userId returns student XP progress dossier', async () => {
-    const res = await request(app).get(`/api/gamification/profile/${testUserId}`);
+    const res = await request(app)
+      .get(`/api/gamification/profile/${testUserId}`)
+      .set('Authorization', `Bearer ${studentToken}`);
 
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);
     expect(res.body.data.operativeId).toBeDefined();
     expect(res.body.data.rankInfo).toBeDefined();
     expect(Array.isArray(res.body.data.badges)).toBe(true);
+  });
+
+  it('GET /api/gamification/profile/:userId rejects IDOR attempt by non-admin with 403', async () => {
+    const res = await request(app)
+      .get('/api/gamification/profile/another-random-user-id')
+      .set('Authorization', `Bearer ${studentToken}`);
+
+    expect(res.status).toBe(403);
+    expect(res.body.success).toBe(false);
   });
 
   it('POST /api/gamification/award-xp adds XP and upgrades student rank', async () => {

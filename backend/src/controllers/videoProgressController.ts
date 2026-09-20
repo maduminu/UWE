@@ -1,5 +1,7 @@
 import { Request, Response } from 'express';
 import { prisma } from '../config/db';
+import { logger } from '../utils/logger';
+import { sendError, ErrorCode } from '../utils/apiResponse';
 
 // @desc    Get user's video progress list
 // @route   GET /api/progress/:userId
@@ -10,7 +12,7 @@ export const getUserProgress = async (req: Request, res: Response): Promise<void
     const targetUserId = isAdmin ? String(req.params.userId) : callerId;
 
     if (!targetUserId) {
-      res.status(400).json({ success: false, message: 'User ID is required' });
+      sendError(res, 400, ErrorCode.VALIDATION_ERROR, 'User ID is required', req);
       return;
     }
 
@@ -19,7 +21,8 @@ export const getUserProgress = async (req: Request, res: Response): Promise<void
     });
     res.status(200).json({ success: true, count: progressList.length, data: progressList });
   } catch (error: any) {
-    res.status(500).json({ success: false, message: error.message });
+    logger.error(`[getUserProgress] ${error.message}`, 'PROGRESS');
+    sendError(res, 500, ErrorCode.INTERNAL_SERVER_ERROR, 'Failed to retrieve video watch progress.', req);
   }
 };
 
@@ -33,7 +36,7 @@ export const saveProgress = async (req: Request, res: Response): Promise<void> =
     const targetUserId = isAdmin && req.body.userId ? String(req.body.userId) : callerId;
 
     if (!targetUserId || !moduleId) {
-      res.status(400).json({ success: false, message: 'Authenticated user and moduleId are required' });
+      sendError(res, 400, ErrorCode.VALIDATION_ERROR, 'Authenticated user and moduleId are required', req);
       return;
     }
 
@@ -61,6 +64,7 @@ export const saveProgress = async (req: Request, res: Response): Promise<void> =
 
     res.status(200).json({ success: true, data: record });
   } catch (error: any) {
-    res.status(500).json({ success: false, message: error.message });
+    logger.error(`[saveProgress] ${error.message}`, 'PROGRESS');
+    sendError(res, 500, ErrorCode.INTERNAL_SERVER_ERROR, 'Failed to record video watch progress.', req);
   }
 };

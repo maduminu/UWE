@@ -25,7 +25,21 @@ router.get('/coaches', requireAdmin, requireRole(['SUPER_ADMIN', 'COMMANDER', 'C
 router.get('/', requireAdmin, requireRole(['SUPER_ADMIN', 'COMMANDER', 'COACH']), getAllUsers);
 router.post('/', requireAdmin, requireRole(['SUPER_ADMIN', 'COMMANDER']), createUser);
 router.put('/:id/assign-coach', requireAdmin, requireRole(['SUPER_ADMIN', 'COMMANDER', 'COACH']), assignCoach);
-router.put('/:id', requireAdmin, requireRole(['SUPER_ADMIN', 'COMMANDER']), updateUser);
+router.put('/:id', (req, res, next) => {
+  if (req.user?.type === 'admin') {
+    if (['SUPER_ADMIN', 'COMMANDER', 'COACH'].includes(req.user?.role || '')) {
+      return updateUser(req, res);
+    }
+    return res.status(403).json({ success: false, message: 'Forbidden: Insufficient admin permissions.' });
+  }
+
+  // Student can update their own profile
+  if (req.user?.id === req.params.id) {
+    return updateUser(req, res);
+  }
+
+  return res.status(403).json({ success: false, message: 'Forbidden: Cannot update another user account.' });
+});
 router.delete('/:id', requireAdmin, requireRole(['SUPER_ADMIN', 'COMMANDER']), deleteUser);
 
 // Aggregated Student Dashboard: Student can fetch their own, Admin can fetch any

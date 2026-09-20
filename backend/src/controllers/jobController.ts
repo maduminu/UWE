@@ -1,13 +1,16 @@
 import { Request, Response } from 'express';
 import { prisma } from '../config/db';
 import { recordAdminAudit } from '../utils/auditLogger';
+import { logger } from '../utils/logger';
+import { sendError, ErrorCode } from '../utils/apiResponse';
+import { broadcastRealtimeEvent } from '../utils/realtimeEmitter';
 
 const PHONE_REGEX = /^[+\d\s\-()]{7,20}$/;
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 // @desc    Get all job vacancies with application counts
 // @route   GET /api/jobs
-export const getAllJobs = async (_req: Request, res: Response): Promise<void> => {
+export const getAllJobs = async (req: Request, res: Response): Promise<void> => {
   try {
     const vacancies = await prisma.jobVacancy.findMany({
       include: {
@@ -19,8 +22,8 @@ export const getAllJobs = async (_req: Request, res: Response): Promise<void> =>
     });
     res.status(200).json({ success: true, count: vacancies.length, data: vacancies });
   } catch (error: any) {
-    console.error('[getAllJobs]', error);
-    res.status(500).json({ success: false, message: 'Failed to retrieve job listings.' });
+    logger.error(`[getAllJobs] ${error.message}`, 'JOBS');
+    sendError(res, 500, ErrorCode.INTERNAL_SERVER_ERROR, 'Failed to retrieve job listings.', req);
   }
 };
 
@@ -31,12 +34,12 @@ export const createJob = async (req: Request, res: Response): Promise<void> => {
     const { title, department, employmentType, incomeText, requirements, isActive, openPositions } = req.body;
 
     if (!title || !incomeText) {
-      res.status(400).json({ success: false, message: 'Title and Income details are required.' });
+      sendError(res, 400, ErrorCode.VALIDATION_ERROR, 'Title and Income details are required.', req);
       return;
     }
 
     if (title.trim().length > 150) {
-      res.status(400).json({ success: false, message: 'Title must be under 150 characters.' });
+      sendError(res, 400, ErrorCode.VALIDATION_ERROR, 'Title must be under 150 characters.', req);
       return;
     }
 
@@ -58,8 +61,8 @@ export const createJob = async (req: Request, res: Response): Promise<void> => {
 
     res.status(201).json({ success: true, data: newVacancy });
   } catch (error: any) {
-    console.error('[createJob]', error);
-    res.status(500).json({ success: false, message: 'Failed to create job vacancy.' });
+    logger.error(`[createJob] ${error.message}`, 'JOBS');
+    sendError(res, 500, ErrorCode.INTERNAL_SERVER_ERROR, 'Failed to create job vacancy.', req);
   }
 };
 
@@ -101,14 +104,14 @@ export const updateJob = async (req: Request, res: Response): Promise<void> => {
 
     res.status(200).json({ success: true, data: updated });
   } catch (error: any) {
-    console.error('[updateJob]', error);
-    res.status(500).json({ success: false, message: 'Failed to update job vacancy.' });
+    logger.error(`[updateJob] ${error.message}`, 'JOBS');
+    sendError(res, 500, ErrorCode.INTERNAL_SERVER_ERROR, 'Failed to update job vacancy.', req);
   }
 };
 
 // @desc    Get all recruitment job applications
 // @route   GET /api/jobs/applications
-export const getAllApplications = async (_req: Request, res: Response): Promise<void> => {
+export const getAllApplications = async (req: Request, res: Response): Promise<void> => {
   try {
     const applications = await prisma.jobApplication.findMany({
       include: {
@@ -118,8 +121,8 @@ export const getAllApplications = async (_req: Request, res: Response): Promise<
     });
     res.status(200).json({ success: true, count: applications.length, data: applications });
   } catch (error: any) {
-    console.error('[getAllApplications]', error);
-    res.status(500).json({ success: false, message: 'Failed to retrieve applications.' });
+    logger.error(`[getAllApplications] ${error.message}`, 'JOBS');
+    sendError(res, 500, ErrorCode.INTERNAL_SERVER_ERROR, 'Failed to retrieve applications.', req);
   }
 };
 
@@ -130,28 +133,28 @@ export const createApplication = async (req: Request, res: Response): Promise<vo
     const { vacancyId, name, phone, email, experience } = req.body;
 
     if (!name || !phone) {
-      res.status(400).json({ success: false, message: 'Name and phone number are required.' });
+      sendError(res, 400, ErrorCode.VALIDATION_ERROR, 'Name and phone number are required.', req);
       return;
     }
 
     if (name.trim().length > 100) {
-      res.status(400).json({ success: false, message: 'Name must be under 100 characters.' });
+      sendError(res, 400, ErrorCode.VALIDATION_ERROR, 'Name must be under 100 characters.', req);
       return;
     }
 
     if (experience && experience.trim().length > 1000) {
-      res.status(400).json({ success: false, message: 'Experience summary must be under 1000 characters.' });
+      sendError(res, 400, ErrorCode.VALIDATION_ERROR, 'Experience summary must be under 1000 characters.', req);
       return;
     }
 
     const cleanPhone = phone.trim();
     if (!PHONE_REGEX.test(cleanPhone)) {
-      res.status(400).json({ success: false, message: 'Invalid phone number format.' });
+      sendError(res, 400, ErrorCode.VALIDATION_ERROR, 'Invalid phone number format.', req);
       return;
     }
 
     if (email && !EMAIL_REGEX.test(email.trim())) {
-      res.status(400).json({ success: false, message: 'Invalid email address format.' });
+      sendError(res, 400, ErrorCode.VALIDATION_ERROR, 'Invalid email address format.', req);
       return;
     }
 
@@ -163,7 +166,7 @@ export const createApplication = async (req: Request, res: Response): Promise<vo
     }
 
     if (!targetVacancyId) {
-      res.status(400).json({ success: false, message: 'No active job vacancies found to apply for.' });
+      sendError(res, 400, ErrorCode.VALIDATION_ERROR, 'No active job vacancies found to apply for.', req);
       return;
     }
 
@@ -180,8 +183,8 @@ export const createApplication = async (req: Request, res: Response): Promise<vo
 
     res.status(201).json({ success: true, data: application });
   } catch (error: any) {
-    console.error('[createApplication]', error);
-    res.status(500).json({ success: false, message: 'Failed to submit application. Please try again.' });
+    logger.error(`[createApplication] ${error.message}`, 'JOBS');
+    sendError(res, 500, ErrorCode.INTERNAL_SERVER_ERROR, 'Failed to submit application. Please try again.', req);
   }
 };
 
@@ -192,6 +195,20 @@ export const updateApplicationStatus = async (req: Request, res: Response): Prom
     const id = String(req.params.id);
     const { status } = req.body;
 
+    const VALID_APPLICATION_STATUSES = ['APPLIED', 'REVIEWED', 'SHORTLISTED', 'HIRED', 'REJECTED'];
+    const normalizedStatus = String(status || '').toUpperCase();
+
+    if (!status || !VALID_APPLICATION_STATUSES.includes(normalizedStatus)) {
+      sendError(
+        res,
+        400,
+        ErrorCode.VALIDATION_ERROR,
+        `Invalid application status. Must be one of: ${VALID_APPLICATION_STATUSES.join(', ')}`,
+        req
+      );
+      return;
+    }
+
     const result = await prisma.$transaction(async (tx) => {
       const existingApp = await tx.jobApplication.findUnique({ where: { id } });
       if (!existingApp) {
@@ -201,7 +218,7 @@ export const updateApplicationStatus = async (req: Request, res: Response): Prom
       const updated = await tx.jobApplication.update({
         where: { id },
         data: {
-          status: status as any,
+          status: normalizedStatus as any,
         },
         include: {
           vacancy: true,
@@ -281,9 +298,91 @@ export const updateApplicationStatus = async (req: Request, res: Response): Prom
       ipAddress: req.ip,
     });
 
+    broadcastRealtimeEvent('job:updated', { vacancyId: result.vacancyId });
+    broadcastRealtimeEvent('job_app:updated', { applicationId: id });
+
     res.status(200).json({ success: true, data: result });
   } catch (error: any) {
-    console.error('[updateApplicationStatus]', error);
-    res.status(500).json({ success: false, message: error.message || 'Failed to update application status.' });
+    logger.error(`[updateApplicationStatus] ${error.message}`, 'JOBS');
+    sendError(res, 500, ErrorCode.INTERNAL_SERVER_ERROR, 'Failed to update application status.', req);
+  }
+};
+
+// @desc    Delete a job vacancy (Admin)
+// @route   DELETE /api/jobs/:id
+export const deleteJob = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const id = String(req.params.id);
+    const existing = await prisma.jobVacancy.findUnique({ where: { id } });
+    if (!existing) {
+      sendError(res, 404, ErrorCode.NOT_FOUND, 'Job vacancy not found.', req);
+      return;
+    }
+
+    await prisma.jobVacancy.delete({ where: { id } });
+    broadcastRealtimeEvent('job:updated', { vacancyId: id, deleted: true });
+
+    await recordAdminAudit({
+      adminId: req.user?.id,
+      adminEmail: req.user?.email,
+      action: 'JOB_DELETED',
+      targetEntity: 'JobVacancy',
+      targetId: id,
+      details: { title: existing.title },
+      ipAddress: req.ip,
+    });
+
+    res.status(200).json({ success: true, message: 'Job vacancy deleted successfully.' });
+  } catch (error: any) {
+    logger.error(`[deleteJob] ${error.message}`, 'JOBS');
+    sendError(res, 500, ErrorCode.INTERNAL_SERVER_ERROR, 'Failed to delete job vacancy.', req);
+  }
+};
+
+// @desc    Delete a job application (Admin)
+// @route   DELETE /api/jobs/applications/:id
+export const deleteApplication = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const id = String(req.params.id);
+    const existing = await prisma.jobApplication.findUnique({ where: { id } });
+    if (!existing) {
+      sendError(res, 404, ErrorCode.NOT_FOUND, 'Application not found.', req);
+      return;
+    }
+
+    // If deleting a hired applicant, decrement hired count on vacancy
+    if (existing.status === 'HIRED' && existing.vacancyId) {
+      const vacancy = await prisma.jobVacancy.findUnique({ where: { id: existing.vacancyId } });
+      if (vacancy && vacancy.hiredCount > 0) {
+        const newHired = Math.max(0, vacancy.hiredCount - 1);
+        await prisma.jobVacancy.update({
+          where: { id: existing.vacancyId },
+          data: {
+            hiredCount: newHired,
+            hiringStatus: 'HIRING',
+            isActive: true,
+          },
+        });
+      }
+    }
+
+    await prisma.jobApplication.delete({ where: { id } });
+    broadcastRealtimeEvent('job_app:updated', { applicationId: id, deleted: true });
+    broadcastRealtimeEvent('job:updated', { vacancyId: existing.vacancyId });
+
+    await recordAdminAudit({
+      adminId: req.user?.id,
+      adminEmail: req.user?.email,
+      action: 'JOB_APP_DELETED',
+      targetEntity: 'JobApplication',
+      targetId: id,
+      details: { name: existing.name, vacancyId: existing.vacancyId },
+      ipAddress: req.ip,
+    });
+
+    res.status(200).json({ success: true, message: 'Job application deleted successfully.' });
+  } catch (error: any) {
+    logger.error(`[deleteApplication] ${error.message}`, 'JOBS');
+    sendError(res, 500, ErrorCode.INTERNAL_SERVER_ERROR, 'Failed to delete application.', req);
   }
 };

@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { prisma } from '../config/db';
 import { cacheGet, cacheSet, cacheDel } from '../config/redis';
+import { broadcastRealtimeEvent } from '../utils/realtimeEmitter';
 
 // @desc    Get active announcement banner (cached)
 // @route   GET /api/banners/active
@@ -59,6 +60,7 @@ export const createBanner = async (req: Request, res: Response): Promise<void> =
     });
 
     await cacheDel('banners:active');
+    broadcastRealtimeEvent('banner:updated', { banner: newBanner });
     res.status(201).json({ success: true, data: newBanner });
   } catch (error: any) {
     console.error('[createBanner]', error);
@@ -100,9 +102,25 @@ export const updateBanner = async (req: Request, res: Response): Promise<void> =
     });
 
     await cacheDel('banners:active');
+    broadcastRealtimeEvent('banner:updated', { banner: updated });
     res.status(200).json({ success: true, data: updated });
   } catch (error: any) {
     console.error('[updateBanner]', error);
     res.status(500).json({ success: false, message: 'Failed to update announcement banner.' });
   }
 };
+
+// @desc    Get latest announcement banner (active or inactive) for admin management
+// @route   GET /api/banners
+export const getAllBanners = async (_req: Request, res: Response): Promise<void> => {
+  try {
+    const banner = await prisma.announcementBanner.findFirst({
+      orderBy: { createdAt: 'desc' },
+    });
+    res.status(200).json({ success: true, data: banner || null });
+  } catch (error: any) {
+    console.error('[getAllBanners]', error);
+    res.status(500).json({ success: false, message: 'Failed to retrieve announcement banner.' });
+  }
+};
+

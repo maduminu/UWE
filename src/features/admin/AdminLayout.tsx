@@ -24,6 +24,8 @@ import { CouponsTab } from './tabs/CouponsTab';
 import { ReviewsTab } from './tabs/ReviewsTab';
 import { InstructorsTab } from './tabs/InstructorsTab';
 import { MastermindTab } from './tabs/MastermindTab';
+import { PartnersTab } from './tabs/PartnersTab';
+import { CallTrackerTab } from './tabs/CallTrackerTab';
 
 interface AdminLayoutProps {
   onLogout: () => void;
@@ -49,6 +51,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ onLogout, setActivePag
   const [coupons, setCoupons] = useState<any[]>([]);
   const [adminReviews, setAdminReviews] = useState<any[]>([]);
   const [adminInstructors, setAdminInstructors] = useState<any[]>([]);
+  const [unansweredQACount, setUnansweredQACount] = useState(0);
   const [announcement, setAnnouncement] = useState({
     id: '',
     enabled: true,
@@ -76,7 +79,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ onLogout, setActivePag
       ] = await Promise.allSettled([
         api.getCourses(),
         api.getLeads(),
-        api.getActiveBanner(),
+        api.getAdminBanner().catch(() => api.getActiveBanner()),
         api.getDemos(),
         api.getProgramVideos(),
         api.getJobVacancies(),
@@ -122,6 +125,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ onLogout, setActivePag
             totalSeats: totalSeats,
             zoomLink: upcomingBatch?.zoomLink || '',
             batchId: upcomingBatch?.id || c.batchId,
+            batches: c.batches || [],
             color: colorMap[c.slug?.toLowerCase()] || '#FFB800',
             dirty: false,
           };
@@ -145,14 +149,14 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ onLogout, setActivePag
           }))
         );
       }
-      if (bannerRes.status === 'fulfilled' && bannerRes.value.data) {
+      if (bannerRes.status === 'fulfilled' && bannerRes.value?.data) {
         const b = Array.isArray(bannerRes.value.data) ? bannerRes.value.data[0] : bannerRes.value.data;
-        if (b) {
+        if (b && b.id) {
           setAnnouncement({
             id: b.id,
-            enabled: b.isActive,
-            text: b.message,
-            type: b.bannerType,
+            enabled: Boolean(b.isActive),
+            text: b.message || '',
+            type: b.bannerType || 'URGENT',
             dirty: false,
           });
         }
@@ -187,6 +191,32 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ onLogout, setActivePag
       if (instructorsRes.status === 'fulfilled' && instructorsRes.value.data) {
         setAdminInstructors(instructorsRes.value.data);
       }
+
+      // Fetch unanswered Mastermind Q&A count — uses IDENTICAL logic to MastermindTab line 174:
+      // (!q.isAnswered && !q.answer) || hasStudentFollowUp(q)
+      // where hasStudentFollowUp = last reply exists and is NOT from a coach.
+      try {
+        const qaRes = await api.getMastermindQuestions('all', { limit: 50 }).catch(() => ({ data: [], totalCount: 0 }));
+        const allQs: any[] = qaRes?.data && Array.isArray(qaRes.data) ? qaRes.data : [];
+        const totalCount: number = qaRes?.totalCount ?? qaRes?.count ?? allQs.length;
+
+        const hasStudentFollowUp = (q: any): boolean => {
+          const replies: any[] = q.replies || [];
+          if (replies.length === 0) return false;
+          return !replies[replies.length - 1].isCoach;
+        };
+
+        const unanswered = allQs.filter((q: any) =>
+          (!q.isAnswered && !q.answer) || hasStudentFollowUp(q)
+        );
+
+        // If backend has more than 50 total questions, fall back to totalCount
+        // (we can only inspect isAnswered/replies for the 50 we received)
+        setUnansweredQACount(totalCount > allQs.length ? totalCount : unanswered.length);
+      } catch {
+        /* non-critical */
+      }
+
       setDbStatus('online');
     } catch (err) {
       console.error('Failed to load some admin data:', err);
@@ -199,7 +229,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ onLogout, setActivePag
   }, [fetchAllData]);
 
   return (
-    <div className="min-h-screen bg-[#070A11] text-on-surface flex flex-col font-body-md pt-20">
+    <div className="min-h-screen bg-[#070A11] text-on-surface flex flex-col font-body-md pt-20 pb-32 lg:pb-8">
       {/* Toast Notification HUD */}
       <AdminToastContainer toasts={toasts} />
 
@@ -228,6 +258,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ onLogout, setActivePag
               jobVacancies={jobVacancies}
               jobApplications={jobApplications}
               users={users}
+              unansweredQACount={unansweredQACount}
               setActiveTab={setActiveTab}
               addToast={addToast}
             />
@@ -314,6 +345,10 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ onLogout, setActivePag
             />
           )}
 
+          {activeTab === 'calls' && (
+            <CallTrackerTab key="calls" />
+          )}
+
           {activeTab === 'slips' && (
             <SlipsTab
               key="slips"
@@ -371,6 +406,13 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ onLogout, setActivePag
           {activeTab === 'mastermind' && (
             <MastermindTab
               key="mastermind"
+              addToast={addToast}
+            />
+          )}
+
+          {activeTab === 'partners' && (
+            <PartnersTab
+              key="partners"
               addToast={addToast}
             />
           )}

@@ -12,7 +12,9 @@ import { NeuralParticleField } from './components/ui/NeuralParticleField';
 import { PageTransitionWrapper } from './components/ui/PageTransitionWrapper';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { AdminRoute } from './components/auth/AdminRoute';
+import { SessionExpiredModal } from './components/auth/SessionExpiredModal';
 import { ActiveBannerBar } from './components/ui/ActiveBannerBar';
+import { RouteSuspenseSkeleton } from './components/ui/ShimmerSkeletons';
 
 // ── Lazy-Loaded Pages for Ultra-Fast Initial Page Load (<100KB payload) ──
 const HomePage = lazy(() => import('./components/pages/HomePage').then((m) => ({ default: m.HomePage })));
@@ -27,6 +29,8 @@ const AdminPage = lazy(() => import('./components/pages/AdminPage').then((m) => 
 const ContactPage = lazy(() => import('./components/pages/ContactPage').then((m) => ({ default: m.ContactPage })));
 const StudentDashboardPage = lazy(() => import('./components/pages/StudentDashboardPage').then((m) => ({ default: m.StudentDashboardPage })));
 const CourseDetailPage = lazy(() => import('./components/pages/CourseDetailPage').then((m) => ({ default: m.CourseDetailPage })));
+const PartnersPage = lazy(() => import('./components/pages/PartnersPage').then((m) => ({ default: m.PartnersPage })));
+const PartnerDetailPage = lazy(() => import('./components/pages/PartnerDetailPage').then((m) => ({ default: m.PartnerDetailPage })));
 
 import { pathToPage, pageToPath } from './utils/routes';
 import './App.css';
@@ -70,7 +74,7 @@ function App() {
   const isAdminRoute = location.pathname.startsWith('/admin');
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#0B0E14] text-on-surface relative">
+    <div className="min-h-screen flex flex-col bg-[#0B0E14] text-on-surface relative w-full max-w-full overflow-x-hidden">
       {/* Tactical Sci-Fi Custom Preloader (Context-Aware: Public Portal vs Command HQ) */}
       {loaderConfig.show && (
         <CustomLoader
@@ -84,15 +88,18 @@ function App() {
       )}
 
       {/* Permanent Global Fixed Neural Particle Background (Runs 60fps across all pages) */}
-      <div className="fixed inset-0 pointer-events-none z-0 opacity-70">
+      <div className="fixed inset-0 pointer-events-none z-0 opacity-70 overflow-hidden">
         <NeuralParticleField />
       </div>
 
       {/* Sci-Fi Tactical Custom Cursor with Framer Motion Spring */}
       <CustomCursor />
 
+      {/* Global Real-Time Session Expiration Modal Alert */}
+      <SessionExpiredModal />
+
       {/* Main Content Viewport Layer */}
-      <div className="relative z-10 flex flex-col min-h-screen">
+      <div className="relative z-10 flex flex-col min-h-screen w-full max-w-full overflow-x-hidden">
         {/* Top Navigation with Shared Layout Glow */}
         {!isAdminRoute && (
           <>
@@ -105,16 +112,7 @@ function App() {
         <main className="flex-grow flex flex-col pt-0 pb-20 lg:pb-0">
           <AnimatePresence mode="wait">
             <PageTransitionWrapper pageKey={location.pathname}>
-              <Suspense
-                fallback={
-                  <div className="min-h-[60vh] flex flex-col items-center justify-center p-8 text-center space-y-3">
-                    <div className="w-12 h-12 rounded-full border-2 border-secondary border-t-transparent animate-spin" />
-                    <p className="font-mono-data text-xs text-secondary tracking-widest uppercase animate-pulse">
-                      ESTABLISHING QUANTUM LINK...
-                    </p>
-                  </div>
-                }
-              >
+              <Suspense fallback={<RouteSuspenseSkeleton />}>
                 <Routes location={location} key={location.pathname}>
                   <Route path="/" element={<HomePage setActivePage={setActivePage} />} />
                   <Route path="/about" element={<AboutPage />} />
@@ -150,6 +148,8 @@ function App() {
                   />
                   <Route path="/program-videos" element={<Navigate to="/videos" replace />} />
                   <Route path="/posters" element={<SocialPostersPage />} />
+                  <Route path="/partners" element={<PartnersPage setActivePage={setActivePage} />} />
+                  <Route path="/partners/:id" element={<PartnerDetailPage setActivePage={setActivePage} />} />
                   
                   {/* Protected Student Portal */}
                   <Route

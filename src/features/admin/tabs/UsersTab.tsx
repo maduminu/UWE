@@ -22,6 +22,9 @@ export const UsersTab: React.FC<UsersTabProps> = ({
   setActivePage,
 }) => {
   const [addUserModalOpen, setAddUserModalOpen] = useState(false);
+  const [editUserModalOpen, setEditUserModalOpen] = useState(false);
+  const [editingUser, setEditingUser] = useState<any | null>(null);
+
   const [newUser, setNewUser] = useState({
     name: '',
     email: '',
@@ -60,6 +63,48 @@ export const UsersTab: React.FC<UsersTabProps> = ({
     }
   };
 
+  const handleOpenEditUser = (u: any) => {
+    setEditingUser({
+      id: u.id,
+      name: u.name || '',
+      email: u.email || '',
+      phone: u.phone || '',
+      password: '',
+      enrolledCourseSlugs: u.enrolledCourseSlugs || '',
+      isEnrolled: u.isEnrolled ?? true,
+    });
+    setEditUserModalOpen(true);
+  };
+
+  const handleSaveEditUser = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingUser?.id || !editingUser.name || !editingUser.email) {
+      addToast('Name and Email are required', 'error');
+      return;
+    }
+    setSaving(true);
+    try {
+      const res = await api.updateUser(editingUser.id, {
+        name: editingUser.name,
+        email: editingUser.email,
+        phone: editingUser.phone,
+        enrolledCourseSlugs: editingUser.enrolledCourseSlugs,
+        isEnrolled: editingUser.isEnrolled,
+        ...(editingUser.password ? { password: editingUser.password } : {}),
+      });
+      if (res.data) {
+        setUsers((prev) => prev.map((u) => (u.id === editingUser.id ? { ...u, ...res.data } : u)));
+        addToast(`✅ Operative profile for "${res.data.name}" updated!`);
+        setEditUserModalOpen(false);
+        setEditingUser(null);
+      }
+    } catch (err: any) {
+      addToast(`❌ ${err.message}`, 'error');
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const handleDeleteUser = async (userId: string) => {
     if (!window.confirm('Are you sure you want to delete this user account?')) return;
     try {
@@ -71,22 +116,42 @@ export const UsersTab: React.FC<UsersTabProps> = ({
     }
   };
 
-  const handleLoginAsUser = (u: any) => {
-    localStorage.setItem(
-      'uwe_user_account',
-      JSON.stringify({
-        id: u.id,
-        name: u.name,
-        email: u.email,
-        phone: u.phone,
-        enrolledCourseSlugs: u.enrolledCourseSlugs,
-      })
-    );
-    addToast(`⚡ Logged in as Operative ${u.name}! Returning to website...`);
-    if (setActivePage) {
-      setTimeout(() => {
-        setActivePage('home');
-      }, 1200);
+  const handleLoginAsUser = async (u: any) => {
+    try {
+      // Fetch fresh user data from DB to ensure consistency
+      const res = await api.getUsers();
+      if (res.data) {
+        const freshUser = res.data.find((user: any) => user.id === u.id);
+        if (!freshUser) {
+          addToast('❌ User not found in database', 'error');
+          return;
+        }
+
+        // Respect isEnrolled gate: cannot impersonate a user with no access
+        if (!freshUser.isEnrolled) {
+          addToast('❌ Cannot login: This operative account has no active enrollment. Grant access first.', 'error');
+          return;
+        }
+
+        localStorage.setItem(
+          'uwe_user_account',
+          JSON.stringify({
+            id: freshUser.id,
+            name: freshUser.name,
+            email: freshUser.email,
+            phone: freshUser.phone,
+            enrolledCourseSlugs: freshUser.enrolledCourseSlugs || '',
+          })
+        );
+        addToast(`⚡ Logged in as Operative ${freshUser.name}! Returning to website...`);
+        if (setActivePage) {
+          setTimeout(() => {
+            setActivePage('home');
+          }, 1200);
+        }
+      }
+    } catch (err: any) {
+      addToast(`❌ Impersonation failed: ${err.message}`, 'error');
     }
   };
 
@@ -443,6 +508,13 @@ export const UsersTab: React.FC<UsersTabProps> = ({
                       WHATSAPP <span className="material-symbols-outlined text-xs">east</span>
                     </a>
                     <button
+                      onClick={() => handleOpenEditUser(u)}
+                      className="p-1.5 rounded text-secondary hover:bg-secondary/15 cursor-pointer"
+                      title="Edit Operative Profile & Password"
+                    >
+                      <span className="material-symbols-outlined text-base">edit</span>
+                    </button>
+                    <button
                       onClick={() => handleDeleteUser(u.id)}
                       className="p-1.5 rounded text-red-400 hover:bg-red-500/10 cursor-pointer"
                       title="Delete User"
@@ -699,6 +771,111 @@ export const UsersTab: React.FC<UsersTabProps> = ({
                     className="px-5 py-2 rounded bg-blue-600 hover:bg-blue-500 text-white font-bold uppercase cursor-pointer"
                   >
                     {saving ? 'ASSIGNING...' : 'CONFIRM ASSIGNMENT'}
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* ━━━ EDIT OPERATIVE MODAL ━━━ */}
+      <AnimatePresence>
+        {editUserModalOpen && editingUser && (
+          <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md overflow-y-auto">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              className="bg-[#0D111A] border border-secondary/40 rounded-2xl p-6 max-w-md w-full space-y-4 text-left shadow-2xl"
+            >
+              <div className="flex justify-between items-center border-b border-outline-variant/30 pb-3">
+                <div className="flex items-center gap-2">
+                  <span className="material-symbols-outlined text-secondary text-xl">manage_accounts</span>
+                  <h3 className="font-headline-md text-lg text-on-surface font-black uppercase">
+                    EDIT <span className="text-secondary">OPERATIVE PROFILE</span>
+                  </h3>
+                </div>
+                <button
+                  onClick={() => setEditUserModalOpen(false)}
+                  className="text-on-surface-variant hover:text-on-surface cursor-pointer"
+                >
+                  <span className="material-symbols-outlined">close</span>
+                </button>
+              </div>
+
+              <form onSubmit={handleSaveEditUser} className="space-y-3.5 text-xs font-mono-data">
+                <div>
+                  <label className="text-secondary font-bold block mb-1">Operative Name *</label>
+                  <input
+                    type="text"
+                    required
+                    value={editingUser.name}
+                    onChange={(e) => setEditingUser({ ...editingUser, name: e.target.value })}
+                    className="input-field w-full p-2.5 rounded-lg bg-[#131929] border-secondary/40"
+                  />
+                </div>
+                <div>
+                  <label className="text-secondary font-bold block mb-1">Email Address *</label>
+                  <input
+                    type="email"
+                    required
+                    value={editingUser.email}
+                    onChange={(e) => setEditingUser({ ...editingUser, email: e.target.value })}
+                    className="input-field w-full p-2.5 rounded-lg bg-[#131929] border-secondary/40 text-secondary"
+                  />
+                </div>
+                <div>
+                  <label className="text-on-surface-variant block mb-1">Phone Number</label>
+                  <input
+                    type="text"
+                    value={editingUser.phone}
+                    onChange={(e) => setEditingUser({ ...editingUser, phone: e.target.value })}
+                    className="input-field w-full p-2.5 rounded-lg bg-[#131929] border-secondary/40"
+                  />
+                </div>
+                <div>
+                  <label className="text-on-surface-variant block mb-1">Reset Password (Leave blank to keep current)</label>
+                  <input
+                    type="password"
+                    value={editingUser.password}
+                    onChange={(e) => setEditingUser({ ...editingUser, password: e.target.value })}
+                    placeholder="New password (min 6 characters)"
+                    className="input-field w-full p-2.5 rounded-lg bg-[#131929] border-secondary/40"
+                  />
+                </div>
+                <div>
+                  <label className="text-on-surface-variant block mb-1">Enrolled Course Slugs (comma separated)</label>
+                  <input
+                    type="text"
+                    value={editingUser.enrolledCourseSlugs}
+                    onChange={(e) => setEditingUser({ ...editingUser, enrolledCourseSlugs: e.target.value })}
+                    placeholder="bmb,leadership,ignit"
+                    className="input-field w-full p-2.5 rounded-lg bg-[#131929] border-secondary/40"
+                  />
+                </div>
+                <div className="flex items-center gap-2 p-2.5 rounded-lg bg-[#131929] border border-outline-variant/30">
+                  <input
+                    type="checkbox"
+                    id="editIsEnrolledCheck"
+                    checked={editingUser.isEnrolled}
+                    onChange={(e) => setEditingUser({ ...editingUser, isEnrolled: e.target.checked })}
+                    className="w-4 h-4 rounded text-secondary focus:ring-0 cursor-pointer"
+                  />
+                  <label htmlFor="editIsEnrolledCheck" className="text-xs text-on-surface cursor-pointer">
+                    Active Enrollment Status (LMS &amp; Vault Access)
+                  </label>
+                </div>
+                <div className="pt-3 flex justify-end gap-3 border-t border-outline-variant/30">
+                  <button
+                    type="button"
+                    onClick={() => setEditUserModalOpen(false)}
+                    className="px-4 py-2 rounded bg-[#131929] text-on-surface-variant cursor-pointer"
+                  >
+                    CANCEL
+                  </button>
+                  <button type="submit" disabled={saving} className="btn-elite px-5 py-2 rounded font-bold uppercase cursor-pointer">
+                    {saving ? 'SAVING...' : 'SAVE CHANGES'}
                   </button>
                 </div>
               </form>

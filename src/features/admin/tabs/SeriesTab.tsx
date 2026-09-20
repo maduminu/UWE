@@ -24,7 +24,9 @@ export const SeriesTab: React.FC<SeriesTabProps> = ({
   const [editingSeries, setEditingSeries] = useState<any | null>(null);
 
   const [addModuleModalOpen, setAddModuleModalOpen] = useState(false);
+  const [editModuleModalOpen, setEditModuleModalOpen] = useState(false);
   const [targetSeriesId, setTargetSeriesId] = useState('');
+  const [editingModule, setEditingModule] = useState<any | null>(null);
 
   const [newSeries, setNewSeries] = useState({
     courseSlug: 'bmb',
@@ -150,6 +152,60 @@ export const SeriesTab: React.FC<SeriesTabProps> = ({
           isFreePreview: true,
           description: '',
         });
+      }
+    } catch (err: any) {
+      addToast(`❌ ${err.message}`, 'error');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleOpenEditModule = (mod: any, seriesId: string) => {
+    setTargetSeriesId(seriesId);
+    setEditingModule({
+      id: mod.id,
+      episodeNumber: mod.episodeNumber || 1,
+      title: mod.title || '',
+      duration: mod.duration || '03:45',
+      videoUrl: mod.videoUrl || '',
+      isFreePreview: mod.isFreePreview ?? false,
+      description: mod.description || '',
+    });
+    setEditModuleModalOpen(true);
+  };
+
+  const handleSaveEditModule = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingModule?.id || !editingModule.title || !editingModule.videoUrl) {
+      addToast('Title and Video URL are required', 'error');
+      return;
+    }
+    setSaving(true);
+    try {
+      const res = await api.updateVideoModule(editingModule.id, {
+        episodeNumber: Number(editingModule.episodeNumber) || 1,
+        title: editingModule.title,
+        duration: editingModule.duration,
+        videoUrl: editingModule.videoUrl,
+        isFreePreview: editingModule.isFreePreview,
+        description: editingModule.description,
+      });
+      if (res.data) {
+        setVideoSeriesList((prev) =>
+          prev.map((s) =>
+            s.id === targetSeriesId
+              ? {
+                  ...s,
+                  modules: (s.modules || []).map((m: any) =>
+                    m.id === editingModule.id ? res.data : m
+                  ),
+                }
+              : s
+          )
+        );
+        addToast(`✅ Episode "${res.data.title}" updated!`);
+        setEditModuleModalOpen(false);
+        setEditingModule(null);
       }
     } catch (err: any) {
       addToast(`❌ ${err.message}`, 'error');
@@ -332,6 +388,13 @@ export const SeriesTab: React.FC<SeriesTabProps> = ({
                       >
                         <span className="material-symbols-outlined text-xs">play_arrow</span> WATCH
                       </a>
+                      <button
+                        onClick={() => handleOpenEditModule(mod, series.id)}
+                        className="p-1 rounded text-secondary hover:bg-secondary/15 transition-colors cursor-pointer"
+                        title="Edit Episode"
+                      >
+                        <span className="material-symbols-outlined text-sm">edit</span>
+                      </button>
                       <button
                         onClick={() => handleDeleteModule(mod.id, series.id)}
                         className="p-1 rounded text-red-400 hover:bg-red-500/10 transition-colors cursor-pointer"
@@ -658,6 +721,115 @@ export const SeriesTab: React.FC<SeriesTabProps> = ({
                   </button>
                   <button type="submit" disabled={saving} className="btn-elite px-5 py-2 rounded font-bold uppercase cursor-pointer">
                     {saving ? 'SAVING...' : 'ADD EPISODE'}
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* ━━━ EDIT EPISODE MODULE MODAL ━━━ */}
+      <AnimatePresence>
+        {editModuleModalOpen && editingModule && (
+          <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-black/85 backdrop-blur-md overflow-y-auto">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-[#0D111A] border border-secondary/50 rounded-2xl p-6 max-w-lg w-full space-y-4 text-left shadow-2xl"
+            >
+              <div className="flex justify-between items-center border-b border-outline-variant/30 pb-3">
+                <div className="flex items-center gap-2">
+                  <span className="material-symbols-outlined text-secondary text-xl">edit</span>
+                  <h3 className="font-headline-md text-lg text-on-surface font-black uppercase">
+                    EDIT <span className="text-secondary">EPISODE MODULE</span>
+                  </h3>
+                </div>
+                <button
+                  onClick={() => setEditModuleModalOpen(false)}
+                  className="text-on-surface-variant hover:text-on-surface cursor-pointer"
+                >
+                  <span className="material-symbols-outlined">close</span>
+                </button>
+              </div>
+
+              <form onSubmit={handleSaveEditModule} className="space-y-3.5 text-xs font-mono-data">
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-secondary font-bold block mb-1">Episode # *</label>
+                    <input
+                      type="number"
+                      required
+                      min={1}
+                      value={editingModule.episodeNumber}
+                      onChange={(e) => setEditingModule({ ...editingModule, episodeNumber: parseInt(e.target.value) || 1 })}
+                      className="input-field w-full p-2.5 rounded-lg bg-[#131929] border-secondary/40"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-secondary font-bold block mb-1">Duration (MM:SS) *</label>
+                    <input
+                      type="text"
+                      required
+                      value={editingModule.duration}
+                      onChange={(e) => setEditingModule({ ...editingModule, duration: e.target.value })}
+                      placeholder="18:40"
+                      className="input-field w-full p-2.5 rounded-lg bg-[#131929] border-secondary/40 text-secondary"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="text-secondary font-bold block mb-1">Episode Title *</label>
+                  <input
+                    type="text"
+                    required
+                    value={editingModule.title}
+                    onChange={(e) => setEditingModule({ ...editingModule, title: e.target.value })}
+                    className="input-field w-full p-2.5 rounded-lg bg-[#131929] border-secondary/40"
+                  />
+                </div>
+                <div>
+                  <label className="text-secondary font-bold block mb-1">Video Stream URL *</label>
+                  <input
+                    type="text"
+                    required
+                    value={editingModule.videoUrl}
+                    onChange={(e) => setEditingModule({ ...editingModule, videoUrl: e.target.value })}
+                    className="input-field w-full p-2.5 rounded-lg bg-[#131929] border-secondary/40 text-secondary"
+                  />
+                </div>
+                <div className="flex items-center gap-2 p-2.5 rounded-lg bg-[#131929] border border-outline-variant/30">
+                  <input
+                    type="checkbox"
+                    id="editFreePreviewCheck"
+                    checked={editingModule.isFreePreview}
+                    onChange={(e) => setEditingModule({ ...editingModule, isFreePreview: e.target.checked })}
+                    className="w-4 h-4 rounded text-secondary focus:ring-0 cursor-pointer"
+                  />
+                  <label htmlFor="editFreePreviewCheck" className="text-xs text-on-surface cursor-pointer">
+                    Set as <strong>FREE PREVIEW</strong> (Accessible without student login)
+                  </label>
+                </div>
+                <div>
+                  <label className="text-on-surface-variant block mb-1">Episode Description / Key Takeaways</label>
+                  <textarea
+                    rows={2}
+                    value={editingModule.description}
+                    onChange={(e) => setEditingModule({ ...editingModule, description: e.target.value })}
+                    className="input-field w-full p-2.5 rounded-lg bg-[#131929] border-secondary/40"
+                  />
+                </div>
+                <div className="pt-3 flex justify-end gap-3 border-t border-outline-variant/30">
+                  <button
+                    type="button"
+                    onClick={() => setEditModuleModalOpen(false)}
+                    className="px-4 py-2 rounded bg-[#131929] text-on-surface-variant cursor-pointer"
+                  >
+                    CANCEL
+                  </button>
+                  <button type="submit" disabled={saving} className="btn-elite px-5 py-2 rounded font-bold uppercase cursor-pointer">
+                    {saving ? 'SAVING...' : 'SAVE CHANGES'}
                   </button>
                 </div>
               </form>

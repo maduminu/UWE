@@ -14,7 +14,7 @@ export const optionalAuth = (req: Request, _res: Response, next: NextFunction): 
     const token = authHeader.split(' ')[1];
     try {
       const secret = getJwtSecret();
-      const decoded = jwt.verify(token, secret) as AuthUserPayload;
+      const decoded = jwt.verify(token, secret, { algorithms: ['HS256'] }) as AuthUserPayload;
       req.user = decoded;
     } catch {
       // Ignore token errors for optional auth

@@ -1,5 +1,11 @@
 import { Router } from 'express';
-import { claimCertificate, verifyCertificate, getUserCertificates, downloadCertificatePDF } from '../controllers/certificateController';
+import {
+  claimCertificate,
+  verifyCertificate,
+  getUserCertificates,
+  downloadCertificatePDF,
+  enqueueCertificatePDF,
+} from '../controllers/certificateController';
 import { authenticate } from '../middlewares/authenticate';
 import { optionalAuth } from '../middlewares/optionalAuth';
 
@@ -10,6 +16,9 @@ router.get('/verify/:certQuery', verifyCertificate);
 
 // Public / Authenticated certificate download as tamper-proof PDF
 router.get('/download/:certId', downloadCertificatePDF);
+
+// Asynchronously generate PDF certificate via background worker queue (<30ms response)
+router.post('/generate-async', optionalAuth, enqueueCertificatePDF);
 
 // Claim / Issue certificate (enforces authenticated operative identity)
 router.post('/claim', authenticate, claimCertificate);
